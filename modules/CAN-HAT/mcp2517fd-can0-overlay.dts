@@ -35,7 +35,7 @@
             mcp2517fd_osc: mcp2517fd_osc {
                 compatible = "fixed-clock";
                 #clock-cells = <0>;
-                clock-frequency  = <20000000>;
+                clock-frequency  = <40000000>;
             };
         };
     };
@@ -53,7 +53,7 @@
                 compatible = "microchip,mcp2517fd";
                 pinctrl-names = "default";
                 pinctrl-0 = <&int_pins>;
-                spi-max-frequency = <20000000>;
+                spi-max-frequency = <125000000>;
                 interrupt-parent = <&gpio>;
                 interrupts = <25 8>; /* IRQ_TYPE_LEVEL_LOW */
                 clocks = <&mcp2517fd_osc>;
