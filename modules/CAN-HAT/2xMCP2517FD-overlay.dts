@@ -1,0 +1,90 @@
+/*
+ * Device tree overlay for mcp251x/mcp2517fd on spi0.0
+ */
+
+/dts-v1/;
+/plugin/;
+
+/ {
+    compatible = "brcm,bcm2835", "brcm,bcm2836", "brcm,bcm2708", "brcm,bcm2709";
+    /* disable spi-dev for spi0.0 */
+
+    fragment@0{
+	target = <&spidev0>;
+	__overlay__ {
+	    status = "disabled";
+	};
+    };
+
+    fragment@1{
+	target = <&spidev1>;
+	__overlay__ {
+	    status = "disabled";
+	};
+    };
+
+    /* the interrupt pin of the can-controller */
+    fragment@2 {
+        target = <&gpio>;
+        __overlay__ {
+            can0_int_pins: can0_int_pins {
+                brcm,pins = <25>;
+                brcm,function = <0>; /* input */
+            };
+            can1_int_pins: can1_int_pins {
+                brcm,pins = <24>;
+                brcm,function = <0>; /* input */
+            };
+
+        };
+    };
+
+    /* the clock/oscillator of the can-controller */
+    fragment@3 {
+        target-path = "/clocks";
+        __overlay__ {
+            /* external 40M oscillator of mcp2517fd on SPI0.0 */
+            mcp2517fd_osc: mcp2517fd_osc {
+                compatible = "fixed-clock";
+                #clock-cells = <0>;
+                clock-frequency  = <40000000>;
+            };
+        };
+    };
+
+    /* the spi config of the can-controller itself binding everything together */
+    fragment@4 {
+        target = <&spi0>;
+        can_overlay:__overlay__ {
+            /* needed to avoid dtc warning */
+            #address-cells = <1>;
+            #size-cells = <0>;
+
+          status = "okay";
+            can0: can@0 {
+                reg = <1>;
+                pinctrl-names = "default";
+         	pinctrl-0 = <&can0_int_pins>;
+                compatible = "microchip,mcp2517fd";
+                spi-max-frequency = <125000000>;
+                interrupt-parent = <&gpio>;
+                interrupts = <25 8>; /* IRQ_TYPE_LEVEL_LOW */
+                clocks = <&mcp2517fd_osc>;
+            };
+            can1: can@1 {
+                reg = <0>;
+                pinctrl-names = "default";
+         	pinctrl-0 = <&can1_int_pins>;
+                compatible = "microchip,mcp2517fd";
+                spi-max-frequency = <125000000>;
+                interrupt-parent = <&gpio>;
+                interrupts = <24 8>; /* IRQ_TYPE_LEVEL_LOW */
+                clocks = <&mcp2517fd_osc>;
+            };
+
+        };
+    };
+    __overrides__ {
+   bus-name = <&can_overlay>,"SeeedStudio.com";
+	 };
+};
