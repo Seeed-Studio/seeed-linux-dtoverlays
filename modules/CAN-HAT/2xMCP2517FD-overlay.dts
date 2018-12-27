@@ -55,14 +55,14 @@
     /* the spi config of the can-controller itself binding everything together */
     fragment@4 {
         target = <&spi0>;
-        can_overlay:__overlay__ {
+        __overlay__ {
             /* needed to avoid dtc warning */
             #address-cells = <1>;
             #size-cells = <0>;
 
           status = "okay";
             can0: can@0 {
-                reg = <1>;
+                reg = <0>;
                 pinctrl-names = "default";
          	pinctrl-0 = <&can0_int_pins>;
                 compatible = "microchip,mcp2517fd";
@@ -71,6 +71,17 @@
                 interrupts = <25 8>; /* IRQ_TYPE_LEVEL_LOW */
                 clocks = <&mcp2517fd_osc>;
             };
+
+        };
+    };
+    /* the spi config of the can-controller itself binding everything together */
+    fragment@5 {
+        target = <&spi1>;
+        __overlay__ {
+            /* needed to avoid dtc warning */
+            #address-cells = <1>;
+            #size-cells = <0>;
+ 	    status = "okay";
             can1: can@1 {
                 reg = <0>;
                 pinctrl-names = "default";
@@ -81,10 +92,7 @@
                 interrupts = <24 8>; /* IRQ_TYPE_LEVEL_LOW */
                 clocks = <&mcp2517fd_osc>;
             };
-
-        };
+	};
     };
-    __overrides__ {
-   bus-name = <&can_overlay>,"SeeedStudio.com";
-	 };
+
 };
