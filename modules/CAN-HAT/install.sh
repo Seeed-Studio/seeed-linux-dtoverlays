@@ -11,7 +11,7 @@ if [ "x${is_Raspberry}" != "xRaspberry" ] ; then
   exit 1
 fi
 
-ver="0.3"
+ver="0.1"
 
 
 # we create a dir with this version to ensure that 'dkms remove' won't delete
