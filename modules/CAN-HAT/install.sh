@@ -23,13 +23,13 @@ which apt &>/dev/null
 if [[ $? -eq 0 ]]; then
   apt update -y
   apt-get -y install raspberrypi-kernel-headers raspberrypi-kernel 
-  apt-get -y install dkms git 
+  apt-get -y install dkms git can-utils
 fi
 
 # Arch Linux
 which pacman &>/dev/null
 if [[ $? -eq 0 ]]; then
-  pacman -Syu --needed git gcc automake make dkms linux-raspberrypi-headers 
+  pacman -Syu --needed git gcc automake make dkms linux-raspberrypi-headers can-utils
 fi
 
 # locate currently installed kernels (may be different to running kernel if
