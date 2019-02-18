@@ -8,7 +8,6 @@ Get the CAN-HAT  source code. and install all linux kernel drivers
 ```bash
 git clone https://github.com/seeed-Studio/pi-hats
 cd pi-hats/CAN-HAT
-git checkout dev
 sudo ./install.sh 
 sudo reboot
 ```
