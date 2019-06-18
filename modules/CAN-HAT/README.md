@@ -1,7 +1,7 @@
 # CAN-HAT
 
 
-The drivers of [Raspberry pi  CAN HAT](https://www.seeedstudio.com/ReSpeaker-2-Mics-Pi-HAT-p-2874.html) for Raspberry Pi.
+The drivers of [Raspberry pi  CAN HAT](https://www.seeedstudio.com/2-Channel-CAN-BUS-FD-Shield-for-Raspberry-Pi-p-4072.html) for Raspberry Pi.
 
 ### Install CAN-HAT
 Get the CAN-HAT  source code. and install all linux kernel drivers
@@ -14,7 +14,7 @@ sudo reboot
 
 ## Raspberry pi  CAN HAT
 
-[![](https://github.com/SeeedDocument/MIC_HATv1.0_for_raspberrypi/blob/master/img/mic_hatv1.0.png?raw=true)](https://www.seeedstudio.com/ReSpeaker-2-Mics-Pi-HAT-p-2874.html)
+[![](https://github.com/SeeedDocument/2-Channel-CAN-BUS-FD-Shield-for-Raspberry-Pi/raw/master/img/block.jpg)](https://www.seeedstudio.com/2-Channel-CAN-BUS-FD-Shield-for-Raspberry-Pi-p-4072.html)
 
 
 Check the kernel log to see if MCP2517 was initialized successfully.You will also see can0 and can1 appear in the list of ifconfig results
