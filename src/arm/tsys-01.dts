@@ -1,0 +1,42 @@
+/*
+ * Author: Manivannan Sadhasivam
+ * Copyright (c) 2017 Linaro Inc.
+ * All rights reserved.
+ *
+ * Sample device tree overlay for TSYS01- Temperature sensor
+ */
+
+/dts-v1/;
+/plugin/;
+
+/ {
+     compatible = "fsl,imx6ull-14x14-evk", "fsl,imx6ull";
+        /*
+         * Helper to show loaded overlays under: /proc/device-tree/chosen/overlays/
+         */
+        fragment@0 {
+                target = <&i2c2>;
+                __overlay__ {
+                        clock_frequency = <100000>;
+                        pinctrl-names = "default";
+                        pinctrl-0 = <&pinctrl_i2c2>;
+                        status = "okay";
+
+
+                };
+        };
+
+        fragment@1 {
+                target = <&iomuxc>;
+                __overlay__ {
+                        pinctrl_i2c2: i2c2grp {
+                        fsl,pins = <
+                                0x00bc 0x0348 0x05ac 2 2 0x4001b8b0
+                                0x00c0 0x034c 0x05b0 2 2 0x4001b8b0
+                                >;
+                        };
+                };
+        };
+
+};
+

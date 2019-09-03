@@ -1,0 +1,10 @@
+SeeedStudio: Motor Bridge Cape:
+
+Docs: http://wiki.seeedstudio.com/Motor_Bridge_Cape_v1.0/
+Firmware: https://github.com/Seeed-Studio/MotorBridgeCapeFirmware
+
+Needs uart2 and P8.23/P8.25 from eMMC
+
+uboot_overlay_addr4=/lib/firmware/BB-UART2-00A0.dtbo
+disable_uboot_overlay_emmc=1
+disable_uboot_overlay_video=1
