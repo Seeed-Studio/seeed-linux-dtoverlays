@@ -1,13 +1,15 @@
 /*
- * Author: Manivannan Sadhasivam
- * Copyright (c) 2017 Linaro Inc.
- * All rights reserved.
+ * Copyright (C) 2019 Seeed Technology Co,Ltd  - https://www.seeed.cc
+ * Author: Baozhu Zuo <zuobaozhu@gmail.com>
  *
- * Sample device tree overlay for TSYS01- Temperature sensor
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
  */
-
+#include "imx6ul-pinfunc.h"
 /dts-v1/;
 /plugin/;
+
 
 / {
      compatible = "fsl,imx6ull-14x14-evk", "fsl,imx6ull";
@@ -29,14 +31,13 @@
         fragment@1 {
                 target = <&iomuxc>;
                 __overlay__ {
-                        pinctrl_i2c2: i2c2grp {
-                        fsl,pins = <
-                                0x00bc 0x0348 0x05ac 2 2 0x4001b8b0
-                                0x00c0 0x034c 0x05b0 2 2 0x4001b8b0
-                                >;
+                        pinctrl_i2c2: i2c2grp@12 {
+                            fsl,pins = <
+                                MX6UL_PAD_UART5_TX_DATA__I2C2_SCL 0x4001b8b0
+                                MX6UL_PAD_UART5_RX_DATA__I2C2_SDA 0x4001b8b0
+                            >;
                         };
                 };
         };
 
 };
-
