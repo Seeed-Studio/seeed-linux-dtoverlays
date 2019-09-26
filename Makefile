@@ -7,16 +7,16 @@ DTCVERSION ?= $(shell $(DTC) --version | grep ^Version | sed 's/^.* //g')
 
 MAKEFLAGS += -rR --no-print-directory
 
-ALL_ARCHES := $(patsubst src/%,%,$(wildcard src/*))
+ALL_PLATFORMES := $(patsubst overlays/%,%,$(wildcard overlays/*))
 
 PHONY += all
-all: $(foreach i,$(ALL_ARCHES),all_$(i))
+all: $(foreach i,$(ALL_PLATFORMES),all_$(i))
 
 PHONY += clean
-clean: $(foreach i,$(ALL_ARCHES),clean_$(i))
+clean: $(foreach i,$(ALL_PLATFORMES),clean_$(i))
 
 PHONY += install
-install: $(foreach i,$(ALL_ARCHES),install_$(i))
+install: $(foreach i,$(ALL_PLATFORMES),install_$(i))
 
 # Do not:
 # o  use make's built-in rules and variables
@@ -127,38 +127,38 @@ endif
 export quiet Q KBUILD_VERBOSE
 
 all_%:
-	$(Q)$(MAKE) ARCH=$* all_arch
+	$(Q)$(MAKE) PLATFORM=$* all_arch
 	gcc -o config-pin ./tools/pmunts_muntsos/config-pin.c
 
 clean_%:
-	$(Q)$(MAKE) ARCH=$* clean_arch
+	$(Q)$(MAKE) PLATFORM=$* clean_arch
 	rm config-pin || true
 
 install_%:
-	$(Q)$(MAKE) ARCH=$* install_arch
+	$(Q)$(MAKE) PLATFORM=$* install_arch
 
-ifeq ($(ARCH),)
+ifeq ($(PLATFORM),)
 
-ALL_DTS		:= $(shell find src/* -name \*.dts)
+ALL_DTS		:= $(shell find overlays/* -name \*.dts)
 
 ALL_DTB		:= $(patsubst %.dts,%.dtbo,$(ALL_DTS))
 
-$(ALL_DTB): ARCH=$(word 2,$(subst /, ,$@))
+$(ALL_DTB): PLATFORM=$(word 2,$(subst /, ,$@))
 $(ALL_DTB): FORCE
-	$(Q)$(MAKE) ARCH=$(ARCH) $@
+	$(Q)$(MAKE) PLATFORM=$(PLATFORM) $@
 
 else
 
-ARCH_DTS	:= $(shell find src/$(ARCH) -name \*.dts)
+PLATFORM_DTS	:= $(shell find overlays/$(PLATFORM) -name \*.dts)
 
-ARCH_DTB	:= $(patsubst %.dts,%.dtbo,$(ARCH_DTS))
+PLATFORM_DTB	:= $(patsubst %.dts,%.dtbo,$(PLATFORM_DTS))
 
-src	:= src/$(ARCH)
-obj	:= src/$(ARCH)
+src	:= overlays/$(PLATFORM)
+obj	:= overlays/$(PLATFORM)
 
 include scripts/Kbuild.include
 
-cmd_files := $(wildcard $(foreach f,$(ARCH_DTB),$(dir $(f)).$(notdir $(f)).cmd))
+cmd_files := $(wildcard $(foreach f,$(PLATFORM_DTB),$(dir $(f)).$(notdir $(f)).cmd))
 
 ifneq ($(cmd_files),)
   include $(cmd_files)
@@ -170,7 +170,7 @@ quiet_cmd_clean    = CLEAN   $(obj)
 dtc-tmp = $(subst $(comma),_,$(dot-target).dts.tmp)
 
 dtc_cpp_flags  = -Wp,-MD,$(depfile).pre.tmp -nostdinc		\
-                 -Iinclude -I$(src) -Isrc -Itestcase-data	\
+                 -Iinclude -I$(src) -Ioverlays -Itestcase-data	\
                  -undef -D__DTS__
 
 quiet_cmd_dtc = DTC     $@
@@ -184,11 +184,11 @@ $(obj)/%.dtbo: $(src)/%.dts FORCE
 	$(call if_changed_dep,dtc)
 
 PHONY += all_arch
-all_arch: $(ARCH_DTB)
+all_arch: $(PLATFORM_DTB)
 	@:
 
 PHONY += install_arch
-install_arch: $(ARCH_DTBO)
+install_arch: $(PLATFORM_DTBO)
 	mkdir -p $(DESTDIR)/lib/firmware/
 	cp -v $(obj)/*.dtbo $(DESTDIR)/lib/firmware/
 	mkdir -p $(DESTDIR)/usr/bin/
@@ -198,7 +198,7 @@ RCS_FIND_IGNORE := \( -name SCCS -o -name BitKeeper -o -name .svn -o -name CVS \
                    -o -name .pc -o -name .hg -o -name .git \) -prune -o
 
 PHONY += clean_arch
-clean_arch: __clean-files = $(ARCH_DTB)
+clean_arch: __clean-files = $(PLATFORM_DTB)
 clean_arch: FORCE
 	$(call cmd,clean)
 	@find . $(RCS_FIND_IGNORE) \
@@ -215,13 +215,13 @@ help:
 	@echo "  clean:                 Clean all generated files"
 	@echo "  install:               Install all generated files (sudo)"
 	@echo ""
-	@echo "  all_<ARCH>:            Build all device tree binaries for <ARCH>"
-	@echo "  clean_<ARCH>:          Clean all generated files for <ARCH>"
-	@echo "  install_<ARCH>:        Install all generated files for <ARCH> (sudo)"
+	@echo "  all_<PLATFORM>:            Build all device tree binaries for <PLATFORM>"
+	@echo "  clean_<PLATFORM>:          Clean all generated files for <PLATFORM>"
+	@echo "  install_<PLATFORM>:        Install all generated files for <PLATFORM> (sudo)"
 	@echo ""
-	@echo "  src/<ARCH>/<DTS>.dtbo   Build a single device tree binary"
+	@echo "  overlays/<PLATFORM>/<DTS>.dtbo   Build a single device tree binary"
 	@echo ""
-	@echo "Architectures: $(ALL_ARCHES)"
+	@echo "Architectures: $(ALL_PLATFORMES)"
 
 PHONY += FORCE
 FORCE:
