@@ -1,0 +1,21 @@
+Chainable RGB LED (P9813)
+========================
+
+ RGB LED(p9813) always bring us vivid and magic light effect, especially when there
+are a large number of LEDs shining together.
+
+Required properties:
+--------------------
+- compatbile : should be "dms,p981x".
+- gpios      : should specify the GPIO p981x connected to.
+               should specify 2 GPIOs, the clock pin first,
+               the data pin second.
+
+
+Example:
+--------
+
+Refer device tree source:
+  dts/bbb/BB-GPIO-P9813.dts
+
+

@@ -1,0 +1,92 @@
+/*
+ * Overlay for the HCSR04 Ultrasonic ranger sensor
+ *
+ * Copyright (C) 2019 Seeed Studio
+ * Peter Yang <turmary@126.com>
+ *
+ * MIT License
+ *
+ */
+/dts-v1/;
+/plugin/;
+
+/ {
+	compatible = "ti,beaglebone", "ti,beaglebone-black", "ti,beaglebone-green";
+
+	/* identification */
+	part-number = "BB-GPIO-P9813";
+	version = "00A0";
+
+	fragment@10 {
+		target= <&ocp>;
+		__overlay__ {
+			cape-universal {
+				status = "disabled";
+			};
+		};
+	};
+
+	fragment@20 {
+		target-path="/";
+		__overlay__ {
+			/* avoid stupid warning */
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			/* SLOT 1057 */
+			p981x_1057@20 {
+				compatible = "dms,p981x";
+				pinctrl-names = "default";
+				pinctrl-0 = <>;
+				status = "okay";
+
+				gpios = <
+					&gpio1 25 0	/* clock pin */
+					&gpio1 26 0	/* data  pin */
+				>;
+			};
+
+			/*
+			 * Only SLOT 1057 enabled, uncomment below statements
+			 * if you need other slots be used.
+			 */
+			#if 0
+			/* SLOT 1059 */
+			p981x_1059@21 {
+				compatible = "dms,p981x";
+				pinctrl-names = "default";
+				pinctrl-0 = <>;
+				status = "okay";
+				gpios = <
+					&gpio1 27 0
+					&gpio1 28 0
+				>;
+			};
+
+			/* SLOT PWM */
+			p981x_pwm@22 {
+				compatible = "dms,p981x";
+				pinctrl-names = "default";
+				pinctrl-0 = <>;
+				status = "okay";
+				gpios = <
+					&gpio3 14 0
+					&gpio1 18 0
+				>;
+			};
+
+			/* SLOT UART4 */
+			p981x_uart4@23 {
+				compatible = "dms,p981x";
+				pinctrl-names = "default";
+				pinctrl-0 = <>;
+				status = "okay";
+				gpios = <
+					&gpio0 30 0
+					&gpio0 31 0
+				>;
+			};
+			#endif
+		};
+	};
+};

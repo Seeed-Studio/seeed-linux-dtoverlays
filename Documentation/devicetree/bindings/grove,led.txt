@@ -1,0 +1,29 @@
+Grove GPIO Output device
+========================
+
+  All gpio level/edge output device could implement with gpio-leds.
+Refer Linux kernel document
+'Documentation/devicetree/bindings/leds/leds-gpio.txt',
+
+
+RPi Overlay
+-----------
+Name:   grove-led
+Info:   This is a generic overlay for activating GPIO output using
+        the gpio-leds library and this dtoverlay. Multiple leds can be
+        set up using multiple calls to the overlay for configuring
+        additional leds(gpios output).
+Load:   dtoverlay=grove-led,<param>=<val>
+Params: gpio                    GPIO pin device connected to (default 5)
+	led_trigger             see linux,default-trigger field in
+	                        'Documentation/devicetree/bindings/leds/common.txt'
+        label                   Set a label for the led
+
+
+Example:
+--------
+
+Refer device tree source:
+  dts/bbb/BB-GPIO-GROVE-LED.dts
+  dts/rpi/grove-led-overlay.dts
+

@@ -1,0 +1,19 @@
+JHD1802
+=======
+
+  JHD1802 is a i2c 16x2 charactor display device,
+which use a HD44780 as core chip, and export a I2C interface.
+
+Example:
+--------
+
+&i2c1 {
+	status = "okay";
+
+	jhd1802@3E {
+		compatible = "hd44780";
+		reg = <0x3E>;
+		status = "okay";
+	};
+};
+

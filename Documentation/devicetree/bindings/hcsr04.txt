@@ -1,0 +1,24 @@
+HCSR04 Ultrasonic Ranger
+========================
+
+  There is two type device interfaces, 1-pin or 2-pin device.
+For 1-pin device, trigger pin is identical with echo pin.
+For 2-pin device, trigger pin and echo pin are seperated.
+
+
+Required properties:
+--------------------
+- compatbile : should be "hcsr04".
+- gpios      : should specify the GPIO hcsr04 connected to.
+               1-pin device only need single GPIO or two identical GPIO,
+               2-pin device should specify 2 GPIOs, the trigger pin first,
+               the echo pin second.
+
+
+Example:
+--------
+
+Refer device tree source:
+  dts/bbb/BB-GPIO-HCSR04.dts
+
+

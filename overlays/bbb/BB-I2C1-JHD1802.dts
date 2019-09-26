@@ -1,0 +1,51 @@
+/*
+ * Copyright (C) 2019 Seeed Studio
+ * Peter Yang <turmary@126.com>
+ *
+ * MIT License
+ *
+ */
+/dts-v1/;
+/plugin/;
+
+/ {
+	fragment@0 {
+		target-path="/";
+		__overlay__ {
+
+			aliases {
+				/* SLOT I2C1 */
+				jhd1802 = "/ocp/i2c@4802a000/jhd1802@3e";
+				/* SLOT I2C2 */
+				/*
+				jhd1802 = "/ocp/i2c@4819c000/jhd1802@3e";
+				*/
+			};
+		};
+	};
+
+	fragment@1 {
+		/* SLOT I2C1 */
+		target = <&i2c1>;
+		/* SLOT I2C2 */
+		/*
+		target = <&i2c2>;
+		*/
+		__overlay__ {
+			status = "okay";
+
+			/* this is the configuration part */
+			clock-frequency = <400000>;
+
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			jhd1802@3e {
+				compatible = "hd44780";
+				reg = <0x3e>;
+				status = "okay";
+			};
+		};
+	};
+};
+

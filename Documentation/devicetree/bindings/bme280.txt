@@ -1,0 +1,18 @@
+BME280
+======
+
+  Barometer Sensor
+
+Example:
+--------
+
+&i2c1 {
+	status = "okay";
+
+	bme280@76 {
+		compatible = "bme280";
+		reg = <0x76>;
+		status = "okay";
+	};
+};
+

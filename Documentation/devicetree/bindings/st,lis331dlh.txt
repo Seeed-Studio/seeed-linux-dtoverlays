@@ -1,0 +1,21 @@
+LIS331DLH
+=========
+
+  The LIS331DLH ia an ultra low-power high performance three axies
+linear accelerometer made by st.
+Refer Linux kernel document
+'Documentation/devicetree/bindings/iio/accel/lis302.txt'.
+
+Example:
+--------
+
+&i2c1 {
+	status = "okay";
+
+	lis331dlh@18 {
+		compatible = "st,lis331dlh";
+		reg = <0x18>;
+		status = "okay";
+	};
+};
+

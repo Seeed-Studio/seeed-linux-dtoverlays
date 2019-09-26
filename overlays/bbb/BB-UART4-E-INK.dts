@@ -1,0 +1,95 @@
+/*
+ * Copyright (C) 2019 Seeed Studio
+ * Peter Yang <turmary@126.com>
+ *
+ * MIT License
+ *
+ */
+
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/board/am335x-bbw-bbb-base.h>
+#include <dt-bindings/pinctrl/am33xx.h>
+
+/ {
+	compatible = "ti,beaglebone", "ti,beaglebone-black", "ti,beaglebone-green";
+
+	// identification
+	part-number = "BB-UART4-E-INK";
+	version = "00A0";
+
+	// resources this cape uses
+	exclusive-use =
+		"P2.05",		// uart4_rxd
+		"P2.07",		// uart4_txd
+
+		"uart4";		// hardware ip used
+
+	/*
+	 * Free up the pins used by the cape from the pinmux helpers.
+	 */
+	fragment@0 {
+		target = <&ocp>;
+		__overlay__ {
+			P2_05_pinmux { status = "disabled"; };	/* uart4_rxd */
+			P2_07_pinmux { status = "disabled"; };	/* uart4_txd */
+		};
+	};
+
+	fragment@10 {
+		target= <&ocp>;
+		__overlay__ {
+			cape-universal {
+				status = "disabled";
+			};
+		};
+	};
+
+	fragment@20 {
+		target = <&am33xx_pinmux>;
+		__overlay__ {
+			bb_uart4_pins: pinmux_bb_uart4_pins {
+				pinctrl-single,pins = <
+					/* gpmc_wait0.uart4_rxd */
+					AM33XX_IOPAD(0x0870, PIN_OUTPUT_PULLUP | INPUT_EN | MUX_MODE6)
+					/* gpmc_wpn.uart4_txd */
+					AM33XX_IOPAD(0x0874, PIN_OUTPUT_PULLUP | INPUT_EN | MUX_MODE6)
+				>;
+			};
+		};
+	};
+
+	fragment@30 {
+		target = <&uart4>;
+		__overlay__ {
+			status = "okay";
+			pinctrl-names = "default";
+			pinctrl-0 = <&bb_uart4_pins>;
+		};
+	};
+
+	fragment@40 {
+		target-path="/";
+		__overlay__ {
+			/* avoid stupid warning */
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			eink@30 {
+				compatible = "seeed,eink";
+				pinctrl-names = "default";
+				pinctrl-0 = <>;
+				status = "okay";
+				/* default Grove - Triple Color E-Ink Display 1.54".
+				 * if it's Grove - Triple Color E-Ink Display 2.13",
+				 * uncomment below lines.
+				 */
+				#if 0
+				lines-len = <212>;
+				num-lines = <104>;
+				#endif
+			};
+		};
+	};
+};

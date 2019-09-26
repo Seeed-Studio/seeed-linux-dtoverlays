@@ -1,0 +1,36 @@
+/*
+ * Copyright (C) 2012 Seeed Studio
+ * Peter Yang <turmary@126.com>
+ *
+ * MIT License
+ *
+ * Device Tree overlay for Grove GPIO output device
+ *
+ */
+/dts-v1/;
+/plugin/;
+
+/ {
+	compatible = "brcm,bcm2835", "brcm,bcm2708", "brcm,bcm2709";
+
+	fragment@0 {
+		target = <&leds>;
+		__overlay__ {
+			compatible = "gpio-leds";
+
+			grove_led: grove_led@0 {
+				label = "grove:usr0";
+				linux,default-trigger = "default-on";
+				gpios = <&gpio 12 0>;
+			};
+		};
+	};
+
+	__overrides__ {
+		gpio =		<&grove_led>,"gpios:4",
+				<&grove_led>,"reg:0";
+		led_trigger =	<&grove_led>,"linux,default-trigger";
+		label =		<&grove_led>,"label";
+	};
+};
+

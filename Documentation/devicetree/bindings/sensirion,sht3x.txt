@@ -1,0 +1,18 @@
+SHT3x
+=====
+
+  The SHT3x series, SHT30/31/35, is temperature and humidity sensors.
+
+Example:
+--------
+
+&i2c1 {
+	status = "okay";
+
+	sht3x@44 {
+		compatible = "sensirion,sht3x";
+		reg = <0x44>;
+		status = "okay";
+	};
+};
+

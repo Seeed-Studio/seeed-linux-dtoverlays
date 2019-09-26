@@ -1,0 +1,115 @@
+/*
+ * Copyright (C) 2012 Seeed Studio
+ * Peter Yang <turmary@126.com>
+ *
+ * MIT License
+ *
+ */
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/board/am335x-bbw-bbb-base.h>
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/pinctrl/am33xx.h>
+
+/ {
+	compatible = "ti,beaglebone", "ti,beaglebone-black", "ti,beaglebone-green";
+
+	/* identification */
+	part-number = "BB-GPIO-GROVE-LED";
+	version = "00A0";
+
+	fragment@0 {
+		target = <&am33xx_pinmux>;
+		__overlay__ {
+			/* already defined by main dtb (am335x-pocketbeagle.dtb) */
+			#if 0
+			grove_led_1057_pins: pinmux_grove_led_1057_pins {
+				pinctrl-single,pins = <
+					/* slot 1057 */
+					AM33XX_IOPAD(0x0864, PIN_INPUT | MUX_MODE7)		/* gpmc_a9.gpio1_25 */
+					AM33XX_IOPAD(0x0868, PIN_INPUT | MUX_MODE7)		/* gpmc_a10.gpio1_26 */
+				>;
+			};
+
+			grove_led_1059_pins: pinmux_grove_led_1059_pins {
+				pinctrl-single,pins = <
+					/* slot 1059 */
+					AM33XX_IOPAD(0x086c, PIN_INPUT | MUX_MODE7)		/* gpmc_a11.gpio1_27 */
+					AM33XX_IOPAD(0x0878, PIN_INPUT | MUX_MODE7)		/* gpmc_be1n.gpio1_28 */
+				>;
+			};
+
+			grove_led_pwm_pins: pinmux_grove_led_pwm_pins {
+				pinctrl-single,pins = <
+					/* slot PWM */
+					AM33XX_IOPAD(0x0990, PIN_INPUT | MUX_MODE7)		/* mcasp0_aclkx.gpio3_14 */
+					AM33XX_IOPAD(0x0848, PIN_INPUT | MUX_MODE7)		/* gpmc_a2.gpio1_18 */
+				>;
+			};
+
+			grove_led_uart4_pins: pinmux_grove_led_uart4_pins {
+				pinctrl-single,pins = <
+					/* slot UART4 */
+					AM33XX_IOPAD(0x0870, PIN_INPUT | MUX_MODE7)		/* gpmc_wait0.gpio0_30 */
+					AM33XX_IOPAD(0x0874, PIN_INPUT | MUX_MODE7)		/* gpmc_wpn.gpio0_31 */
+				>;
+			};
+			#endif
+		};
+	};
+
+	fragment@10 {
+		target= <&ocp>;
+		__overlay__ {
+			cape-universal {
+				status = "disabled";
+			};
+		};
+	};
+
+	fragment@20 {
+		target-path="/";
+		__overlay__ {
+			/* avoid stupid warning */
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			leds {
+				grove_led_1057@4 {
+					label = "grove:usr0";
+					gpios = <&gpio1 25 0>;
+					linux,default-trigger = "none";
+					default-state = "off";
+				};
+
+				/*
+				 * Only SLOT 1057 enabled, uncomment below statements
+				 * if you need other slots be used.
+				 */
+				#if 0
+				grove_led_1059@5 {
+					label = "grove:usr1";
+					gpios = <&gpio1 27 0>;
+					linux,default-trigger = "none";
+					default-state = "off";
+				};
+
+				grove_led_pwm@6 {
+					label = "grove:usr2";
+					gpios = <&gpio3 14 0>;
+					linux,default-trigger = "none";
+					default-state = "off";
+				};
+
+				grove_led_uart4@7 {
+					label = "grove:usr3";
+					gpios = <&gpio0 30 0>;
+					linux,default-trigger = "none";
+					default-state = "off";
+				};
+				#endif
+			};
+		};
+	};
+};

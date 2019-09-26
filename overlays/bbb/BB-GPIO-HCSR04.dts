@@ -1,0 +1,83 @@
+/*
+ * Overlay for the HCSR04 Ultrasonic ranger sensor
+ *
+ * Copyright (C) 2012 Seeed Studio
+ * Peter Yang <turmary@126.com>
+ *
+ * MIT License
+ *
+ */
+/dts-v1/;
+/plugin/;
+
+/ {
+	compatible = "ti,beaglebone", "ti,beaglebone-black", "ti,beaglebone-green";
+
+	/* identification */
+	part-number = "BB-GPIO-HCSR04";
+	version = "00A0";
+
+	fragment@10 {
+		target= <&ocp>;
+		__overlay__ {
+			cape-universal {
+				status = "disabled";
+			};
+		};
+	};
+
+	fragment@20 {
+		target-path="/";
+		__overlay__ {
+			/* avoid stupid warning */
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			/* SLOT 1057 */
+			hcsr04_1057@20 {
+				compatible = "hcsr04";
+				pinctrl-names = "default";
+				pinctrl-0 = <>;
+				status = "okay";
+
+				gpios = <
+					&gpio1 25 0	/* trigger pin */
+					&gpio1 25 0	/* echo    pin */
+				>;
+			};
+
+			/*
+			 * Only SLOT 1057 enabled, uncomment below statements
+			 * if you need other slots be used.
+			 */
+			#if 0
+			/* SLOT 1059 */
+			hcsr04_1059@21 {
+				compatible = "hcsr04";
+				pinctrl-names = "default";
+				pinctrl-0 = <>;
+				status = "okay";
+				gpios = <&gpio1 27 0>;
+			};
+
+			/* SLOT PWM */
+			hcsr04_pwm@22 {
+				compatible = "hcsr04";
+				pinctrl-names = "default";
+				pinctrl-0 = <>;
+				status = "okay";
+				gpios = <&gpio3 14 0>;
+			};
+
+			/* SLOT UART4 */
+			hcsr04_uart4@23 {
+				compatible = "hcsr04";
+				pinctrl-names = "default";
+				pinctrl-0 = <>;
+				status = "okay";
+				gpios = <&gpio0 30 0>;
+			};
+			#endif
+		};
+	};
+};

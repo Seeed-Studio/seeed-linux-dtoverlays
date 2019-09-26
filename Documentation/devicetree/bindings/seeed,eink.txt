@@ -1,0 +1,32 @@
+Seeed E-lnk
+===========
+
+  Seeed Grove Triple Color E-Ink Display, export a UART interface to
+draw/transfer display data.
+
+Grove - Triple Color E-Ink Display 1.54"
+  https://github.com/Seeed-Studio/Grove_Triple_Color_E-lnk_1.54
+Grove - Triple Color E-Ink Display 2.13"
+  https://github.com/Seeed-Studio/Grove_Triple_Color_E-lnk_2.13
+
+
+Required properties:
+--------------------
+- compatbile : should be "seeed,eink".
+
+
+Optional properties:
+--------------------
+- tty-port   : should specify the UART device path, default to "/dev/ttyS4"
+- baudrate   : should specify the UART communication speed in bps,
+               default to 230400
+- lines-len  : should specify the line length, default to 152
+- num-lines  : should specify the lines count, default to 152
+
+
+Example:
+--------
+
+Refer device tree source:
+  dts/bbb/BB-UART4-E-INK.dts
+

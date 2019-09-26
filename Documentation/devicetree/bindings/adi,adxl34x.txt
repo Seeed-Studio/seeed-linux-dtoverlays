@@ -1,0 +1,18 @@
+ADI ADXL345/ADXL346
+===================
+
+  Three-Axis Digital Accelerometer
+
+Example:
+--------
+
+&i2c1 {
+	status = "okay";
+
+	adxl34x@53 {
+		compatible = "adi,adxl34x";
+		reg = <0x53>;
+		status = "okay";
+	};
+};
+
