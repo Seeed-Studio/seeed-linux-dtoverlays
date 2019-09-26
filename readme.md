@@ -1,123 +1,46 @@
-Build Status
+# seeed-linux-dtverlays
 
- [![Build Status](http://gfnd.rcn-ee.org:8080/buildStatus/icon?job=beagleboard_overlays/master)](http://gfnd.rcn-ee.org:8080/job/beagleboard_overlays/job/master/)
+On embedded systems, the [Device Tree](https://elinux.org/Device_Tree_What_It_Is) helps the kernel understand various peripherals that are connected to the board and how to initialize them. These hardware might be things like LDO regulators, various controllers, GPIO, etc which are generic, but yet needs certain configuration that should not be hard-coded into the kernel. To understand more about device trees I recommend you start with the Raspberry Pi [documentation on this topic](https://www.raspberrypi.org/documentation/configuration/device-tree.md). There are more links at the end of this article.
 
 
-Users:
-------------
-
-Install or Update bb-cape-overlays debian package (pre installed on: Debian Jessie/Stretch & Ubuntu Xenial images)
-
-    sudo apt update ; sudo apt install bb-cape-overlays
-
-Supported Linux Kernels:
-------------
-
-Pre-built kernels: (there are multiple options avaiable)
-
-    cd /opt/scripts/tools
-    git pull
-
-Supported Linux Kernels: v4.19.x:
-------------
-
-v4.19.x-ti:
-
-    sudo /opt/scripts/tools/update_kernel.sh --lts-4_19 --ti-channel
-
-v4.19.x-ti + Real Time:
-
-    sudo /opt/scripts/tools/update_kernel.sh --lts-4_19 --ti-rt-channel
-
-v4.19.x mainline:
-
-    sudo /opt/scripts/tools/update_kernel.sh --lts-4_19 --bone-channel
-
-v4.19.x mainline + Real Time:
-
-    sudo /opt/scripts/tools/update_kernel.sh --lts-4_19 --bone-rt-channel
-
-Supported Linux Kernels: v4.14.x:
-------------
-
-v4.14.x-ti:
-
-    sudo /opt/scripts/tools/update_kernel.sh --lts-4_14 --ti-channel
-
-v4.14.x-ti + Real Time:
-
-    sudo /opt/scripts/tools/update_kernel.sh --lts-4_14 --ti-rt-channel
-
-v4.14.x mainline:
-
-    sudo /opt/scripts/tools/update_kernel.sh --lts-4_14 --bone-channel
-
-v4.14.x mainline + Real Time:
-
-    sudo /opt/scripts/tools/update_kernel.sh --lts-4_14 --bone-rt-channel
-
-Supported Linux Kernels: v4.9.x:
-------------
-
-v4.9.x-ti:
-
-    sudo /opt/scripts/tools/update_kernel.sh --lts-4_9 --ti-channel
-
-v4.9.x-ti + Real Time:
-
-    sudo /opt/scripts/tools/update_kernel.sh --lts-4_9 --ti-rt-channel
-
-v4.9.x mainline:
-
-    sudo /opt/scripts/tools/update_kernel.sh --lts-4_9 --bone-channel
-
-v4.9.x mainline + Real Time:
-
-    sudo /opt/scripts/tools/update_kernel.sh --lts-4_9 --bone-rt-channel
-
-Supported Linux Kernels: v4.4.x:
-------------
-
-v4.4.x-ti:
-
-    sudo /opt/scripts/tools/update_kernel.sh --lts-4_4 --ti-channel
-
-v4.4.x-ti + Real Time:
-
-    sudo /opt/scripts/tools/update_kernel.sh --lts-4_4 --ti-rt-channel
-
-v4.4.x mainline:
-
-    sudo /opt/scripts/tools/update_kernel.sh --lts-4_4 --bone-channel
-
-v4.4.x mainline + Real Time:
-
-    sudo /opt/scripts/tools/update_kernel.sh --lts-4_4 --bone-rt-channel
 
 Developers:
 ------------
 
 Step 1: Clone this repo:
-
-    git clone https://github.com/beagleboard/bb.org-overlays
-    cd ./bb.org-overlays
-
+```sh
+git clone https://github.com/Seeed-Studio/seeed-linux-dtverlays
+cd seeed-linux-dtverlays
+```
 Step 2: Install *.dtbo:
+```sh
+make 
+#On iMx6ull-NPI
+sudo make install_imx6ull
+#on RPI
+sudo make install_rpi
+#On beagleboard
+sudo make install_bb
+```
+more:
+```sh
+@echo "Targets:"
+@echo "  all:                   Build all device tree binaries for all architectures"
+@echo "  clean:                 Clean all generated files"
+@echo "  install:               Install all generated files (sudo)"
+@echo ""
+@echo "  all_<PLATFORM>:            Build all device tree binaries for <PLATFORM>"
+@echo "  clean_<PLATFORM>:          Clean all generated files for <PLATFORM>"
+@echo "  install_<PLATFORM>:        Install all generated files for <PLATFORM> (sudo)"
+@echo ""
+@echo "  overlays/<PLATFORM>/<DTS>.dtbo   Build a single device tree binary"
+@echo ""
+@echo "PLATFORMES: $(ALL_PLATFORMES)"
 
-    ./install.sh
+```
 
-Developers: Tested Versions of dtc:
-------------
-
-    v1.4.4
-    v1.4.6
-    v1.4.7
-    v1.5.0
-
-Known Broken: v1.4.5 (DO NOT USE)
-
-U-Boot Overlays:
-------------
-
-https://elinux.org/Beagleboard:BeagleBoneBlack_Debian#U-Boot_Overlays
-
+## Further Reading
+- Device Tree for Dummies: https://elinux.org/images/f/f9/Petazzoni-device-tree-dummies_0.pdf
+- Raspberry Pi and the Device Tree: https://www.raspberrypi.org/documentation/configuration/device-tree.md
+- Device Tree overlay support in the Linux Kernel: https://www.kernel.org/doc/Documentation/devicetree/overlay-notes.txt
+- FDT overlays in U-Boot: https://github.com/u-boot/u-boot/blob/master/doc/README.fdt-overlays
