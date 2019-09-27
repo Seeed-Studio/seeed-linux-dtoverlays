@@ -4,7 +4,7 @@ On embedded systems, the [Device Tree](https://elinux.org/Device_Tree_What_It_Is
 
 
 
-Developers:
+Overlays:
 ------------
 
 Step 1: Clone this repo:
@@ -44,3 +44,8 @@ more:
 - Raspberry Pi and the Device Tree: https://www.raspberrypi.org/documentation/configuration/device-tree.md
 - Device Tree overlay support in the Linux Kernel: https://www.kernel.org/doc/Documentation/devicetree/overlay-notes.txt
 - FDT overlays in U-Boot: https://github.com/u-boot/u-boot/blob/master/doc/README.fdt-overlays
+
+## Modules:
+------------
+Mainline does not have a kernel module, or there is controversy about a kernel module that does work well. We will also collect them together and put them here.
+The kernel modules will have the corresponding documentation and detailed instructions。
