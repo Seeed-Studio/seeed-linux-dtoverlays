@@ -1,0 +1,62 @@
+/*
+ * Copyright (C) 2019 Seeed Technology Co,Ltd  - https://www.seeed.cc
+ * Author: Baozhu Zuo <zuobaozhu@gmail.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+/dts-v1/;
+/plugin/;
+
+#include "imx6ul-pinfunc.h"
+
+/ {
+	ccompatible = "fsl,imx6ull-14x14-evk", "fsl,imx6ull";
+
+
+	fragment@0 {
+		target = <&uart3>;
+		__overlay__ {
+			status = "okay";
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_uart3>;
+		};
+	};
+#if 0
+	fragment@1 {
+		target-path="/";
+		__overlay__ {
+			/* avoid stupid warning */
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			eink@30 {
+				compatible = "seeed,eink";
+				pinctrl-names = "default";
+				pinctrl-0 = <>;
+				status = "okay";
+				/* default Grove - Triple Color E-Ink Display 1.54".
+				 * if it's Grove - Triple Color E-Ink Display 2.13",
+				 * uncomment below lines.
+				 */
+				#if 0
+				lines-len = <212>;
+				num-lines = <104>;
+				#endif
+			};
+		};
+	};
+#endif    
+    fragment@1 {
+        target = <&iomuxc>;
+        __overlay__ {
+            pinctrl_uart3: uart3grp {
+                fsl,pins = <
+                    MX6UL_PAD_UART3_TX_DATA__UART3_DCE_TX 0x1b0b1
+                    MX6UL_PAD_UART3_RX_DATA__UART3_DCE_RX 0x1b0b1
+                >;
+            };        
+        };        
+    };
+};
