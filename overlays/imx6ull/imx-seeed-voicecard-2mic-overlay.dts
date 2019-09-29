@@ -6,6 +6,8 @@
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
  */
+#include "imx6ul-pinfunc.h"
+#include "dt-bindings/clock/imx6ul-clock.h"
 
 /dts-v1/;
 /plugin/;
@@ -13,30 +15,113 @@
 
 / {
      compatible = "fsl,imx6ull-14x14-evk", "fsl,imx6ull";
-        /*
-         * Helper to show loaded overlays under: /proc/device-tree/chosen/overlays/
-         */
         fragment@0 {
+            target-path="/";
+            __overlay__ {
+                wm8960_mclk: wm8960_mclk {
+                        compatible = "fixed-clock";
+                        #clock-cells = <0>;
+                        clock-frequency = <24000000>;
+                };
+
+            };
+        };
+
+        fragment@1 {
                 target = <&i2c2>;
                 __overlay__ {
                         clock_frequency = <100000>;
                         pinctrl-names = "default";
                         pinctrl-0 = <&pinctrl_i2c2>;
                         status = "okay";
+                        
+                        #address-cells = <1>;
+                        #size-cells = <0>;   
+                        wm8960: wm8960{
+                            compatible = "wlf,wm8960";
+                            reg = <0x1a>;
+                            #sound-dai-cells = <0>;
 
-
+                            clock-names = "mclk";
+                            clocks = <&wm8960_mclk>;
+                        };
                 };
         };
 
-        fragment@1 {
+        fragment@2 {
+            target = <&sai1>;
+            __overlay__ {
+                pinctrl-names = "default";
+                pinctrl-0 = <&pinctrl_sai1>;
+
+                assigned-clocks = <&clks IMX6UL_CLK_SAI1_SEL>,
+                                <&clks IMX6UL_CLK_SAI1>;
+                assigned-clock-parents = <&clks IMX6UL_CLK_PLL4_AUDIO_DIV>;
+                assigned-clock-rates = <0>, <12288000>;
+                #sound-dai-cells = <0>;
+                status = "okay";
+            };
+        };
+
+        fragment@3 {
+                target = <&sound>;
+                __overlay__ {
+                    compatible = "simple-audio-card";
+                    simple-audio-card,format = "i2s";
+                    simple-audio-card,name = "seeed-2mic-voicecard"; 
+                    status = "okay";
+                    simple-audio-card,widgets =
+                            "Microphone", "Mic Jack",
+                            "Line", "Line In",
+                            "Line", "Line Out",
+                            "Speaker", "Speaker",
+                            "Headphone", "Headphone Jack";
+                    simple-audio-card,routing =
+                            "Headphone Jack", "HP_L",
+                            "Headphone Jack", "HP_R",
+                            "Speaker", "SPK_LP",
+                            "Speaker", "SPK_LN",
+                            "LINPUT1", "Mic Jack",
+                            "LINPUT3", "Mic Jack",
+                            "RINPUT1", "Mic Jack",
+                            "RINPUT2", "Mic Jack"; 
+                    simple-audio-card,bitclock-master = <&sound_master>;
+                    simple-audio-card,frame-master = <&sound_master>;
+
+
+
+                    sound_master:simple-audio-card,cpu {
+                        sound-dai = <&sai1>;
+                        system-clock-frequency = <24000000>;
+                        system-clock-id = <1>;
+                    };
+                    simple-audio-card,codec {
+                        sound-dai = <&wm8960>;
+                        // system-clock-frequency = <12288000>;
+                        // system-clock-id = <1>;
+                    };                    
+                };
+
+        };
+
+        fragment@4 {
                 target = <&iomuxc>;
                 __overlay__ {
-                        pinctrl_i2c2: i2c2grp@12 {
+                    pinctrl_i2c2: i2c2grp {
+                    fsl,pins = <
+                        MX6UL_PAD_UART5_TX_DATA__I2C2_SCL 0x4001b8b0
+                        MX6UL_PAD_UART5_RX_DATA__I2C2_SDA 0x4001b8b0
+                        >;
+                    };
+                    pinctrl_sai1: sai1grp {
                         fsl,pins = <
-                                0x00bc 0x0348 0x05ac 2 2 0x4001b8b0
-                                0x00c0 0x034c 0x05b0 2 2 0x4001b8b0
-                                >;
-                        };
+                            MX6UL_PAD_CSI_DATA04__SAI1_TX_SYNC      0x1b0b0
+                            MX6UL_PAD_CSI_DATA05__SAI1_TX_BCLK      0x1b0b0
+                            MX6UL_PAD_CSI_DATA06__SAI1_RX_DATA      0x110b0
+                            MX6UL_PAD_CSI_DATA07__SAI1_TX_DATA      0x1f0b8
+                                /* IM6UL_PAD_CSI_PIXCLK__AUDMUX_MCLK      0x130B0 */
+                        >;
+                    };
                 };
         };
 };
