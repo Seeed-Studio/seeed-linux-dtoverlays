@@ -1,0 +1,54 @@
+/*
+ * Copyright (C) 2012 Seeed Studio
+ * Peter Yang <turmary@126.com>
+ *
+ * MIT License
+ *
+ */
+/dts-v1/;
+/plugin/;
+
+#include "imx6ul-pinfunc.h"
+#include "imx6ull-pinfunc-snvs.h"
+#include "dt-bindings/interrupt-controller/irq.h"
+#include "dt-bindings/gpio/gpio.h"
+
+/ {
+	compatible = "fsl,imx6ull-14x14-evk", "fsl,imx6ull";
+
+	fragment@0 {
+		target = <&iomuxc_snvs>;
+		__overlay__ {
+                	pinctrl_tsc_irq: tsc_irq {
+                	    fsl,pins = <
+                	        /* used for lcd reset */
+                	        MX6ULL_PAD_SNVS_TAMPER9__GPIO5_IO09        0x000110A1
+                	    >;
+                	};
+		};
+	};
+
+	fragment@20 {
+		target-path="/";
+		__overlay__ {
+			gpio_keys {
+				compatible = "gpio-keys";
+				pinctrl-names = "default";
+				pinctrl-0 = <>;
+
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				grove_button_1057_0@0 {
+					debounce_interval = <50>;
+					linux,code = <0x100>;
+					label = "grove:usr0";
+					/* Grove Button, HIGH valid/press */
+					gpios = <&gpio5 9 0x0>;
+					gpio-key,wakeup;
+					autorepeat;
+				};
+			};
+		};
+	};
+};
