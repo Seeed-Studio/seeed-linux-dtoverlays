@@ -1,0 +1,79 @@
+
+/*
+ * Device tree overlay for mcp251x/mcp2517fd on spi0.0
+ */
+
+#include "imx6ul-pinfunc.h"
+#include "imx6ull-pinfunc-snvs.h"
+#include "dt-bindings/interrupt-controller/irq.h"
+#include "dt-bindings/gpio/gpio.h"
+
+/dts-v1/;
+/plugin/;
+
+/ {
+    compatible = "fsl,imx6ull-14x14-evk", "fsl,imx6ull";
+    /* disable spi-dev for spi0.0 */
+
+    /* the interrupt pin of the can-controller */
+    fragment@1 {
+        target = <&iomuxc>;
+        __overlay__ {
+            int_pins: int_pins {
+                fsl,pins = <
+                        MX6UL_PAD_CSI_VSYNC__GPIO4_IO19         0x14 /* SODIMM 81 */
+                >;
+            };
+
+            pinctrl_ecspi3_master: ecspi3grp1 {
+                fsl,pins = <
+                        MX6UL_PAD_UART2_RX_DATA__ECSPI3_SCLK    0x10b0
+                        MX6UL_PAD_UART2_CTS_B__ECSPI3_MOSI      0x10b0
+                        MX6UL_PAD_UART2_RTS_B__ECSPI3_MISO      0x10b0
+                        MX6UL_PAD_UART2_TX_DATA__GPIO1_IO20     0x10b0 /* Chip Select */
+                >;
+            };
+
+        };
+    };
+
+    /* the clock/oscillator of the can-controller */
+    fragment@2 {
+        target-path = "/clocks";
+        __overlay__ {
+            /* external 20M oscillator of mcp2517fd on SPI0.0 */
+            mcp2517fd_osc: mcp2517fd_osc {
+                compatible = "fixed-clock";
+                #clock-cells = <0>;
+                clock-frequency  = <40000000>;
+            };
+        };
+    };
+
+    /* the spi config of the can-controller itself binding everything together */
+    fragment@3 {
+        target = <&ecspi3>;
+        __overlay__ {
+            /* needed to avoid dtc warning */
+            cs-gpios = <&gpio1 20 GPIO_ACTIVE_LOW>;
+            pinctrl-names = "default";
+            pinctrl-0 = <&pinctrl_ecspi3_master>;
+            status = "okay";
+
+            /* needed to avoid dtc warning */
+            #address-cells = <1>;
+            #size-cells = <0>;
+
+            mcp2517fd: mcp2517fd@0 {
+                reg = <0>;
+                compatible = "microchip,mcp2517fd";
+                pinctrl-names = "default";
+                pinctrl-0 = <&int_pins>;
+                spi-max-frequency = <125000000>;
+                interrupt-parent = <&gpio4>;
+                interrupts = <19 IRQ_TYPE_LEVEL_LOW>; /* IRQ_TYPE_LEVEL_LOW */
+                clocks = <&mcp2517fd_osc>;
+            };
+        };
+    };
+};
