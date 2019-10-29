@@ -93,7 +93,7 @@
             		goodix,create-wr-node = <1>;
             		goodix,wakeup-with-reset = <0>;
             		goodix,resume-in-workqueue = <0>;
-            		goodix,int-sync = <0>;
+            		goodix,int-sync = <1>;
             		goodix,swap-x2y = <0>;
             		goodix,esd-protect = <0>;
             		goodix,pen-suppress-finger = <0>;
@@ -236,8 +236,7 @@
             __overlay__ {
                 pinctrl_tsc_irq: tsc_irq {
                     fsl,pins = <
-                        /* used for lcd reset */
-                        MX6ULL_PAD_SNVS_TAMPER9__GPIO5_IO09        0x000110A1
+                        MX6ULL_PAD_SNVS_TAMPER9__GPIO5_IO09        0x4001b8b0
                     >;
                 };
             };
