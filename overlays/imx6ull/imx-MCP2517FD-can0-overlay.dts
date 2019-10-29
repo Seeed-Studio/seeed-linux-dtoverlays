@@ -57,7 +57,7 @@
             /* needed to avoid dtc warning */
             cs-gpios = <&gpio1 20 GPIO_ACTIVE_LOW>;
             pinctrl-names = "default";
-            pinctrl-0 = <&pinctrl_ecspi3_master>;
+            pinctrl-0 = <&pinctrl_ecspi3_master &int_pins>;
             status = "okay";
 
             /* needed to avoid dtc warning */
@@ -67,8 +67,6 @@
             mcp2517fd: mcp2517fd@0 {
                 reg = <0>;
                 compatible = "microchip,mcp2517fd";
-                pinctrl-names = "default";
-                pinctrl-0 = <&int_pins>;
                 spi-max-frequency = <125000000>;
                 interrupt-parent = <&gpio4>;
                 interrupts = <19 IRQ_TYPE_LEVEL_LOW>; /* IRQ_TYPE_LEVEL_LOW */

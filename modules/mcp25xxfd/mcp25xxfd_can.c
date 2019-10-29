@@ -485,15 +485,16 @@ static int mcp25xxfd_can_open(struct net_device *net)
 	memset(&cpriv->stats, 0, sizeof(cpriv->stats));
 
 	/* request an IRQ but keep disabled for now */
-	ret = request_threaded_irq(spi->irq, NULL,
+	ret = request_threaded_irq(spi->irq, NULL, 
 				   mcp25xxfd_can_int,
-				   IRQF_ONESHOT | IRQF_TRIGGER_LOW,
+				   IRQF_ONESHOT | IRQ_TYPE_EDGE_FALLING,
 				   cpriv->priv->device_name, cpriv);
 	if (ret) {
 		dev_err(&spi->dev, "failed to acquire irq %d - %i\n",
 			spi->irq, ret);
 		goto out_candev;
 	}
+
 	disable_irq(spi->irq);
 	cpriv->irq.allocated = true;
 	cpriv->irq.enabled = false;
