@@ -94,7 +94,7 @@ cangen can0 -mv
 
 ```bash
 #dump data
-candump can0 
+candump can1 
 ```
 #### Communicate with [CAN_BUS_Shield](https://www.seeedstudio.com/CAN-BUS-Shield-V2-p-2921.html)
 ![](https://github.com/Seeed-Studio/pi-hats/raw/master/images/can_hat_and_arduinno_hardware.jpg) 
