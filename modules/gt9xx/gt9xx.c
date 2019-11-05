@@ -725,19 +725,29 @@ void gtp_reset_guitar(struct i2c_client *client, s32 ms)
 		dev_warn(&client->dev, "reset failed no valid reset gpio");
 		return;
 	}
+	/*把gt9157的设备地址被配置为0xBA：
+	1.RST、INT低电平
+	2.至少延时100us
+	3.RST切换为高电平
+	4.至少延时5ms
+	5.INT切换为浮空输入 */
 
+	//拉低RST引脚
 	gpio_direction_output(ts->pdata->rst_gpio, 0);
-	usleep_range(ms*1000, ms*1000 + 100);	/*  T2: > 10ms */
-
-	gtp_int_output(ts, client->addr == 0x14);
-
-	usleep_range(2000, 3000);		/*  T3: > 100us (2ms)*/
+	gpio_direction_output(ts->pdata->irq_gpio, 0);
+	//usleep_range(ms*1000, ms*1000 + 100);	/*  T2: > 10ms */
+	mdelay(5);
+	gpio_direction_output(ts->pdata->irq_gpio, 1);
+	//拉高/拉低int引脚，取决于通讯地址
+	//gtp_int_output(ts, client->addr == 0x14);
+	mdelay(5);
+	//usleep_range(2000, 3000);		/*  T3: > 100us (2ms)*/
 	gpio_direction_output(ts->pdata->rst_gpio, 1);
-
+	
 	usleep_range(6000, 7000);		/*  T4: > 5ms */
-	gpio_direction_input(ts->pdata->rst_gpio);
+	gpio_direction_input(ts->pdata->irq_gpio);
 
-	gtp_int_sync(ts, 50);
+//	gtp_int_sync(ts, 50);
 	if (ts->pdata->esd_protect)
 		gtp_init_ext_watchdog(client);
 
@@ -1909,7 +1919,7 @@ static int gtp_probe(struct i2c_client *client, const struct i2c_device_id *id)
 		goto exit_power_off;
 	}
 #endif
-	//gtp_reset_guitar(ts->client, 20);    pengjie 不需要复位
+	gtp_reset_guitar(ts->client, 20);    //pengjie 不需要复位
 
 	ret = gtp_i2c_test(client);
 	if (ret) {

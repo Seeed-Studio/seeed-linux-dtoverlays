@@ -70,7 +70,7 @@
             		interrupts = <9 IRQ_TYPE_EDGE_FALLING>;
             		pinctrl-names = "default";
             		pinctrl-0 = <&pinctrl_tsc_reset &pinctrl_tsc_irq>;
-            		/*pinctrl-1 = <&pinctrl_tsc_irq>;*/
+            		pinctrl-1 = <&pinctrl_tsc_irq>;
             		/*pinctrl-names = "default", "int-output-low", "int-output-high", "int-input";
             		pinctrl-0 = <&ts_int_default>;
             		pinctrl-1 = <&ts_int_output_low>;
@@ -89,7 +89,7 @@
             		/*touchscreen-key-map = <172>, <158>;*/ /*KEY_HOMEPAGE, KEY_BACK*/
 
             		goodix,type-a-report = <0>;
-            		goodix,driver-send-cfg = <1>;
+            		goodix,driver-send-cfg = <0>;
             		goodix,create-wr-node = <1>;
             		goodix,wakeup-with-reset = <0>;
             		goodix,resume-in-workqueue = <0>;
