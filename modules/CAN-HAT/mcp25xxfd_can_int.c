@@ -437,10 +437,10 @@ static int mcp25xxfd_can_int_handle_ivmif(struct mcp25xxfd_can_priv *cpriv)
 		return ret;
 
 	/* and clear the interrupt flag until we have received or transmited */
-	cpriv->status.intf &= ~(MCP25XXFD_CAN_INT_IVMIE);
+	cpriv->status.intf &= ~(MCP25XXFD_CAN_INT_IVMIF);
 	return mcp25xxfd_cmd_write_mask(spi, MCP25XXFD_CAN_INT,
 					cpriv->status.intf,
-					MCP25XXFD_CAN_INT_IVMIE);
+					MCP25XXFD_CAN_INT_IVMIF);
 }
 
 static int mcp25xxfd_can_int_handle_cerrif(struct mcp25xxfd_can_priv *cpriv)
