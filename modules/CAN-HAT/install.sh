@@ -93,9 +93,9 @@ if [[ $? -eq 0 ]]; then
   echo "____________________________________"
   apt-get -y install dkms git can-utils
   echo "____________________________________"
-  install_kernel
+  #install_kernel
   # rpi-update checker
-  check_kernel_headers
+  # check_kernel_headers
 fi
 
 # Arch Linux

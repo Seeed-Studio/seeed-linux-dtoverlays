@@ -71,7 +71,7 @@
                 pinctrl-names = "default";
          	pinctrl-0 = <&can_int_pins>;
                 compatible = "microchip,mcp2517fd";
-                spi-max-frequency = <10000000>;
+                spi-max-frequency = <20000000>;
                 interrupt-parent = <&gpio>;
                 interrupts = <25 8>; /* IRQ_TYPE_LEVEL_LOW */
                 clocks = <&mcp2517fd_osc>;
@@ -95,7 +95,7 @@
                 pinctrl-names = "default";
          	pinctrl-0 = <&spi1_pins &spi1_cs_pins>;
                 compatible = "microchip,mcp2517fd";
-                spi-max-frequency = <10000000>;
+                spi-max-frequency = <20000000>;
                 interrupt-parent = <&gpio>;
                 interrupts = <24 8>; /* IRQ_TYPE_LEVEL_LOW */
                 clocks = <&mcp2517fd_osc>;

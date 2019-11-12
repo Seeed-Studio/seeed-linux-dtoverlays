@@ -43,9 +43,6 @@ static void mcp25xxfd_can_debugfs_stats(struct mcp25xxfd_can_priv *cpriv,
 					struct dentry *root)
 {
 	struct dentry *dir = debugfs_create_dir("stats", root);
-	char name[32];
-	u64 *data;
-	int i;
 
 # define DEBUGFS_CREATE(name, var) debugfs_create_u64(name, 0444, dir, \
 						      &cpriv->stats.var)
@@ -65,21 +62,6 @@ static void mcp25xxfd_can_debugfs_stats(struct mcp25xxfd_can_priv *cpriv,
 	DEBUGFS_CREATE("int_rx_invalid_message", int_ivm_count);
 	DEBUGFS_CREATE("int_crcerror",		 int_cerr_count);
 
-	DEBUGFS_CREATE("tef_reads",		 tef_reads);
-	DEBUGFS_CREATE("tef_conservative_reads", tef_conservative_reads);
-	DEBUGFS_CREATE("tef_optimized_reads",	 tef_optimized_reads);
-	DEBUGFS_CREATE("tef_read_splits",	 tef_read_splits);
-
-	for (i = 0; i < MCP25XXFD_CAN_TEF_READ_BINS - 1; i++) {
-		snprintf(name, sizeof(name),
-			 "tef_optimized_reads_%i", i + 1);
-		data = &cpriv->stats.tef_optimized_read_sizes[i];
-		debugfs_create_u64(name, 0444, dir, data);
-	}
-	snprintf(name, sizeof(name), "tef_optimized_reads_%i+", i + 1);
-	debugfs_create_u64(name, 0444, dir,
-			   &cpriv->stats.tef_optimized_read_sizes[i]);
-
 	DEBUGFS_CREATE("tx_frames_fd",		 tx_fd_count);
 	DEBUGFS_CREATE("tx_frames_brs",		 tx_brs_count);
 
@@ -94,7 +76,8 @@ static void mcp25xxfd_can_debugfs_stats(struct mcp25xxfd_can_priv *cpriv,
 		       rx_reads_prefetched_too_many_bytes);
 	DEBUGFS_CREATE("rx_single_reads",	 rx_single_reads);
 	DEBUGFS_CREATE("rx_bulk_reads",		 rx_bulk_reads);
-
+/*
+	int i;
 	for (i = 0; i < MCP25XXFD_CAN_RX_BULK_READ_BINS - 1; i++) {
 		snprintf(name, sizeof(name), "rx_bulk_reads_%i", i + 1);
 		data = &cpriv->stats.rx_bulk_read_sizes[i];
@@ -103,7 +86,7 @@ static void mcp25xxfd_can_debugfs_stats(struct mcp25xxfd_can_priv *cpriv,
 	snprintf(name, sizeof(name), "rx_bulk_reads_%i+", i + 1);
 	debugfs_create_u64(name, 0444, dir,
 			   &cpriv->stats.rx_bulk_read_sizes[i]);
-
+*/
 	if (cpriv->can.dev->mtu == CANFD_MTU)
 		debugfs_create_u32("rx_reads_prefetch_predicted_len", 0444,
 				   dir, &cpriv->rx_history.predicted_len);
