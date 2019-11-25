@@ -26,7 +26,7 @@
 #include "mcp25xxfd_can_rx.h"
 
 /* module parameters */
-unsigned int rx_prefetch_bytes = -1;
+static unsigned int rx_prefetch_bytes = -1;
 module_param(rx_prefetch_bytes, uint, 0664);
 MODULE_PARM_DESC(rx_prefetch_bytes,
 		 "number of bytes to blindly prefetch when reading a rx-fifo");
@@ -158,10 +158,10 @@ static int mcp25xxfd_can_rx_read_frame(struct mcp25xxfd_can_priv *cpriv,
 			return ret;
 	}
 
-	/* transpose the headers to CPU format*/
-	rx->id = le32_to_cpu(rx->id);
-	rx->flags = le32_to_cpu(rx->flags);
-	rx->ts = le32_to_cpu(rx->ts);
+	/* transpose the headers to CPU format */
+	rx->id = le32_to_cpu(*(__le32 *)&rx->id);
+	rx->flags = le32_to_cpu(*(__le32 *)&rx->flags);
+	rx->ts = le32_to_cpu(*(__le32 *)&rx->ts);
 
 	/* compute len */
 	dlc = (rx->flags & MCP25XXFD_CAN_OBJ_FLAGS_DLC_MASK) >>
@@ -461,7 +461,7 @@ static int mcp25xxfd_can_rx_read_fd_frames(struct mcp25xxfd_can_priv *cpriv)
 		}
 
 	/* if we have at least 33% brs frames then run bulk */
-	if (count_brs * 3 >= count_dlc15 )
+	if (count_brs * 3 >= count_dlc15)
 		return mcp25xxfd_can_rx_read_bulk_frames(cpriv);
 	else
 		return mcp25xxfd_can_rx_read_single_frames(cpriv, prefetch);

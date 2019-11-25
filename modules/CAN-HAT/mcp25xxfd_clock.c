@@ -76,6 +76,7 @@
 #include <linux/spi/spi.h>
 
 #include "mcp25xxfd_can.h"
+#include "mcp25xxfd_clock.h"
 #include "mcp25xxfd_cmd.h"
 #include "mcp25xxfd_priv.h"
 
@@ -289,8 +290,13 @@ static int _mcp25xxfd_clock_probe(struct mcp25xxfd_priv *priv)
 	mdelay(MCP25XXFD_OST_DELAY_MS);
 
 	/* check clock register that the clock is ready or disabled */
-	ret = mcp25xxfd_cmd_read(priv->spi, MCP25XXFD_OSC,
-				 &priv->regs.osc);
+	ret = mcp25xxfd_cmd_read_regs(priv->spi, MCP25XXFD_OSC |
+				      MCP25XXFD_ADDRESS_WITH_CRC,
+				      &priv->regs.osc,4);
+	if (ret == -EILSEQ)
+		dev_err(&priv->spi->dev,
+			"CRC read of clock register resulted in a bad CRC mismatch - hw not found\n");
+
 	if (ret)
 		return ret;
 

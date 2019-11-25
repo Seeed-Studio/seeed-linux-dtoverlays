@@ -42,7 +42,7 @@ static int mcp25xxfd_debugfs_dump_regs_range(struct seq_file *file,
 static int mcp25xxfd_debugfs_dump_regs(struct seq_file *file, void *offset)
 {
 	return mcp25xxfd_debugfs_dump_regs_range(file, MCP25XXFD_OSC,
-						 MCP25XXFD_ECCSTAT);
+						 MCP25XXFD_DEVID);
 }
 
 static int mcp25xxfd_debugfs_dump_can_regs(struct seq_file *file,
@@ -68,13 +68,19 @@ static void mcp25xxfd_debugfs_mod_setup(struct mcp25xxfd_priv *priv)
 	root = priv->debugfs_dir;
 
 	/* expose some parameters related to clocks */
-	debugfs_create_u32("spi_setup_speed_hz", 0444, root,
+	debugfs_create_u32("spi_setup_speed_hz", 0644, root,
 			   &priv->spi_setup_speed_hz);
-	debugfs_create_u32("spi_normal_speed_hz", 0444, root,
+	debugfs_create_u32("spi_normal_speed_hz", 0644, root,
 			   &priv->spi_normal_speed_hz);
-	debugfs_create_u32("spi_use_speed_hz", 0444, root,
+	debugfs_create_u32("spi_use_speed_hz", 0644, root,
 			   &priv->spi_use_speed_hz);
 	debugfs_create_u32("clk_user_mask", 0444, root, &priv->clk_user_mask);
+
+	/* some statistics */
+	debugfs_create_u64("spi_crc_read", 0444, root,
+			   &priv->stats.spi_crc_read);
+	debugfs_create_u64("spi_crc_read_split", 0444, root,
+			   &priv->stats.spi_crc_read_split);
 
 	/* expose the system registers */
 	priv->debugfs_regs_dir = debugfs_create_dir("regs", root);

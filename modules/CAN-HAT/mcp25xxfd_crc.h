@@ -12,4 +12,6 @@
 int mcp25xxfd_crc_enable_int(struct mcp25xxfd_priv *priv, bool enable);
 int mcp25xxfd_crc_clear_int(struct mcp25xxfd_priv *priv);
 
+u16 mcp25xxfd_crc(u16 crc, u8 const *buffer, size_t len);
+
 #endif /* __MCP25XXFD_CRC_H */

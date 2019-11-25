@@ -155,6 +155,13 @@ struct mcp25xxfd_can_priv {
 		u64 tx_fd_count;
 		u64 tx_brs_count;
 
+		u64 tef_reads;
+		u64 tef_read_splits;
+		u64 tef_conservative_reads;
+		u64 tef_optimized_reads;
+#define MCP25XXFD_CAN_TEF_READ_BINS 8
+		u64 tef_optimized_read_sizes[MCP25XXFD_CAN_TEF_READ_BINS];
+
 		u64 rx_reads;
 		u64 rx_reads_prefetched_too_few;
 		u64 rx_reads_prefetched_too_few_bytes;

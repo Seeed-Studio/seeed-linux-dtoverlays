@@ -21,6 +21,7 @@
 
 enum mcp25xxfd_model {
 	CAN_MCP2517FD	= 0x2517,
+	CAN_MCP2518FD	= 0x2518,
 };
 
 struct mcp25xxfd_can_priv;
@@ -43,6 +44,9 @@ struct mcp25xxfd_priv {
 		int clock_pll;
 		int clock_div2;
 		int clock_odiv;
+		/* gpio related */
+		bool gpio_open_drain;
+		bool gpio0_xstandby;
 	} config;
 
 	/* lock for enabling/disabling the clock */
@@ -77,6 +81,10 @@ struct mcp25xxfd_priv {
 #if defined(CONFIG_DEBUG_FS)
 	struct dentry *debugfs_dir;
 	struct dentry *debugfs_regs_dir;
+	struct {
+		u64 spi_crc_read;
+		u64 spi_crc_read_split;
+	} stats;
 #endif
 };
 

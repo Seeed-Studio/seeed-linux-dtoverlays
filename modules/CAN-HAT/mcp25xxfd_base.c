@@ -12,6 +12,7 @@
 #include <linux/platform_device.h>
 #include <linux/slab.h>
 
+#include "mcp25xxfd_base.h"
 #include "mcp25xxfd_can.h"
 #include "mcp25xxfd_clock.h"
 #include "mcp25xxfd_cmd.h"
@@ -259,6 +260,10 @@ static const struct spi_device_id mcp25xxfd_id_table[] = {
 	{
 		.name		= "mcp2517fd",
 		.driver_data	= (kernel_ulong_t)CAN_MCP2517FD,
+	},
+	{
+		.name		= "mcp2518fd",
+		.driver_data	= (kernel_ulong_t)CAN_MCP2518FD,
 	},
 	{ }
 };

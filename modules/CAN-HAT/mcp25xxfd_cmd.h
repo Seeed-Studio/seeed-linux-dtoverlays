@@ -10,7 +10,6 @@
 
 #include <linux/byteorder/generic.h>
 #include <linux/spi/spi.h>
-#include <linux/version.h>
 
 /* SPI commands */
 #define MCP25XXFD_INSTRUCTION_RESET		0x0000
@@ -21,25 +20,8 @@
 #define MCP25XXFD_INSTRUCTION_WRITE_SAVE	0xC000
 
 #define MCP25XXFD_ADDRESS_MASK			0x0fff
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4,18,0)
-/* XXX: this stuff can be optimized */
-static inline void le32_to_cpu_array(u32 *buf, unsigned int words)
-{
-	while (words--) {
-		__le32_to_cpus(buf);
-		buf++;
-	}
-}
-
-static inline void cpu_to_le32_array(u32 *buf, unsigned int words)
-{
-	while (words--) {
-		__cpu_to_le32s(buf);
-		buf++;
-	}
-}
-
-#endif
+/* a bit to use CRC commands if possible */
+#define MCP25XXFD_ADDRESS_WITH_CRC		BIT(31)
 
 static inline void mcp25xxfd_cmd_convert_to_cpu(u32 *data, int n)
 {

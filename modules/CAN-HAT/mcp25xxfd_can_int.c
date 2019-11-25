@@ -9,6 +9,7 @@
 #include <linux/can/dev.h>
 #include <linux/device.h>
 #include <linux/interrupt.h>
+#include <linux/irqreturn.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/net.h>
@@ -20,13 +21,15 @@
 #include "mcp25xxfd_regs.h"
 #include "mcp25xxfd_can.h"
 #include "mcp25xxfd_can_debugfs.h"
+#include "mcp25xxfd_can_int.h"
 #include "mcp25xxfd_can_priv.h"
 #include "mcp25xxfd_can_rx.h"
 #include "mcp25xxfd_can_tx.h"
 #include "mcp25xxfd_cmd.h"
 #include "mcp25xxfd_ecc.h"
+#include "mcp25xxfd_int.h"
 
-unsigned int reschedule_int_thread_after = 4;
+static unsigned int reschedule_int_thread_after = 4;
 module_param(reschedule_int_thread_after, uint, 0664);
 MODULE_PARM_DESC(reschedule_int_thread_after,
 		 "Reschedule the interrupt thread after this many loops\n");
@@ -217,7 +220,7 @@ static int mcp25xxfd_can_int_handle_modif(struct mcp25xxfd_can_priv *cpriv)
 
 	/* get the current mode */
 	ret = mcp25xxfd_can_get_mode(cpriv->priv, &mode);
-	if (ret)
+	if (ret < 0)
 		return ret;
 	mode = ret;
 
@@ -527,14 +530,17 @@ static int mcp25xxfd_can_int_error_handling(struct mcp25xxfd_can_priv *cpriv)
 	return 0;
 }
 
+
 static int mcp25xxfd_can_int_handle_status(struct mcp25xxfd_can_priv *cpriv)
 {
+	char *errfunc;
 	int ret;
+
+#define HANDLE_ERROR(name) if (ret) { errfunc = name; goto err; }
 
 	/* clear all the interrupts asap - we have them on file allready */
 	ret = mcp25xxfd_can_int_clear_int_flags(cpriv);
-	if (ret)
-		return ret;
+	HANDLE_ERROR("mcp25xxfd_can_int_clear_int_flags");
 
 	/* set up new state and error frame for this loop */
 	cpriv->bus.new_state = cpriv->bus.state;
@@ -549,63 +555,59 @@ static int mcp25xxfd_can_int_handle_status(struct mcp25xxfd_can_priv *cpriv)
 	 * to get us out of restricted mode
 	 */
 	ret = mcp25xxfd_can_int_handle_serrif(cpriv);
-	if (ret)
-		return ret;
+	HANDLE_ERROR("mcp25xxfd_can_int_handle_serrif");
 
 	/* mode change interrupt */
 	ret = mcp25xxfd_can_int_handle_modif(cpriv);
-	if (ret)
-		return ret;
+	HANDLE_ERROR("mcp25xxfd_can_int_handle_modif");
 
 	/* handle the rx */
 	ret = mcp25xxfd_can_rx_handle_int_rxif(cpriv);
-	if (ret)
-		return ret;
+	HANDLE_ERROR("mcp25xxfd_can_rx_handle_int_rxif");
+
 	/* handle aborted TX FIFOs */
 	ret = mcp25xxfd_can_tx_handle_int_txatif(cpriv);
-	if (ret)
-		return ret;
+	HANDLE_ERROR("mcp25xxfd_can_tx_handle_int_txatif");
 
 	/* handle the TEF */
 	ret = mcp25xxfd_can_tx_handle_int_tefif(cpriv);
-	if (ret)
-		return ret;
+	HANDLE_ERROR("mcp25xxfd_can_rx_handle_int_tefif");
 
 	/* handle error interrupt flags */
 	ret = mcp25xxfd_can_rx_handle_int_rxovif(cpriv);
-	if (ret)
-		return ret;
+	HANDLE_ERROR("mcp25xxfd_can_rx_handle_int_rxovif");
 
 	/* sram ECC error interrupt */
 	ret = mcp25xxfd_can_int_handle_eccif(cpriv);
-	if (ret)
-		return ret;
+	HANDLE_ERROR("mcp25xxfd_can_int_handle_eccif");
 
 	/* message format interrupt */
 	ret = mcp25xxfd_can_int_handle_ivmif(cpriv);
-	if (ret)
-		return ret;
+	HANDLE_ERROR("mcp25xxfd_can_int_handle_ivmif");
 
 	/* handle bus errors in more detail */
 	ret = mcp25xxfd_can_int_handle_cerrif(cpriv);
-	if (ret)
-		return ret;
+	HANDLE_ERROR("mcp25xxfd_can_int_handle_cerrif");
 
 	/* error counter handling */
 	ret = mcp25xxfd_can_int_error_counters(cpriv);
-	if (ret)
-		return ret;
+	HANDLE_ERROR("mcp25xxfd_can_int_error_counters");
 
 	/* error counter handling */
 	ret = mcp25xxfd_can_int_error_handling(cpriv);
-	if (ret)
-		return ret;
+	HANDLE_ERROR("mcp25xxfd_can_int_error_handling");
 
 	/* and submit can frames to network stack */
 	ret = mcp25xxfd_can_int_submit_frames(cpriv);
+	HANDLE_ERROR("mcp25xxfd_can_int_submit_frames");
 
+	return 0;
+err:
+	netdev_err(cpriv->can.dev, "%s returned with error code %i\n",
+		   errfunc, ret);
 	return ret;
 }
+#undef HANDLE_ERROR
 
 irqreturn_t mcp25xxfd_can_int(int irq, void *dev_id)
 {
@@ -625,8 +627,17 @@ irqreturn_t mcp25xxfd_can_int(int irq, void *dev_id)
 					      MCP25XXFD_CAN_INT,
 					      &cpriv->status.intf,
 					      sizeof(cpriv->status));
-		if (ret)
-			return ret;
+		switch (ret) {
+		case 0: /* no errors, so process */
+			break;
+		case -EILSEQ: /* a crc error, so run the loop again */
+			continue;
+		default: /* all other error cases */
+			netdev_err(cpriv->can.dev,
+				   "reading can registers returned with error code %i\n",
+				   ret);
+			goto fail;
+		}
 
 		/* only act if the IE mask configured has active IF bits
 		 * otherwise the Interrupt line should be deasserted already
@@ -636,10 +647,15 @@ irqreturn_t mcp25xxfd_can_int(int irq, void *dev_id)
 		       cpriv->status.intf) == 0)
 			break;
 
-		/* handle the status */
+		/* handle the interrupts for real */
 		ret = mcp25xxfd_can_int_handle_status(cpriv);
-		if (ret)
-			return ret;
+		switch (ret) {
+		case 0: /* no errors, so process */
+		case -EILSEQ: /* a crc error, so run the loop again */
+			break;
+		default: /* all other error cases */
+			goto fail;
+		}
 
 		/* allow voluntarily rescheduling every so often to avoid
 		 * long CS lows at the end of a transfer on low power CPUs
@@ -651,6 +667,19 @@ irqreturn_t mcp25xxfd_can_int(int irq, void *dev_id)
 			cond_resched();
 		}
 	}
+
+	return IRQ_HANDLED;
+
+fail:
+ 	netdev_err(cpriv->can.dev,
+		   "experienced unexpected error %i in interrupt handler - disabling interrupts\n",
+ 		   ret);
+	/* note that if we experienced an spi error,
+	 * then this would produce another error
+	 */
+	mcp25xxfd_int_enable(cpriv->priv, false);
+
+	/* we could also put the driver in bus-off mode */
 
 	return IRQ_HANDLED;
 }

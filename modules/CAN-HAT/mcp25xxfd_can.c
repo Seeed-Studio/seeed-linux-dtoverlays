@@ -49,6 +49,7 @@
 #include <linux/spi/spi.h>
 
 #include "mcp25xxfd_base.h"
+#include "mcp25xxfd_can.h"
 #include "mcp25xxfd_can_debugfs.h"
 #include "mcp25xxfd_can_fifo.h"
 #include "mcp25xxfd_can_int.h"
@@ -63,23 +64,23 @@
 #include <uapi/linux/can/netlink.h>
 
 /* module parameters */
-unsigned int bw_sharing_log2bits;
+static unsigned int bw_sharing_log2bits;
 module_param(bw_sharing_log2bits, uint, 0664);
 MODULE_PARM_DESC(bw_sharing_log2bits,
 		 "Delay between 2 transmissions in number of arbitration bit times\n");
-bool enable_edge_filter;
+static bool enable_edge_filter;
 module_param(enable_edge_filter, bool, 0664);
 MODULE_PARM_DESC(enable_edge_filter,
 		 "Enable ISO11898-1:2015 edge_filtering");
-unsigned int tdc_mode = 2;
+static unsigned int tdc_mode = 2;
 module_param(tdc_mode, uint, 0664);
 MODULE_PARM_DESC(tdc_mode,
 		 "Transmitter Delay Mode - 0 = disabled, 1 = fixed, 2 = auto\n");
-unsigned int tdc_value;
+static unsigned int tdc_value;
 module_param(tdc_value, uint, 0664);
 MODULE_PARM_DESC(tdc_value,
 		 "Transmission Delay Value - range: [0:63] SCLK");
-int tdc_offset = 64; /* outside of range to use computed values */
+static int tdc_offset = 64; /* outside of range to use computed values */
 module_param(tdc_offset, int, 0664);
 MODULE_PARM_DESC(tdc_offset,
 		 "Transmission Delay offset - range: [-64:63] SCLK");
@@ -218,7 +219,7 @@ int mcp25xxfd_can_switch_mode_no_wait(struct mcp25xxfd_priv *priv,
 	 * (this only happens during initialization phase)
 	 */
 	if (reg) {
-		if (!reg) {
+		if (!*reg) {
 			ret = mcp25xxfd_can_get_mode(priv, reg);
 			if (ret < 0)
 				return ret;
@@ -565,8 +566,8 @@ static int mcp25xxfd_can_stop(struct net_device *net)
 	struct mcp25xxfd_priv *priv = cpriv->priv;
 	struct spi_device *spi = priv->spi;
 
-	disable_irq(spi->irq);
-	cpriv->irq.enabled = false;
+	/* disable inerrupts on controller */
+	mcp25xxfd_int_enable(cpriv->priv, false);
 
 	/* stop transmit queue */
 	mcp25xxfd_can_tx_queue_manage(cpriv,
@@ -578,10 +579,10 @@ static int mcp25xxfd_can_stop(struct net_device *net)
 	/* shutdown the can controller */
 	mcp25xxfd_can_shutdown(cpriv);
 
-	mcp25xxfd_cmd_reset(spi);
+//	mcp25xxfd_cmd_reset(spi);
 
 	/* disable inerrupts on controller */
-	mcp25xxfd_int_enable(cpriv->priv, false);
+//	mcp25xxfd_int_enable(cpriv->priv, false);
 
 	/* stop the clock */
 	mcp25xxfd_clock_stop(cpriv->priv, MCP25XXFD_CLK_USER_CAN);

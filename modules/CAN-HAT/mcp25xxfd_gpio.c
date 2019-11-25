@@ -15,6 +15,7 @@
 
 #include "mcp25xxfd_clock.h"
 #include "mcp25xxfd_cmd.h"
+#include "mcp25xxfd_gpio.h"
 #include "mcp25xxfd_priv.h"
 
 /* GPIO component */
@@ -34,6 +35,10 @@ static int mcp25xxfd_gpio_request(struct gpio_chip *chip,
 
 	/* only handle gpio 0/1 */
 	if (offset > 1)
+		return -EINVAL;
+
+	/* if we have XSTANDBY enabled then gpio0 is not available either */
+	if (priv->config.gpio0_xstandby && offset == 0)
 		return -EINVAL;
 
 	mcp25xxfd_clock_start(priv, clock_requestor);
@@ -156,7 +161,48 @@ static int mcp25xxfd_gpio_direction_output(struct gpio_chip *chip,
 					mask_pm | mask_stby);
 }
 
-int mcp25xxfd_gpio_setup(struct mcp25xxfd_priv *priv)
+#ifdef CONFIG_OF_DYNAMIC
+static void mcp25xxfd_gpio_read_of(struct mcp25xxfd_priv *priv)
+{
+	const struct device_node *np = priv->spi->dev.of_node;
+
+	priv->config.gpio_open_drain =
+		of_property_read_bool(np, "microchip,gpio-open-drain");
+	priv->config.gpio0_xstandby =
+		of_property_read_bool(np, "microchip,gpio0-xstandby");
+}
+#else
+static void mcp25xxfd_gpio_read_of(struct mcp25xxfd_priv *priv)
+{
+	priv->config.gpio_open_drain = false;
+	priv->config.gpio0_xstandby = false;
+}
+#endif
+
+static int mcp25xxfd_gpio_setup_regs(struct mcp25xxfd_priv *priv)
+{
+	/* handle open-drain */
+	if (priv->config.gpio_open_drain) {
+		priv->regs.iocon |= MCP25XXFD_IOCON_INTOD;
+	} else {
+		priv->regs.iocon &= ~MCP25XXFD_IOCON_INTOD;
+	}
+
+	/* handle xstandby */
+	if (priv->config.gpio0_xstandby) {
+		priv->regs.iocon &= ~(MCP25XXFD_IOCON_TRIS0 |
+				      MCP25XXFD_IOCON_GPIO0);
+		priv->regs.iocon |= MCP25XXFD_IOCON_XSTBYEN;
+	} else {
+		priv->regs.iocon &= ~(MCP25XXFD_IOCON_XSTBYEN);
+	}
+
+	/* update the iocon register */
+	return mcp25xxfd_cmd_write_regs(priv->spi, MCP25XXFD_IOCON,
+					&priv->regs.iocon, sizeof(u32));
+}
+
+static int mcp25xxfd_gpio_setup_gpiochip(struct mcp25xxfd_priv *priv)
 {
 	struct gpio_chip *gpio = &priv->gpio;
 
@@ -175,6 +221,21 @@ int mcp25xxfd_gpio_setup(struct mcp25xxfd_priv *priv)
 	gpio->can_sleep            = 1;
 
 	return gpiochip_add_data(gpio, priv);
+}
+
+int mcp25xxfd_gpio_setup(struct mcp25xxfd_priv *priv)
+{
+	int ret;
+
+	/* setting up defaults */
+	priv->config.gpio0_xstandby = false;
+
+	mcp25xxfd_gpio_read_of(priv);
+	ret = mcp25xxfd_gpio_setup_regs(priv);
+	if (ret)
+		return ret;
+
+	return mcp25xxfd_gpio_setup_gpiochip(priv);
 }
 
 void mcp25xxfd_gpio_remove(struct mcp25xxfd_priv *priv)
