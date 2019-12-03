@@ -7,6 +7,7 @@
 
 # no irq version
 _tgt     := adxl34x
+_tgt_i2c     := adxl34x-i2c
 
 _uname_r := $(shell uname -r)
 _BUILD   := /lib/modules/$(_uname_r)/build
@@ -18,6 +19,7 @@ _DEPMOD  ?= depmod -a
 ifneq ($(KERNELRELEASE),)
 
 obj-m += ${_tgt}.o
+obj-m += ${_tgt_i2c}.o
 
 else
 _class  := drivers/input/misc
@@ -32,10 +34,12 @@ clean:
 
 install:
 	cp ${_tgt}.ko ${DEST}/${_class}/
+	cp ${_tgt_i2c}.ko ${DEST}/${_class}/
 	$(_DEPMOD)
 
 uninstall:
 	rm -f ${DEST}/${_class}/${_tgt}.ko
+	rm -f ${DEST}/${_class}/${_tgt_i2c}.ko
 	$(_DEPMOD)
 
 .PHONY: all clean install uninstall
