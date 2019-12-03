@@ -28,6 +28,7 @@
 #include <linux/of_device.h>
 #include <linux/of_gpio.h>
 #include <linux/iio/iio.h>
+#include <linux/version.h>
 
 #define DEV_NAME	"hcsr04"
 #define DEV_ALERT	KERN_ALERT DEV_NAME ": "
@@ -223,7 +224,10 @@ static int hcsr04_read_raw(struct iio_dev *iio,
 }
 
 static const struct iio_info hcsr04_iio_info = {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,18,0)
+#else
 	.driver_module		= THIS_MODULE,
+#endif
 	.read_raw		= hcsr04_read_raw,
 };
 
