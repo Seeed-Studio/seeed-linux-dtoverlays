@@ -32,7 +32,6 @@
 			/* avoid stupid warning */
 			#address-cells = <1>;
 			#size-cells = <1>;
-
 			/* SLOT 1057 */
 			p981x_1057@20 {
 				compatible = "dms,p981x";
@@ -41,8 +40,8 @@
 				status = "okay";
 
 				gpios = <
-					&gpio1 25 0	/* clock pin */
-					&gpio1 26 0	/* data  pin */
+					&gpio1 12 0	/* clock pin */
+					&gpio1 13 0	/* data  pin */
 				>;
 			};
 
