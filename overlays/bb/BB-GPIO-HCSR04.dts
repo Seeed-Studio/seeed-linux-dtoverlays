@@ -41,8 +41,8 @@
 				status = "okay";
 
 				gpios = <
-					&gpio1 25 0	/* trigger pin */
-					&gpio1 25 0	/* echo    pin */
+					&gpio3 18 0	/* trigger pin */
+					&gpio3 18 0	/* echo    pin */
 				>;
 			};
 

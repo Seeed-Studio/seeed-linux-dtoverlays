@@ -85,7 +85,7 @@
 					linux,code = <0x100>;
 					label = "grove:usr0";
 					/* Grove Button, HIGH valid/press */
-					gpios = <&gpio1 25 0x0>;
+					gpios = <&gpio0 30 0x0>;
 					gpio-key,wakeup;
 					autorepeat;
 				};
@@ -98,7 +98,7 @@
 					 * Grove Red/Yellow/Blue LED Button
 					 * LOW valid/press
 					 */
-					gpios = <&gpio1 26 0x1>;
+					gpios = <&gpio2 22 0x0>;
 					gpio-key,wakeup;
 					autorepeat;
 				};
