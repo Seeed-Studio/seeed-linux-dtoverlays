@@ -1,0 +1,15 @@
+
+/*
+ * Device tree overlay for mcp251x/mcp2517fd on spi0.0
+ */
+
+
+#include "dt-bindings/interrupt-controller/irq.h"
+#include "dt-bindings/gpio/gpio.h"
+
+/dts-v1/;
+/plugin/;
+
+/ {
+    compatible = "seeed,npi-stm32mp1", "st,stm32mp157";
+};
