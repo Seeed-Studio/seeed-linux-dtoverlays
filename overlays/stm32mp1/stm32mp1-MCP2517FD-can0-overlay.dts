@@ -6,10 +6,77 @@
 
 #include "dt-bindings/interrupt-controller/irq.h"
 #include "dt-bindings/gpio/gpio.h"
+#include "dt-bindings/pinctrl/stm32-pinfunc.h"
 
 /dts-v1/;
 /plugin/;
 
 / {
-    compatible = "seeed,npi-stm32mp1", "st,stm32mp157";
+     compatible = "seeed,npi-stm32mp1", "st,stm32mp157";
+    fragment@0 {
+        target = <&pinctrl>;
+        __overlay__ {
+                       spi5_pins_s: spi5-1 {
+                               pins1 {
+                                       pinmux = <STM32_PINMUX('H', 6, AF5)>, /* SPI5_SCK */
+                                                <STM32_PINMUX('F', 9, AF5)>; /* SPI5_MOSI */
+                                                /* <STM32_PINMUX('F', 6, GPIO)>, SPI5_NSS0 */
+                                                /* <STM32_PINMUX('F', 3, GPIO)>; SPI5_NSS1 */
+                                       bias-disable;
+                                       drive-push-pull;
+                                       slew-rate = <1>;
+                               };
+
+                               pins2 {
+                                       pinmux = <STM32_PINMUX('H', 7, AF5)>; /* SPI5_MISO */
+                                       bias-disable;
+                               };
+                       };
+
+                       spi5_sleep_pins_s: spi5-sleep-1 {
+                               pins {
+                                       pinmux = <STM32_PINMUX('H', 6, ANALOG)>, /* SPI5_SCK */
+                                                <STM32_PINMUX('H', 7, ANALOG)>, /* SPI5_MISO */
+                                                <STM32_PINMUX('F', 9, ANALOG)>; /* SPI5_MOSI */
+                                                /* <STM32_PINMUX('F', 6, ANALOG)>, SPI5_NSS0 */
+                                                /* <STM32_PINMUX('F', 3, ANALOG)>; SPI5_NSS1 */
+                               };
+                       };
+        };
+    };
+    /* the clock/oscillator of the can-controller */
+    fragment@2 {
+        target-path = "/clocks";
+        __overlay__ {
+            /* external 20M oscillator of mcp2517fd on SPI5.0 */
+            mcp2517fd_osc: mcp2517fd_osc {
+                compatible = "fixed-clock";
+                #clock-cells = <0>;
+                clock-frequency  = <40000000>;
+            };
+        };
+    };
+
+    fragment@3 {
+        target = <&spi5>;
+        __overlay__ {
+            pinctrl-names = "default", "sleep";
+            pinctrl-0 = <&spi5_pins_s>;
+            pinctrl-1 = <&spi5_sleep_pins_a>;
+            cs-gpios = <&gpiof 6 GPIO_ACTIVE_LOW>;
+            status = "okay";
+            /* needed to avoid dtc warning */
+            #address-cells = <1>;
+            #size-cells = <0>;
+            mcp2517fd: mcp2517fd@0 {
+                reg = <0>;
+                compatible = "microchip,mcp2517fd";
+                spi-max-frequency = <125000000>;
+                interrupt-parent = <&gpioe>;
+                interrupts = <8 IRQ_TYPE_LEVEL_LOW>;
+                clocks = <&mcp2517fd_osc>;
+            };
+        };
+    };
 };
+
