@@ -35,7 +35,7 @@
 			status = "okay";
 
 			/* this is the configuration part */
-			clock-frequency = <400000>;
+			clock-frequency = <100000>;
 
 			#address-cells = <1>;
 			#size-cells = <0>;
