@@ -453,8 +453,8 @@ state.Audio {
 	control.33 {
 		iface MIXER
 		name 'PGA Capture Volume'
-		value.0 51
-		value.1 51
+		value.0 108
+		value.1 108
 		comment {
 			access 'read write'
 			type INTEGER
@@ -462,8 +462,8 @@ state.Audio {
 			range '0 - 119'
 			dbmin 0
 			dbmax 5950
-			dbvalue.0 2550
-			dbvalue.1 2550
+			dbvalue.0 5400
+			dbvalue.1 5400
 		}
 	}
 	control.34 {
