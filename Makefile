@@ -134,22 +134,24 @@ BASE_SRC_FOLDER := $(filter-out $(MOD_PATH), $(BASE_SRC_FOLDER))
 BASE_SRC_FOLDER := $(filter-out grove-led, $(BASE_SRC_FOLDER))
 BASE_SRC_FOLDER := $(filter-out grove-button, $(BASE_SRC_FOLDER))
 
-uname_r=$(shell uname -r)
-kbuild=/lib/modules/$(uname_r)/build
+uname_r = $(shell uname -r)
+KBUILD ?= /lib/modules/$(uname_r)/build
+KO_DIR ?= /lib/modules/$(uname_r)/extra/seeed
 
 make_options="CROSS_COMPILE=${CC} KDIR=${x86_dir}/KERNEL"
 
 all_%:
 	$(Q)$(MAKE) PLATFORM=$* all_arch
-	@for dir in ${BASE_SRC_FOLDER}; do make -C $(kbuild) M=$(MOD_PATH)/$$dir ||exit; done
+	@for dir in ${BASE_SRC_FOLDER}; do make -C $(KBUILD) M=$(MOD_PATH)/$$dir ||exit; done
 
 
 clean_%:
 	$(Q)$(MAKE) PLATFORM=$* clean_arch
-	@for dir in ${BASE_SRC_FOLDER}; do make -C $(kbuild) M=$(MOD_PATH)/$$dir clean ||exit; done
+	@for dir in ${BASE_SRC_FOLDER}; do make -C $(KBUILD) M=$(MOD_PATH)/$$dir clean ||exit; done
 
 install_%:
 	$(Q)$(MAKE) PLATFORM=$* install_arch
+	@for dir in ${BASE_SRC_FOLDER}; do cp $(MOD_PATH)/$$dir/*.ko $(KO_DIR) ||exit; done
 
 ifeq ($(PLATFORM),)
 
@@ -205,8 +207,6 @@ PHONY += install_arch
 install_arch: $(PLATFORM_DTBO)
 	mkdir -p $(DESTDIR)/lib/firmware/
 	cp -v $(obj)/*.dtbo $(DESTDIR)/lib/firmware/
-	mkdir -p $(DESTDIR)/usr/bin/
-	cp -v config-pin $(DESTDIR)/usr/bin/
 
 RCS_FIND_IGNORE := \( -name SCCS -o -name BitKeeper -o -name .svn -o -name CVS \
                    -o -name .pc -o -name .hg -o -name .git \) -prune -o
@@ -243,12 +243,17 @@ FORCE:
 .PHONY: $(PHONY)
 
 
+KO_LIST := $(shell ls $(KO_DIR))
 builddeb:
-	# build the source package in the parent directory
-	# then rename it to project_version.orig.tar.gz
-	#$(PYTHON) setup.py sdist $(COMPILE) --dist-dir=../
-	#rename -f 's/$(PROJECT)-(.*)\.tar\.gz/$(PROJECT)_$$1\.orig\.tar\.gz/' ../*
-	# build the package
-	./install.sh
-	dpkg-buildpackage -i -I -rfakeroot
+	cp debian/control control
+	cp $(KO_DIR)/*.ko .
+	@echo $(KO_LIST)
+	echo "Package: seeed-linux-dtoverlay-bb-${uname_r}" >> control
+	echo "Pre-Depends: linux-image-${uname_r}" >> control
+	echo "Depends: linux-image-${uname_r}" >> control
+	echo "Files: $(KO_LIST)  /lib/modules/${uname_r}/extra/seeed" >> control
+	equivs-build control
+	rm -rf control || true
+	rm -rf *.ko || true
+
 
