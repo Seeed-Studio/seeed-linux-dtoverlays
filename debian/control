@@ -1,11 +1,12 @@
-Source: device-tree-overlays
-Maintainer: Elias Bakken <elias@iagent.no>
 Section: misc
 Priority: optional
-Standards-Version: 0.4.0
-Build-Depends: build-essential
+Homepage: https://github.com/Seeed-Studio/seeed-linux-dtverlays
+Standards-Version: 3.9.6
 
-Package: device-tree-overlays
-Architecture: armhf
-Depends: 
-Description: Device tree overlays for Beaglebone.
+Maintainer: Baozhu Zuo <zuobaozhu@gmail.com>
+Version: 1stretch
+Architecture: 
+Readme: readme.md
+Description: seeed linux dtoverlays
+ Kernel modules for grove devices
+
