@@ -126,13 +126,27 @@ endif
 
 export quiet Q KBUILD_VERBOSE
 
+MOD_PATH := $(shell pwd)/modules
+
+SRC_FOLDER := $(shell find $(MOD_PATH) -maxdepth 1 -type d)
+BASE_SRC_FOLDER := $(basename $(patsubst $(MOD_PATH)/%, %, $(SRC_FOLDER)))
+BASE_SRC_FOLDER := $(filter-out $(MOD_PATH), $(BASE_SRC_FOLDER))
+BASE_SRC_FOLDER := $(filter-out grove-led, $(BASE_SRC_FOLDER))
+BASE_SRC_FOLDER := $(filter-out grove-button, $(BASE_SRC_FOLDER))
+
+uname_r=$(shell uname -r)
+kbuild=/lib/modules/$(uname_r)/build
+
+make_options="CROSS_COMPILE=${CC} KDIR=${x86_dir}/KERNEL"
+
 all_%:
 	$(Q)$(MAKE) PLATFORM=$* all_arch
-	gcc -o config-pin ./tools/pmunts_muntsos/config-pin.c
+	@for dir in ${BASE_SRC_FOLDER}; do make -C $(kbuild) M=$(MOD_PATH)/$$dir ||exit; done
+
 
 clean_%:
 	$(Q)$(MAKE) PLATFORM=$* clean_arch
-	rm config-pin || true
+	@for dir in ${BASE_SRC_FOLDER}; do make -C $(kbuild) M=$(MOD_PATH)/$$dir clean ||exit; done
 
 install_%:
 	$(Q)$(MAKE) PLATFORM=$* install_arch

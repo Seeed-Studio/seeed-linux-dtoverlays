@@ -4,7 +4,7 @@
 #
 # MIT License
 #
-
+lis331dlh-i2c-objs := lis3lv02d.o lis3lv02d_i2c.o
 obj-m += lis331dlh-i2c.o
 
 all:

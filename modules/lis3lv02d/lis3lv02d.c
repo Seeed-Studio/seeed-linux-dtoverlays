@@ -39,10 +39,8 @@
 #include <linux/pm_runtime.h>
 #include <linux/atomic.h>
 #include <linux/of_device.h>
-#ifdef SCHED_SIGNAL_H
 /* linux v4.14 compability */
 #include <linux/sched/signal.h>
-#endif
 #include "lis3lv02d.h"
 
 #define DRIVER_NAME     "lis3lv02d"
