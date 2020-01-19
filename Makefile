@@ -255,6 +255,7 @@ builddeb:
 	echo "Files: COPYING	/lib/modules/4.19.75-v7l+/extra/seeed/" >> control
 	@for dir in ${KO_LIST}; do echo "	$$dir /lib/modules/${uname_r}/extra/seeed" >> control; done
 	@for dir in ${DTBO_LIST}; do echo "	$$dir /lib/firmware/" >> control; done
+	echo "		extras/tlv320aic3104.state.txt /etc/alsa" >> control
 	equivs-build control
 	rm -rf control || true
 	rm -rf *.ko || true
