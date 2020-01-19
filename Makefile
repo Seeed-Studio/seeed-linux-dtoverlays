@@ -244,14 +244,16 @@ FORCE:
 
 
 KO_LIST := $(shell ls $(KO_DIR))
+DTBO_LIST := $(shell ls overlays/bb/*.dtbo)
 builddeb:
 	cp debian/control control
 	cp $(KO_DIR)/*.ko .
-	@echo $(KO_LIST)
 	echo "Package: seeed-linux-dtoverlay-bb-${uname_r}" >> control
 	echo "Pre-Depends: linux-image-${uname_r}" >> control
 	echo "Depends: linux-image-${uname_r}" >> control
-	echo "Files: $(KO_LIST)  /lib/modules/${uname_r}/extra/seeed" >> control
+	echo "Files: COPYING	/lib/modules/4.19.75-v7l+/extra/seeed/" >> control
+	@for dir in ${KO_LIST}; do echo "	$$dir /lib/modules/${uname_r}/extra/seeed" >> control; done
+	@for dir in ${DTBO_LIST}; do echo "	$$dir /lib/firmware/" >> control; done
 	equivs-build control
 	rm -rf control || true
 	rm -rf *.ko || true

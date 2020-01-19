@@ -5,7 +5,7 @@ Standards-Version: 3.9.6
 
 Maintainer: Baozhu Zuo <zuobaozhu@gmail.com>
 Version: 1stretch
-Architecture: 
+Architecture: armhf
 Readme: readme.md
 Description: seeed linux dtoverlays
  Kernel modules for grove devices
