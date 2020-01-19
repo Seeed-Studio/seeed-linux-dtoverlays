@@ -135,7 +135,7 @@ BASE_SRC_FOLDER := $(filter-out grove-led, $(BASE_SRC_FOLDER))
 BASE_SRC_FOLDER := $(filter-out grove-button, $(BASE_SRC_FOLDER))
 
 uname_r = $(shell uname -r)
-KBUILD ?= /lib/modules/$(uname_r)/build
+KBUILD ?= /usr/src/linux-headers-$(uname_r)
 KO_DIR ?= /lib/modules/$(uname_r)/extra/seeed
 
 make_options="CROSS_COMPILE=${CC} KDIR=${x86_dir}/KERNEL"
@@ -151,6 +151,7 @@ clean_%:
 
 install_%:
 	$(Q)$(MAKE) PLATFORM=$* install_arch
+	mkdir -p /lib/modules/$(uname_r)/extra/seeed || true
 	@for dir in ${BASE_SRC_FOLDER}; do cp $(MOD_PATH)/$$dir/*.ko $(KO_DIR) ||exit; done
 
 ifeq ($(PLATFORM),)
@@ -192,7 +193,7 @@ dtc_cpp_flags  = -Wp,-MD,$(depfile).pre.tmp -nostdinc		\
 quiet_cmd_dtc = DTC     $@
 cmd_dtc = $(CPP) $(dtc_cpp_flags) -x assembler-with-cpp -o $(dtc-tmp) $< ; \
         $(DTC) -O dtb -o $@ -b 0 -@ \
-                -i $(src) $(DTC_FLAGS) \
+                -i $(src) -iinclude $(DTC_FLAGS) \
                 -d $(depfile).dtc.tmp $(dtc-tmp) ; \
         cat $(depfile).pre.tmp $(depfile).dtc.tmp > $(depfile)
 
