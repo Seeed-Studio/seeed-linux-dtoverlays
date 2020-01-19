@@ -5,7 +5,7 @@
 # MIT License
 #
 
-obj-m				+= mpr121.o
+obj-m				+= mpr121_touchkey.o
 
 
 

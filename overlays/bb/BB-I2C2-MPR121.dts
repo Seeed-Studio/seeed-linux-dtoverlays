@@ -5,8 +5,11 @@
  * MIT License
  *
  */
+
 /dts-v1/;
 /plugin/;
+
+#include <dt-bindings/input/input.h>
 
 / {
 	fragment@0 {
@@ -21,6 +24,14 @@
 				/* SLOT I2C2 */
 				mpr121 = "/ocp/i2c@4819c000/mpr121@5b";
 			};
+			
+		        vcc_3v3: regulator-vcc-3v3 {
+        	        	compatible = "regulator-fixed";
+                		regulator-name = "VCC-3V3";
+                		regulator-min-microvolt = <3300000>;
+                		regulator-max-microvolt = <3300000>;
+		        };
+
 		};
 	};
 
@@ -41,11 +52,13 @@
 			#size-cells = <0>;
 
 			mpr121@5b {
-                compatible = "mpr121";
-                reg = <0x5b>;
-                status = "okay";
-		    };
-        };
+				compatible = "fsl,mpr121-touchkey";
+				reg = <0x5b>;
+				autorepeat;
+				vdd-supply = <&vcc_3v3>;
+				linux,keycodes = <KEY_0>, <KEY_1>, <KEY_2>, <KEY_3>,<KEY_4>, <KEY_5>, <KEY_6>, <KEY_7>,<KEY_8>, <KEY_9>, <KEY_A>, <KEY_B>;
+		    	};
+        	};
 	};
 };
 
