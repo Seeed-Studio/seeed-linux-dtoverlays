@@ -6,6 +6,7 @@
 #
 
 obj-m				+= mpr121_touchkey.o
+obj-m				+= mpr121.o
 
 
 
