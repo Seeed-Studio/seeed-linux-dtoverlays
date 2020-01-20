@@ -131,6 +131,7 @@ static irqreturn_t mpr_touchkey_interrupt(int irq, void *dev_id)
 	struct input_dev *input = mpr121->input_dev;
 	unsigned long bit_changed;
 	unsigned int key_num;
+	unsigned int irq_counter;
 	int reg;
 
 	reg = i2c_smbus_read_byte_data(client, ELE_TOUCH_STATUS_1_ADDR);
@@ -150,6 +151,7 @@ static irqreturn_t mpr_touchkey_interrupt(int irq, void *dev_id)
 	/* use old press bit to figure out which bit changed */
 	bit_changed = reg ^ mpr121->statusbits;
 	mpr121->statusbits = reg;
+	irq_counter = 0;
 	for_each_set_bit(key_num, &bit_changed, mpr121->keycount) {
 		unsigned int key_val, pressed;
 
@@ -161,6 +163,8 @@ static irqreturn_t mpr_touchkey_interrupt(int irq, void *dev_id)
 
 		dev_dbg(&client->dev, "key %d %d %s\n", key_num, key_val,
 			pressed ? "pressed" : "released");
+		if( irq_counter > mpr121->keycount) break;
+		irq_counter++;
 
 	}
 	input_sync(input);
@@ -179,7 +183,7 @@ static void work_cb_irq(struct work_struct *work)
 	mpr_touchkey_interrupt(mpr121->client->irq, mpr121);
 	
 	if (!mpr121->exit_work) {
-		msleep(120);
+		msleep(80);
 		schedule_work(&mpr121->work_irq);
 	}
 	
@@ -194,7 +198,6 @@ static int mpr121_phys_init(struct mpr121_touchkey *mpr121,
 	const struct mpr121_init_register *reg;
 	unsigned char usl, lsl, tl, eleconf;
 	int i, t, vdd, ret;
-
 	/* Set up touch/release threshold for ele0-ele11 */
 	for (i = 0; i <= MPR121_MAX_KEY_COUNT; i++) {
 		t = ELE0_TOUCH_THRESHOLD_ADDR + (i * 2);
