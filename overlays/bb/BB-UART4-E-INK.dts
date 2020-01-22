@@ -27,9 +27,24 @@
 		"uart4";		// hardware ip used
 
 	/*
-	 * Free up the pins used by the cape from the pinmux helpers.
+	 * Helper to show loaded overlays under: /proc/device-tree/chosen/overlays/
 	 */
 	fragment@0 {
+		target-path="/";
+		__overlay__ {
+
+			chosen {
+				overlays {
+					BB-UART4-E-INK = __TIMESTAMP__;
+				};
+			};
+		};
+	};
+
+	/*
+	 * Free up the pins used by the cape from the pinmux helpers.
+	 */
+	fragment@1 {
 		target = <&ocp>;
 		__overlay__ {
 			P2_05_pinmux { status = "disabled"; };	/* uart4_rxd */

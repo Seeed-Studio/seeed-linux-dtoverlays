@@ -9,9 +9,20 @@
 /plugin/;
 
 / {
+        compatible = "ti,beaglebone", "ti,beaglebone-black", "ti,beaglebone-green";
+
+	/* identification */
+	part-number = "BB-I2C1-BME280";
+	version = "00A0";
+
 	fragment@0 {
 		target-path="/";
 		__overlay__ {
+			chosen {
+				overlays {
+					BB-I2C1-BME280 = __TIMESTAMP__;
+				};
+			};
 
 			aliases {
 				/* SLOT I2C1 */
