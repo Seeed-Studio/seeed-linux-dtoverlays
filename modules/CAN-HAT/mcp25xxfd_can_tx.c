@@ -407,19 +407,6 @@ int mcp25xxfd_can_tx_handle_int_tefif(struct mcp25xxfd_can_priv *cpriv)
 
 	MCP25XXFD_DEBUGFS_STATS_INCR(cpriv, int_tef_count);
 
-	spin_lock_irqsave(&cpriv->fifos.tx_queue->lock, flags);
-
-	/* compute finished fifos and clear them immediately */
-	finished = (cpriv->fifos.tx_queue->in_can_transfer ^
-		    cpriv->status.txreq) &
-		cpriv->fifos.tx_queue->in_can_transfer;
-
-	spin_unlock_irqrestore(&cpriv->fifos.tx_queue->lock, flags);
-
-	/* run in optimized mode if possible */
-	if (finished)
-		return mcp25xxfd_can_tx_handle_int_tefif_optimized(cpriv,
-								   finished);
 	/* otherwise play it safe */
 	netdev_warn(cpriv->can.dev,
 		    "Something is wrong - we got a TEF interrupt but we were not able to detect a finished fifo\n");
