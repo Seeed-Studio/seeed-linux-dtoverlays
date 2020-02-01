@@ -264,7 +264,7 @@ err_free_mem:
 int mpr121_remove(struct mpr121 *ac)
 {
 
-    sysfs_remove_group(&ac->dev->kobj, &mpr121_attr_group);
+    //sysfs_remove_group(&ac->dev->kobj, &mpr121_attr_group);
 
     printk(KERN_INFO "unregistered accelerometer\n");
     kfree(ac);
