@@ -1,4 +1,4 @@
-# seeed-linux-dtverlays
+# seeed-linux-dtoverlays
 
 On embedded systems, the [Device Tree](https://elinux.org/Device_Tree_What_It_Is) helps the kernel understand various peripherals that are connected to the board and how to initialize them. These hardware might be things like LDO regulators, various controllers, GPIO, etc which are generic, but yet needs certain configuration that should not be hard-coded into the kernel. To understand more about device trees I recommend you start with the Raspberry Pi [documentation on this topic](https://www.raspberrypi.org/documentation/configuration/device-tree.md). There are more links at the end of this article.
 
@@ -9,8 +9,8 @@ Overlays:
 
 Step 1: Clone this repo:
 ```sh
-git clone https://github.com/Seeed-Studio/seeed-linux-dtverlays
-cd seeed-linux-dtverlays
+git clone https://github.com/Seeed-Studio/seeed-linux-dtoverlays
+cd seeed-linux-dtoverlays
 ```
 Step 2: Install *.dtbo:
 ```sh

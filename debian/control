@@ -1,6 +1,6 @@
 Section: misc
 Priority: optional
-Homepage: https://github.com/Seeed-Studio/seeed-linux-dtverlays
+Homepage: https://github.com/Seeed-Studio/seeed-linux-dtoverlays
 Standards-Version: 3.9.6
 
 Maintainer: Baozhu Zuo <zuobaozhu@gmail.com>
