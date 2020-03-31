@@ -51,7 +51,7 @@
 			#size-cells = <0>;
 
 			jhd1802@3e {
-				compatible = "hd44780";
+				compatible = "seeed-hd44780";
 				reg = <0x3e>;
 				status = "okay";
 			};

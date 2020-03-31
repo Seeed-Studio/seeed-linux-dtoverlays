@@ -11,7 +11,7 @@ Example:
 	status = "okay";
 
 	jhd1802@3E {
-		compatible = "hd44780";
+		compatible = "seeed-hd44780";
 		reg = <0x3E>;
 		status = "okay";
 	};

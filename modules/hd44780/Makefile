@@ -4,9 +4,9 @@
 #
 # MIT License
 #
-hd44780-objs := hd44780-i2c.o hd44780-dev.o
+seeed-hd44780-objs := hd44780-i2c.o hd44780-dev.o
 
-obj-m += hd44780.o
+obj-m += seeed-hd44780.o
 
 all:
 	make -C $(KDIR) M=$(PWD) modules

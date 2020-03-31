@@ -36,7 +36,7 @@
 #include "hd44780.h"
 
 #define CLASS_NAME	"hd44780"
-#define NAME		"hd44780"
+#define NAME		"seeed-hd44780"
 #define NUM_DEVICES	8
 
 static struct class *hd44780_class;

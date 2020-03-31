@@ -2,4 +2,9 @@
 !.gitignore
 *.dtbo
 config-pin
-
+*.o
+*.ko
+*.mod
+*.mod.c
+modules.order
+Module.symvers
