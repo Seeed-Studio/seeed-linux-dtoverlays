@@ -12,7 +12,7 @@
 /plugin/;
 
 / {
-     compatible = "seeed,npi-stm32mp1", "st,stm32mp157";
+    compatible = "seeed,npi-stm32mp1", "st,stm32mp157";
     fragment@0 {
         target = <&pinctrl>;
         __overlay__ {
