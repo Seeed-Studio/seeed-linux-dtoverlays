@@ -3,7 +3,7 @@
  */
 #include "dt-bindings/gpio/gpio.h"
 #include "dt-bindings/pinctrl/stm32-pinfunc.h"
-
+#include <dt-bindings/rtc/rtc-stm32.h>
 /dts-v1/;
 /plugin/;
 
@@ -90,6 +90,11 @@
 					bias-pull-up;
 					output-high;
 					slew-rate = <0>;
+				};
+			};
+			rtc_out2_rmp_pins_a: rtc-out2-rmp-pins@0 {
+				pins {
+					pinmux = <STM32_PINMUX('I', 8, ANALOG)>; /* RTC_OUT2_RMP */
 				};
 			};
 		};
@@ -196,22 +201,16 @@
 			};
 		};
 	};
-	/* RNG */
+    
+	/* config RTC to provide clk of ap6263 */
 	fragment@40 {
-		target = <&rng1>;
+		target = <&rtc>;
 		__overlay__ {
 			status = "okay";
+			st,lsco = <RTC_OUT2_RMP>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&rtc_out2_rmp_pins_a>;
 		};
 	};
-	/* RNG */
-	fragment@50 {
-		target = <&vrefbuf>;
-		__overlay__ {
-			regulator-min-microvolt = <2500000>;
-			regulator-max-microvolt = <2500000>;
-			vdda-supply = <&vdd>;
-			status = "okay";
-		};
-	};	
 };
 
