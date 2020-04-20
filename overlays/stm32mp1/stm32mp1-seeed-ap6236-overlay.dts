@@ -1,0 +1,217 @@
+/*
+ * Device tree overlay for ap6236
+ */
+#include "dt-bindings/gpio/gpio.h"
+#include "dt-bindings/pinctrl/stm32-pinfunc.h"
+
+/dts-v1/;
+/plugin/;
+
+/ {
+	
+	compatible = "seeed,npi-stm32mp1", "st,stm32mp157";
+	fragment@0 {
+		target = <&pinctrl>;
+		__overlay__ {
+			// sdmmc3 pin configure
+			sdmmc3_b4_pins_s: sdmmc3-b4-1 {
+				pins1 {
+					pinmux = <STM32_PINMUX('F', 0, AF9)>, /* SDMMC3_D0 */
+						<STM32_PINMUX('F', 4, AF9)>, /* SDMMC3_D1 */
+						<STM32_PINMUX('D', 5, AF10)>, /* SDMMC3_D2 */
+						<STM32_PINMUX('D', 7, AF10)>, /* SDMMC3_D3 */
+						<STM32_PINMUX('F', 1, AF9)>; /* SDMMC3_CMD */
+					slew-rate = <1>;
+					drive-push-pull;
+					bias-pull-up;
+				};
+				pins2 {
+					pinmux = <STM32_PINMUX('G', 15, AF10)>; /* SDMMC3_CLK */
+					slew-rate = <2>;
+					drive-push-pull;
+					bias-pull-up;
+				};
+			};
+
+			sdmmc3_b4_od_pins_s: sdmmc3-b4-od-1 {
+				pins1 {
+					pinmux = <STM32_PINMUX('F', 0, AF9)>, /* SDMMC3_D0 */
+							<STM32_PINMUX('F', 4, AF9)>, /* SDMMC3_D1 */
+							<STM32_PINMUX('D', 5, AF10)>, /* SDMMC3_D2 */
+							<STM32_PINMUX('D', 7, AF10)>; /* SDMMC3_D3 */
+					slew-rate = <1>;
+					drive-push-pull;
+					bias-pull-up;
+				};
+				pins2 {
+					pinmux = <STM32_PINMUX('G', 15, AF10)>; /* SDMMC3_CLK */
+					slew-rate = <2>;
+					drive-push-pull;
+					bias-pull-up;
+				};
+				pins3 {
+					pinmux = <STM32_PINMUX('F', 1, AF9)>; /* SDMMC2_CMD */
+					slew-rate = <1>;
+					drive-open-drain;
+					bias-pull-up;
+				};
+			};
+
+			sdmmc3_b4_sleep_pins_s: sdmmc3-b4-sleep-1 {
+				pins {
+					pinmux = <STM32_PINMUX('F', 0, ANALOG)>, /* SDMMC3_D0 */
+							<STM32_PINMUX('F', 4, ANALOG)>, /* SDMMC3_D1 */
+							<STM32_PINMUX('D', 5, ANALOG)>, /* SDMMC3_D2 */
+							<STM32_PINMUX('D', 7, ANALOG)>, /* SDMMC3_D3 */
+							<STM32_PINMUX('G', 15, ANALOG)>, /* SDMMC3_CK */
+							<STM32_PINMUX('F', 1, ANALOG)>; /* SDMMC3_CMD */
+				};
+			};
+
+			// bluetooth pin configure
+			btreg_s: bt_reg_on-1 {
+				reset_gpio {
+					pinmux = <STM32_PINMUX('H', 9, GPIO)>;
+					drive-push-pull;
+					bias-pull-up;
+					output-high;
+					slew-rate = <0>;
+				};
+				wake_gpio {
+					pinmux = <STM32_PINMUX('H', 8, GPIO)>;
+					drive-push-pull;
+					bias-pull-up;
+					output-high;
+					slew-rate = <0>;
+				};
+				wake_host_gpio {
+					pinmux = <STM32_PINMUX('H', 3, GPIO)>;
+					drive-push-pull;
+					bias-pull-up;
+					output-high;
+					slew-rate = <0>;
+				};
+			};
+		};
+	};
+
+	fragment@1 {
+		target = <&pinctrl_z>;
+		__overlay__ {
+			// usart1 pin configure
+			usart1_pins_s: usart1-0 {
+				pins1 {
+					pinmux = <STM32_PINMUX('Z', 7, AF7)>, /* USART1_TX */
+						<STM32_PINMUX('Z', 5, AF7)>; /* USART1_RTS */
+					bias-disable;
+					drive-push-pull;
+					slew-rate = <0>;
+				};
+				pins2 {
+					pinmux = <STM32_PINMUX('Z', 6, AF7)>, /* USART1_RX */
+						<STM32_PINMUX('Z', 3, AF7)>; /* USART1_CTS_NSS */
+					bias-disable;
+				};
+			};
+
+			usart1_idle_pins_s: usart1-idle-0 {
+				pins1 {
+					pinmux = <STM32_PINMUX('Z', 7, ANALOG)>, /* USART1_TX */
+						<STM32_PINMUX('Z', 5, ANALOG)>, /* USART1_RTS */
+						<STM32_PINMUX('Z', 3, ANALOG)>; /* USART1_CTS_NSS */
+				};
+				pins2 {
+					pinmux = <STM32_PINMUX('Z', 6, AF7)>; /* USART1_RX */
+					bias-disable;
+				};
+			};
+
+			usart1_sleep_pins_s: usart1-sleep-0 {
+				pins {
+					pinmux = <STM32_PINMUX('Z', 7, ANALOG)>, /* USART1_TX */
+						<STM32_PINMUX('Z', 5, ANALOG)>, /* USART1_RTS */
+						<STM32_PINMUX('Z', 6, ANALOG)>, /* USART1_RX */
+						<STM32_PINMUX('Z', 3, ANALOG)>; /* USART1_CTS_NSS */
+				};
+			};
+		};
+	};
+
+	fragment@10 {
+		target-path = "/";
+		__overlay__ {
+			wifi_pwrseq: wifi-pwrseq {
+				compatible = "mmc-pwrseq-simple";
+				reset-gpios = <&gpiod 9 GPIO_ACTIVE_LOW>;
+				post-power-on-delay-ms = <1>;
+			};
+			bcmdhd_wlan1: bcmdhd_wlan@1 {
+				compatible = "android,bcmdhd_wlan";
+				gpios = <&gpiog 12 GPIO_ACTIVE_HIGH>;
+			};
+		};
+	};
+	/* Wifi */
+	fragment@20 {
+		target = <&sdmmc3>;
+		__overlay__ {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			/* arm,primecell-periphid = <0x10153180>; */
+			pinctrl-names = "default", "opendrain", "sleep";
+			pinctrl-0 = <&sdmmc3_b4_pins_s>;
+			pinctrl-1 = <&sdmmc3_b4_od_pins_s>;
+			pinctrl-2 = <&sdmmc3_b4_sleep_pins_s>;
+			/*
+			non-removable;
+			broken-cd;
+			st,neg-edge;
+			st,sig-dir;
+			*/
+			bus-width = <4>;
+			vmmc-supply = <&v3v3>;
+			mmc-pwrseq = <&wifi_pwrseq>;
+			keep-power-in-suspend;
+			supports-sdio;
+			status = "okay";
+		};
+	};
+
+	/* Bluetooth */
+	fragment@30 {
+		target = <&usart1>;
+		__overlay__ {
+			pinctrl-names = "default", "sleep", "idle";
+			pinctrl-0 = <&usart1_pins_s>;
+			pinctrl-1 = <&usart1_sleep_pins_s>;
+			pinctrl-2 = <&usart1_idle_pins_s>;
+			st,hw-flow-ctrl;
+			status = "okay";
+
+			bluetooth {
+				pinctrl-names = "default";
+				pinctrl-0 = <&btreg_s>;
+				compatible = "brcm,bcm43438-bt";
+				max-speed = <3000000>;
+			};
+		};
+	};
+	/* RNG */
+	fragment@40 {
+		target = <&rng1>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+	/* RNG */
+	fragment@50 {
+		target = <&vrefbuf>;
+		__overlay__ {
+			regulator-min-microvolt = <2500000>;
+			regulator-max-microvolt = <2500000>;
+			vdda-supply = <&vdd>;
+			status = "okay";
+		};
+	};	
+};
+
