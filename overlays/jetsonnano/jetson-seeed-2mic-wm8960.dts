@@ -1,0 +1,121 @@
+// SPDX-License-Identifier: GPL-2.0-only
+/*
+ * Jetson Device-tree overlay for ReSpeaker 2-Mics Pi HAT.
+ *
+ * Copyright (c) 2020 Seeed Technology Co,Ltd - https://www.seeed.cc.
+ * All rights reserved.
+ *
+ */
+
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/pinctrl/tegra210-p3448-0000-p3449-0000-a02.h>
+#include <dt-bindings/pinctrl/pinctrl-tegra.h>
+
+/ {
+	overlay-name = "Seeed Voice Card 2MIC";
+	compatible = JETSON_COMPATIBLE;
+
+	fragment@0 {
+		target-path = "/";
+		__overlay__ {
+			clocks {
+				wm8960_mclk: wm8960_mclk {
+					compatible = "fixed-clock";
+					#clock-cells = <0x0>;
+					clock-frequency = <24000000>;
+					clock-output-names = "wm8960-mclk";
+					status = "okay";
+				};
+			};
+		};
+	};
+
+	fragment@1 {
+		target = <&hdr40_i2c1>;
+		__overlay__ {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			wm8960: wm8960@1A {
+				#sound-dai-cells = <0x0>;
+				compatible = "wlf,wm8960";
+				status = "okay";
+
+				reg = <0x1a>;
+
+				AVDD-supply = <&hdr40_vdd_3v3>;
+				// DVDD-supply = <&v1v8_audio>;
+
+				clocks = <&wm8960_mclk>;
+				clock-names = "wm-mclk";
+
+				wlf,shared-lrclk;
+			};
+		};
+	};
+
+	fragment@2 {
+		target = <&tegra_sound>;
+		__overlay__ {
+			nvidia,audio-routing =
+				"x Headphone",		"x HP_OUT",
+				"x MIC_IN",		"x Mic",
+				"x ADC",		"x Mic Bias";
+		};
+	};
+
+	fragment@3 {
+		target = <&hdr40_snd_link_i2s>;
+		__overlay__ {
+			link-name = "seeed-voicecard-2mic";
+			codec-dai = <&wm8960>;
+			codec-dai-name = "wm8960";
+			bitclock-master;
+			frame-master;
+		};
+	};
+
+	fragment@4 {
+		target = <&pinmux>;
+		__overlay__ {
+			pinctrl-names = "default";
+			pinctrl-0 = <&hdr40_pinmux>;
+
+			hdr40_pinmux: header-40pin-pinmux {
+				pin12 {
+					nvidia,pins = HDR40_PIN12;
+					nvidia,function = HDR40_I2S;
+					nvidia,pull = <TEGRA_PIN_PULL_DOWN>;
+					nvidia,tristate = <TEGRA_PIN_DISABLE>;
+					nvidia,enable-input = <TEGRA_PIN_ENABLE>;
+				};
+
+				pin35 {
+					nvidia,pins = HDR40_PIN35;
+					nvidia,function = HDR40_I2S;
+					nvidia,pull = <TEGRA_PIN_PULL_DOWN>;
+					nvidia,tristate = <TEGRA_PIN_DISABLE>;
+					nvidia,enable-input = <TEGRA_PIN_ENABLE>;
+				};
+
+				pin38 {
+					nvidia,pins = HDR40_PIN38;
+					nvidia,function = HDR40_I2S;
+					nvidia,pull = <TEGRA_PIN_PULL_DOWN>;
+					nvidia,tristate = <TEGRA_PIN_ENABLE>;
+					nvidia,enable-input = <TEGRA_PIN_ENABLE>;
+				};
+
+				pin40 {
+					nvidia,pins = HDR40_PIN40;
+					nvidia,function = HDR40_I2S;
+					nvidia,pull = <TEGRA_PIN_PULL_DOWN>;
+					nvidia,tristate = <TEGRA_PIN_DISABLE>;
+					nvidia,enable-input = <TEGRA_PIN_DISABLE>;
+				};
+			};
+		};
+	};
+};
