@@ -133,6 +133,9 @@ BASE_SRC_FOLDER := $(basename $(patsubst $(MOD_PATH)/%, %, $(SRC_FOLDER)))
 BASE_SRC_FOLDER := $(filter-out $(MOD_PATH), $(BASE_SRC_FOLDER))
 BASE_SRC_FOLDER := $(filter-out grove-led, $(BASE_SRC_FOLDER))
 BASE_SRC_FOLDER := $(filter-out grove-button, $(BASE_SRC_FOLDER))
+ifneq ($(CUSTOM_MOD_FILTER_OUT),)
+BASE_SRC_FOLDER := $(filter-out $(CUSTOM_MOD_FILTER_OUT), $(BASE_SRC_FOLDER))
+endif
 
 uname_r = $(shell uname -r)
 KBUILD ?= /usr/src/linux-headers-$(uname_r)
