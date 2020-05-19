@@ -28,8 +28,6 @@
 #include <sound/pcm_params.h>
 #include <sound/soc.h>
 #include <dt-bindings/sound/tas2552.h>
-#include "rt5659.h"
-#include "sgtl5000.h"
 #include "tegra_asoc_machine_alt.h"
 #include "tegra210_xbar_alt.h"
 
@@ -311,40 +309,6 @@ static int tegra_machine_dai_init(struct snd_soc_pcm_runtime *runtime,
 	if (err < 0)
 		return err;
 
-	rtd = snd_soc_get_pcm_runtime(card, "rt565x-playback");
-	if (rtd) {
-		dai_params =
-		(struct snd_soc_pcm_stream *)rtd->dai_link->params;
-
-		dai_params->rate_min = srate;
-		dai_params->formats = (machine->fmt_via_kcontrol == 2) ?
-			(1ULL << SNDRV_PCM_FORMAT_S32_LE) : formats;
-
-		err = snd_soc_dai_set_sysclk(rtd->codec_dai, RT5659_SCLK_S_MCLK,
-					     aud_mclk, SND_SOC_CLOCK_IN);
-		if (err < 0) {
-			dev_err(card->dev, "codec_dai clock not set\n");
-			return err;
-		}
-	}
-
-	rtd = snd_soc_get_pcm_runtime(card, "rt565x-codec-sysclk-bclk1");
-	if (rtd) {
-		dai_params =
-		(struct snd_soc_pcm_stream *)rtd->dai_link->params;
-
-		dai_params->rate_min = srate;
-		dai_params->formats = (machine->fmt_via_kcontrol == 2) ?
-			(1ULL << SNDRV_PCM_FORMAT_S32_LE) : formats;
-
-		err = rt565x_manage_codec_sysclk(dai_params, rtd->codec_dai,
-						 RT5659_PLL1_S_BCLK1);
-		if (err < 0) {
-			dev_err(card->dev, "codec_dai clock not set\n");
-			return err;
-		}
-	}
-
 	rtd = snd_soc_get_pcm_runtime(card, "spdif-dit-0");
 	if (rtd) {
 		dai_params =
@@ -537,62 +501,6 @@ static int tegra_machine_compr_set_params(struct snd_compr_stream *cstream)
 }
 #endif
 
-static int tegra_machine_fepi_init(struct snd_soc_pcm_runtime *rtd)
-{
-	struct device *dev = rtd->card->dev;
-	int err;
-
-	err = snd_soc_dai_set_sysclk(rtd->codec_dai, SGTL5000_SYSCLK, 12288000,
-				     SND_SOC_CLOCK_IN);
-	if (err) {
-		dev_err(dev, "failed to set sgtl5000 sysclk!\n");
-		return err;
-	}
-
-	return 0;
-}
-
-static int tegra_machine_rt565x_init(struct snd_soc_pcm_runtime *rtd)
-{
-	struct snd_soc_card *card = rtd->card;
-	struct snd_soc_jack *jack;
-	int err;
-
-	jack = devm_kzalloc(card->dev, sizeof(struct snd_soc_jack), GFP_KERNEL);
-	if (!jack)
-		return -ENOMEM;
-
-	err = snd_soc_card_jack_new(card, "Headset Jack", SND_JACK_HEADSET,
-				    jack, NULL, 0);
-	if (err) {
-		dev_err(card->dev, "Headset Jack creation failed %d\n", err);
-		return err;
-	}
-
-	err = tegra_machine_add_codec_jack_control(card, rtd, jack);
-	if (err) {
-		dev_err(card->dev, "Failed to add jack control: %d\n", err);
-		return err;
-	}
-
-	err = rt5659_set_jack_detect(rtd->codec, jack);
-	if (err) {
-		dev_err(card->dev, "Failed to set jack for RT565x: %d\n", err);
-		return err;
-	}
-
-	/* single button supporting play/pause */
-	snd_jack_set_key(jack->jack, SND_JACK_BTN_0, KEY_MEDIA);
-
-	/* multiple buttons supporting play/pause and volume up/down */
-	snd_jack_set_key(jack->jack, SND_JACK_BTN_1, KEY_MEDIA);
-	snd_jack_set_key(jack->jack, SND_JACK_BTN_2, KEY_VOLUMEUP);
-	snd_jack_set_key(jack->jack, SND_JACK_BTN_3, KEY_VOLUMEDOWN);
-
-	snd_soc_dapm_sync(&card->dapm);
-
-	return 0;
-}
 
 static int codec_init(struct tegra_machine *machine)
 {
@@ -606,11 +514,6 @@ static int codec_init(struct tegra_machine *machine)
 		if (!dai_links[i].name)
 			continue;
 
-		if (strstr(dai_links[i].name, "rt565x-playback") ||
-		    strstr(dai_links[i].name, "rt565x-codec-sysclk-bclk1"))
-			dai_links[i].init = tegra_machine_rt565x_init;
-		else if (strstr(dai_links[i].name, "fe-pi-audio-z-v2"))
-			dai_links[i].init = tegra_machine_fepi_init;
 	}
 
 	return 0;
