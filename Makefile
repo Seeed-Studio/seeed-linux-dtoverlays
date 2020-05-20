@@ -156,6 +156,7 @@ install_%:
 	$(Q)$(MAKE) PLATFORM=$* install_arch
 	mkdir -p /lib/modules/$(uname_r)/extra/seeed || true
 	@for dir in ${BASE_SRC_FOLDER}; do cp $(MOD_PATH)/$$dir/*.ko $(KO_DIR) ||exit; done
+	@which depmod >/dev/null 2>&1 && depmod -a || true
 
 ifeq ($(PLATFORM),)
 
