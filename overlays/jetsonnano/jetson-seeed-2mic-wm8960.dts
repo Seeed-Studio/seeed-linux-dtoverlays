@@ -65,6 +65,8 @@
 			nvidia,audio-routing =
 				"x LINPUT1",		"x MICB",
 				"x LINPUT1",		"x Mic",
+				"x RINPUT1",		"x MICB",
+				"x RINPUT1",		"x Mic",
 				"x Headphone",		"x HP_L",
 				"x Headphone",		"x HP_R";
 		};
