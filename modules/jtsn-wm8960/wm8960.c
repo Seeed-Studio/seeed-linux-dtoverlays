@@ -9,7 +9,7 @@
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
  */
-
+//#define DEBUG 1
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 #include <linux/init.h>
@@ -27,6 +27,14 @@
 #include <sound/wm8960.h>
 
 #include "wm8960.h"
+
+#ifdef DEBUG
+#undef pr_fmt
+#define pr_fmt(fmt)     KBUILD_MODNAME ": %s:%d: " fmt, __func__, __LINE__
+#else
+#undef pr_info
+#define pr_info(...)
+#endif
 
 /* R25 - Power 1 */
 #define WM8960_VMID_MASK 0x180
@@ -524,6 +532,7 @@ static int wm8960_set_dai_fmt(struct snd_soc_dai *codec_dai,
 	struct snd_soc_codec *codec = codec_dai->codec;
 	u16 iface = 0;
 
+	pr_info();
 	/* set master/slave audio interface */
 	switch (fmt & SND_SOC_DAIFMT_MASTER_MASK) {
 	case SND_SOC_DAIFMT_CBM_CFM:
@@ -660,7 +669,8 @@ static int wm8960_configure_clocking(struct snd_soc_codec *codec)
 			if (j != ARRAY_SIZE(dac_divs))
 				break;
 		}
-
+		pr_info(" wm8960_configure_sysclk1 i = %d, j = %d, k = %d\n",
+				i, j, k);
 		if (i != ARRAY_SIZE(sysclk_divs)) {
 			goto configure_clock;
 		} else if (wm8960->clk_id != WM8960_SYSCLK_AUTO) {
@@ -693,6 +703,8 @@ static int wm8960_configure_clocking(struct snd_soc_codec *codec)
 			break;
 	}
 
+	pr_info(" wm8960_configure_sysclk2 i = %d, j = %d, k = %d\n",
+			i, j, k);
 	if (i == ARRAY_SIZE(sysclk_divs)) {
 		dev_err(codec->dev, "failed to configure clock with SYSCLK_PLL\n");
 		return -EINVAL;
@@ -721,6 +733,8 @@ static int wm8960_hw_params(struct snd_pcm_substream *substream,
 	u16 iface = snd_soc_read(codec, WM8960_IFACE1) & 0xfff3;
 	bool tx = substream->stream == SNDRV_PCM_STREAM_PLAYBACK;
 	int i;
+
+	pr_info();
 
 	wm8960->bclk = snd_soc_params_to_bclk(params);
 	if (params_channels(params) == 1)
@@ -760,6 +774,8 @@ static int wm8960_hw_params(struct snd_pcm_substream *substream,
 						    alc_rates[i].val);
 	}
 
+	pr_info("bck = %d bit-size = %d lrclk = %d\n",
+		wm8960->bclk, params_width(params), wm8960->lrclk);
 	/* set iface */
 	snd_soc_write(codec, WM8960_IFACE1, iface);
 
@@ -779,6 +795,7 @@ static int wm8960_hw_free(struct snd_pcm_substream *substream,
 	struct wm8960_priv *wm8960 = snd_soc_codec_get_drvdata(codec);
 	bool tx = substream->stream == SNDRV_PCM_STREAM_PLAYBACK;
 
+	pr_info();
 	wm8960->is_stream_in_use[tx] = false;
 
 	return 0;
@@ -788,6 +805,7 @@ static int wm8960_mute(struct snd_soc_dai *dai, int mute)
 {
 	struct snd_soc_codec *codec = dai->codec;
 
+	pr_info();
 	if (mute)
 		snd_soc_update_bits(codec, WM8960_DACCTL1, 0x8, 0x8);
 	else
@@ -802,6 +820,7 @@ static int wm8960_set_bias_level_out3(struct snd_soc_codec *codec,
 	u16 pm2 = snd_soc_read(codec, WM8960_POWER2);
 	int ret;
 
+	pr_info();
 	switch (level) {
 	case SND_SOC_BIAS_ON:
 		break;
@@ -1149,6 +1168,7 @@ static int wm8960_set_dai_pll(struct snd_soc_dai *codec_dai, int pll_id,
 	struct snd_soc_codec *codec = codec_dai->codec;
 	struct wm8960_priv *wm8960 = snd_soc_codec_get_drvdata(codec);
 
+	pr_info();
 	wm8960->freq_in = freq_in;
 
 	if (pll_id == WM8960_SYSCLK_AUTO)
@@ -1163,6 +1183,7 @@ static int wm8960_set_dai_clkdiv(struct snd_soc_dai *codec_dai,
 	struct snd_soc_codec *codec = codec_dai->codec;
 	u16 reg;
 
+	pr_info();
 	switch (div_id) {
 	case WM8960_SYSCLKDIV:
 		reg = snd_soc_read(codec, WM8960_CLOCK1) & 0x1f9;
@@ -1205,6 +1226,8 @@ static int wm8960_set_dai_sysclk(struct snd_soc_dai *dai, int clk_id,
 	struct snd_soc_codec *codec = dai->codec;
 	struct wm8960_priv *wm8960 = snd_soc_codec_get_drvdata(codec);
 	unsigned osc_clk;
+
+	pr_info("clkid = %d freq = %u dir = %d\n", clk_id, freq, dir);
 
 	osc_clk = clk_get_rate(wm8960->mclk);
 
