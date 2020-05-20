@@ -28,10 +28,11 @@
 #include <sound/pcm_params.h>
 #include <sound/soc.h>
 #include <dt-bindings/sound/tas2552.h>
+#include "wm8960.h"
 #include "tegra_asoc_machine_alt.h"
 #include "tegra210_xbar_alt.h"
 
-#define DRV_NAME "tegra-asoc-s:"
+#define DRV_NAME "tegra-asoc:"
 
 #define PARAMS(sformat, channels)		\
 	{					\
@@ -385,7 +386,7 @@ static int tegra_machine_dai_init(struct snd_soc_pcm_runtime *runtime,
 		}
 	}
 
-	rtd = snd_soc_get_pcm_runtime(card, "fe-pi-audio-z-v2");
+	rtd = snd_soc_get_pcm_runtime(card, "seeed-voicecard-2mic");
 	if (rtd) {
 		dai_params =
 		(struct snd_soc_pcm_stream *)rtd->dai_link->params;
@@ -501,6 +502,20 @@ static int tegra_machine_compr_set_params(struct snd_compr_stream *cstream)
 }
 #endif
 
+static int tegra_machine_seeed_voice_init(struct snd_soc_pcm_runtime *rtd)
+{
+	struct device *dev = rtd->card->dev;
+	int err;
+
+	err = snd_soc_dai_set_sysclk(rtd->codec_dai, WM8960_SYSCLK_PLL, 12288000,
+				     SND_SOC_CLOCK_IN);
+	if (err) {
+		dev_err(dev, "failed to set wm8960/seeed-voicecard-2mic sysclk!\n");
+		return err;
+	}
+
+	return 0;
+}
 
 static int codec_init(struct tegra_machine *machine)
 {
@@ -514,6 +529,8 @@ static int codec_init(struct tegra_machine *machine)
 		if (!dai_links[i].name)
 			continue;
 
+		if (strstr(dai_links[i].name, "seeed-voicecard-2mic"))
+			dai_links[i].init = tegra_machine_seeed_voice_init;
 	}
 
 	return 0;

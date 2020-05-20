@@ -664,7 +664,7 @@ static int wm8960_configure_clocking(struct snd_soc_codec *codec)
 		if (i != ARRAY_SIZE(sysclk_divs)) {
 			goto configure_clock;
 		} else if (wm8960->clk_id != WM8960_SYSCLK_AUTO) {
-			dev_err(codec->dev, "failed to configure clock\n");
+			dev_err(codec->dev, "failed to configure clock Not SYSCLK_PLL\n");
 			return -EINVAL;
 		}
 	}
@@ -694,7 +694,7 @@ static int wm8960_configure_clocking(struct snd_soc_codec *codec)
 	}
 
 	if (i == ARRAY_SIZE(sysclk_divs)) {
-		dev_err(codec->dev, "failed to configure clock\n");
+		dev_err(codec->dev, "failed to configure clock with SYSCLK_PLL\n");
 		return -EINVAL;
 	}
 
@@ -1011,6 +1011,7 @@ static int wm8960_set_bias_level_capless(struct snd_soc_codec *codec,
 struct _pll_div {
 	u32 pre_div:1;
 	u32 n:4;
+	u32 sysclk_div:2;
 	u32 k:24;
 };
 
@@ -1051,11 +1052,17 @@ static int pll_factors(unsigned int source, unsigned int target,
 	/* Scale up target to PLL operating frequency */
 	target *= 4;
 
+	pll_div->sysclk_div = 0;
 	Ndiv = target / source;
 	if (Ndiv < 6) {
 		source >>= 1;
 		pll_div->pre_div = 1;
 		Ndiv = target / source;
+		if (Ndiv < 6) {
+			target <<= 1;
+			pll_div->sysclk_div = 0x2;
+			Ndiv = target / source;
+		}
 	} else
 		pll_div->pre_div = 0;
 
@@ -1120,6 +1127,13 @@ static int wm8960_set_pll(struct snd_soc_codec *codec,
 		snd_soc_write(codec, WM8960_PLL4, pll_div.k & 0xff);
 	}
 	snd_soc_write(codec, WM8960_PLL1, reg);
+
+	{
+	int v = snd_soc_read(codec, WM8960_CLOCK1);
+	v &= ~(0x3 << 1);
+	v |= (pll_div.sysclk_div << 1);
+	snd_soc_write(codec, WM8960_CLOCK1, v);
+	}
 
 	/* Turn it on */
 	snd_soc_update_bits(codec, WM8960_POWER2, 0x1, 0x1);
@@ -1190,6 +1204,9 @@ static int wm8960_set_dai_sysclk(struct snd_soc_dai *dai, int clk_id,
 {
 	struct snd_soc_codec *codec = dai->codec;
 	struct wm8960_priv *wm8960 = snd_soc_codec_get_drvdata(codec);
+	unsigned osc_clk;
+
+	osc_clk = clk_get_rate(wm8960->mclk);
 
 	switch (clk_id) {
 	case WM8960_SYSCLK_MCLK:
@@ -1199,8 +1216,8 @@ static int wm8960_set_dai_sysclk(struct snd_soc_dai *dai, int clk_id,
 	case WM8960_SYSCLK_PLL:
 		snd_soc_update_bits(codec, WM8960_CLOCK1,
 					0x1, WM8960_SYSCLK_PLL);
-		break;
 	case WM8960_SYSCLK_AUTO:
+		wm8960_set_dai_pll(dai, clk_id, 0, osc_clk, freq);
 		break;
 	default:
 		return -EINVAL;
