@@ -59,9 +59,10 @@
 	fragment@2 {
 		target = <&tegra_sound>;
 		__overlay__ {
+			/*
 			compatible = "nvidia,tegra-audio-t210ref-mobile-wm8960";
 			nvidia,model = "tegra-snd-t210ref-mobile-wm8960";
-
+			*/
 			nvidia,audio-routing =
 				"x LINPUT1",		"x MICB",
 				"x LINPUT1",		"x Mic",
