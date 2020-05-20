@@ -49,7 +49,7 @@
 				// DVDD-supply = <&v1v8_audio>;
 
 				clocks = <&wm8960_mclk>;
-				clock-names = "wm-mclk";
+				clock-names = "mclk";
 
 				wlf,shared-lrclk;
 			};
@@ -59,10 +59,14 @@
 	fragment@2 {
 		target = <&tegra_sound>;
 		__overlay__ {
+			compatible = "nvidia,tegra-audio-t210ref-mobile-wm8960";
+			nvidia,model = "tegra-snd-t210ref-mobile-wm8960";
+
 			nvidia,audio-routing =
-				"x Headphone",		"x HP_OUT",
-				"x MIC_IN",		"x Mic",
-				"x ADC",		"x Mic Bias";
+				"x LINPUT1",		"x MICB",
+				"x LINPUT1",		"x Mic",
+				"x Headphone",		"x HP_L",
+				"x Headphone",		"x HP_R";
 		};
 	};
 
@@ -70,8 +74,9 @@
 		target = <&hdr40_snd_link_i2s>;
 		__overlay__ {
 			link-name = "seeed-voicecard-2mic";
+
 			codec-dai = <&wm8960>;
-			codec-dai-name = "wm8960";
+			codec-dai-name = "wm8960-hifi";
 			bitclock-master;
 			frame-master;
 		};

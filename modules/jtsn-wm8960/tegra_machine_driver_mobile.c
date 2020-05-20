@@ -31,7 +31,7 @@
 #include "tegra_asoc_machine_alt.h"
 #include "tegra210_xbar_alt.h"
 
-#define DRV_NAME "tegra-asoc:"
+#define DRV_NAME "tegra-asoc-s:"
 
 #define PARAMS(sformat, channels)		\
 	{					\
@@ -616,12 +616,10 @@ static struct snd_soc_card snd_soc_tegra_card = {
 
 /* structure to match device tree node */
 static const struct of_device_id tegra_machine_of_match[] = {
-	{ .compatible = "nvidia,tegra-audio-t186ref-mobile-rt565x",
+	{ .compatible = "nvidia,tegra-audio-t186ref-mobile-wm8960",
 		.data = &soc_data_tegra186 },
-	{ .compatible = "nvidia,tegra-audio-t210ref-mobile-rt565x",
+	{ .compatible = "nvidia,tegra-audio-t210ref-mobile-wm8960",
 		.data = &soc_data_tegra210 },
-	{ .compatible = "nvidia,tegra-audio-mystique",
-		.data = &soc_data_tegra186 },
 	{},
 };
 
