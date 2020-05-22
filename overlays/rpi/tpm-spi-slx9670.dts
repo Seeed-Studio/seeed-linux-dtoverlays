@@ -1,0 +1,72 @@
+/*
+ * Device Tree overlay for the Infineon SLB9670 Trusted Platform Module add-on
+ * boards, which can be used as a secure key storage and hwrng.
+ * available as "Iridium SLB9670" by Infineon and "LetsTrust TPM" by pi3g.
+ */
+
+/dts-v1/;
+/plugin/;
+
+/ {
+	compatible = "brcm,bcm2835";
+
+	fragment@0 {
+		target = <&spi0>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+	
+	 fragment@1{
+		target = <&spidev0>;
+		__overlay__ {
+	   		 status = "disabled";
+		};
+         };
+
+	fragment@2 {
+		target = <&spidev1>;
+		__overlay__ {
+			status = "disabled";
+		};
+	};
+
+	/*
+	fragment@2{
+	        target = <&gpio>;
+		__overlay__{
+			slb9670_int_pins: slb9670_int_pins{
+				brcm,pins = <25 24>;
+				brcm,function = <0>;
+			};
+			spi0_pins: spi0_pins{
+				brcm,pins = <9 10 11>;
+				brcm,function = <3>;  
+			};
+			spi0_cs_pins: spi0_cs_pins{
+				brcm,pins= <8>;
+				brcm,function = <1>;
+			};
+		};
+	};
+	*/
+
+	fragment@3 {
+		target = <&spi0>;
+		__overlay__ {
+			/* needed to avoid dtc warning */
+			#address-cells = <1>;
+			#size-cells = <0>;
+			slb9670: slb9670@0 {
+				compatible = "infineon,slb9670";
+				reg = <0>;	/* CE1 */
+				#address-cells = <1>;
+				#size-cells = <0>;
+				/* spi-max-frequency = <32000000>; */
+				spi-max-frequency = <16000000>;
+				status = "okay";
+			};
+		};
+	};
+};
+
