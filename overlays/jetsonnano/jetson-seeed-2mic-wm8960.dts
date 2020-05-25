@@ -68,6 +68,10 @@
 				"x LINPUT1",		"x Mic",
 				"x RINPUT1",		"x MICB",
 				"x RINPUT1",		"x Mic",
+				"x Int Spk",		"x SPK_LP",
+				"x Int Spk",		"x SPK_LN",
+				"x Int Spk",		"x SPK_RP",
+				"x Int Spk",		"x SPK_RN",
 				"x Headphone",		"x HP_L",
 				"x Headphone",		"x HP_R";
 		};
