@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Jetson Device-tree overlay for ReSpeaker 2-Mics Pi HAT.
+ * only include WM8960 Codec support
  *
  * Copyright (c) 2020 Seeed Technology Co,Ltd - https://www.seeed.cc.
  * All rights reserved.

@@ -1,0 +1,88 @@
+// SPDX-License-Identifier: GPL-2.0-only
+/*
+ * Jetson Device-tree overlay for ReSpeaker 2-Mics Pi HAT.
+ * include WM8960 Codec & SPIDEV pinmux
+ *
+ * Copyright (c) 2020 Seeed Technology Co,Ltd - https://www.seeed.cc.
+ * All rights reserved.
+ *
+ */
+#include <jetson-seeed-2mic-wm8960.dts>
+
+/ {
+	fragment@10 {
+		target = <&pinmux>;
+		__overlay__ {
+			header-40pin-pinmux {
+				pin19 {
+					nvidia,pins = "spi1_mosi_pc0";
+					nvidia,function = "spi1";
+					nvidia,pull = <TEGRA_PIN_PULL_DOWN>;
+					nvidia,tristate = <TEGRA_PIN_DISABLE>;
+					nvidia,enable-input = <TEGRA_PIN_ENABLE>;
+				};
+				pin21 {
+					nvidia,pins = "spi1_miso_pc1";
+					nvidia,function = "spi1";
+					nvidia,pull = <TEGRA_PIN_PULL_DOWN>;
+					nvidia,tristate = <TEGRA_PIN_DISABLE>;
+					nvidia,enable-input = <TEGRA_PIN_ENABLE>;
+				};
+				pin23 {
+					nvidia,pins = "spi1_sck_pc2";
+					nvidia,function = "spi1";
+					nvidia,pull = <TEGRA_PIN_PULL_DOWN>;
+					nvidia,tristate = <TEGRA_PIN_DISABLE>;
+					nvidia,enable-input = <TEGRA_PIN_ENABLE>;
+				};
+				/* spi0.cs0 */
+				pin24 {
+					nvidia,pins = "spi1_cs0_pc3";
+					nvidia,function = "spi1";
+					nvidia,pull = <TEGRA_PIN_PULL_UP>;
+					nvidia,tristate = <TEGRA_PIN_DISABLE>;
+					nvidia,enable-input = <TEGRA_PIN_ENABLE>;
+				};
+
+				/* spi0.cs1, uncomment to enable it */
+				/*
+				pin26 {
+					nvidia,pins = "spi1_cs1_pc4";
+					nvidia,function = "spi1";
+					nvidia,pull = <TEGRA_PIN_PULL_UP>;
+					nvidia,tristate = <TEGRA_PIN_DISABLE>;
+					nvidia,enable-input = <TEGRA_PIN_ENABLE>;
+				};
+				*/
+
+				/*
+				 * Move ID_I2C pins to GPIO mode
+				 *
+				 * Note: export a gpio in /sys/class/gpio
+				 *       will override the pinmux setting
+				 *       and set the pin to gpio mode,
+				 *       so this pinmux not required
+				 */
+				#if 0
+				pin27 {
+					nvidia,pins = "gen1_i2c_sda_pj0";
+					nvidia,function = "i2c1" /* "rsvd1" */;
+					nvidia,pull = <TEGRA_PIN_PULL_UP>;
+					nvidia,tristate = <TEGRA_PIN_DISABLE>;
+					nvidia,enable-input = <TEGRA_PIN_ENABLE>;
+					nvidia,io-high-voltage = <TEGRA_PIN_ENABLE>;
+				};
+				pin28 {
+					nvidia,pins = "gen1_i2c_scl_pj1";
+					nvidia,function = "i2c1" /* "rsvd1" */;
+					nvidia,pull = <TEGRA_PIN_PULL_UP>;
+					nvidia,tristate = <TEGRA_PIN_DISABLE>;
+					nvidia,enable-input = <TEGRA_PIN_ENABLE>;
+					nvidia,io-high-voltage = <TEGRA_PIN_ENABLE>;
+				};
+				#endif
+			};
+		};
+	};
+};
+
