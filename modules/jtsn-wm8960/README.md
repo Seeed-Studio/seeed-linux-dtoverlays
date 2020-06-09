@@ -11,12 +11,12 @@ For Jetson source R32.4.2 or JetPack Image 4.4
 ### 2. Build dtbo & driver
 ```shell
 	export CUSTOM_MOD_FILTER_OUT="lis3lv02d mcp25xxfd gt9xx seeed-voicecard"
-	KBUILD=/usr/src/linux-headers-4.9.140-tegra-ubuntu18.04_aarch64/kernel-4.9 make all_jetsonnano
+	make all_jetsonnano
 ```
 
 ### 3. Install driver
 ```shell
-	sudo -E KBUILD=/usr/src/linux-headers-4.9.140-tegra-ubuntu18.04_aarch64/kernel-4.9 make install_jetsonnano
+	sudo -E make install_jetsonnano
 ```
 
 ### 4. Install dtbo

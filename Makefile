@@ -138,7 +138,7 @@ BASE_SRC_FOLDER := $(filter-out $(CUSTOM_MOD_FILTER_OUT), $(BASE_SRC_FOLDER))
 endif
 
 uname_r = $(shell uname -r)
-KBUILD ?= /usr/src/linux-headers-$(uname_r)
+KBUILD ?= /lib/modules/$(uname_r)/build
 KO_DIR ?= /lib/modules/$(uname_r)/extra/seeed
 
 make_options="CROSS_COMPILE=${CC} KDIR=${x86_dir}/KERNEL"
