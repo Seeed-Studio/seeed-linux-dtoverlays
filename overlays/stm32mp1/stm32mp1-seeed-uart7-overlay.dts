@@ -1,0 +1,62 @@
+/*
+
+* Device tree overlay for uart7
+
+*/
+#include "dt-bindings/gpio/gpio.h"
+#include "dt-bindings/pinctrl/stm32-pinfunc.h"
+/dts-v1/;
+/plugin/;
+/ {
+    compatible = "seeed,npi-stm32mp1", "st,stm32mp157";
+    fragment@0 {
+        target = <&pinctrl>;
+        __overlay__ {
+            uart7_pins_s: uart7-1 {
+                pins1 {
+                    pinmux = <STM32_PINMUX('E', 8, AF7)>;/* uart7_TX */
+                    bias-disable;
+                    drive-push-pull;
+                    slew-rate = <0>;
+                };
+                pins2 {
+                    pinmux = <STM32_PINMUX('E', 7, AF7)>; /* uart7_RX */
+                    bias-disable;
+                };
+            };
+			uart7_idle_pins_a: uart7-idle-0 {
+				pins1 {
+					pinmux = <STM32_PINMUX('E', 8, ANALOG)>; /* USART7_TX */
+				};
+				pins2 {
+					pinmux = <STM32_PINMUX('E', 7, AF7)>; /* USART7_RX */
+					bias-disable;
+				};
+			};
+			uart7_sleep_pins_a: uart7-sleep-0 {
+				pins {
+					pinmux = <STM32_PINMUX('E', 8, ANALOG)>, /* USART7_TX */
+						 <STM32_PINMUX('E', 7, ANALOG)>; /* USART7_RX */
+				};
+			};
+        };
+
+    };
+    fragment@1 {
+        target = <&uart7>;
+        __overlay__ {
+            pinctrl-names = "default";
+            pinctrl-0 = <&uart7_pins_s>;
+            pinctrl-1 = <&uart7_sleep_pins_a>;
+            pinctrl-2 = <&uart7_idle_pins_a>;            
+            st,hw-flow-ctrl;
+            status = "okay";
+        };
+    };
+    fragment@2 {
+        target-path = "/aliases";
+        __overlay__ {
+            serial7 = "/soc/serial@40018000";
+        };        
+    };
+};
