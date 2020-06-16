@@ -24,21 +24,21 @@
                     bias-disable;
                 };
             };
-			uart7_idle_pins_a: uart7-idle-0 {
-				pins1 {
-					pinmux = <STM32_PINMUX('E', 8, ANALOG)>; /* USART7_TX */
-				};
-				pins2 {
-					pinmux = <STM32_PINMUX('E', 7, AF7)>; /* USART7_RX */
-					bias-disable;
-				};
-			};
-			uart7_sleep_pins_a: uart7-sleep-0 {
-				pins {
-					pinmux = <STM32_PINMUX('E', 8, ANALOG)>, /* USART7_TX */
-						 <STM32_PINMUX('E', 7, ANALOG)>; /* USART7_RX */
-				};
-			};
+            uart7_idle_pins_a: uart7-idle-0 {
+                pins1 {
+                    pinmux = <STM32_PINMUX('E', 8, ANALOG)>; /* USART7_TX */
+                };
+                pins2 {
+                    pinmux = <STM32_PINMUX('E', 7, AF7)>; /* USART7_RX */
+                    bias-disable;
+                };
+            };
+            uart7_sleep_pins_a: uart7-sleep-0 {
+                pins {
+                    pinmux = <STM32_PINMUX('E', 8, ANALOG)>, /* USART7_TX */
+                    <STM32_PINMUX('E', 7, ANALOG)>; /* USART7_RX */
+                };
+            };
         };
 
     };
