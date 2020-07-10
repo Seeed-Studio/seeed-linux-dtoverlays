@@ -1,7 +1,7 @@
 /*
  * SPI driver for NVIDIA's Tegra114 SPI Controller.
  *
- * Copyright (c) 2013-2019, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2013-2020, NVIDIA CORPORATION.  All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -84,8 +84,7 @@
 #define SPI_RX_TAP_DELAY(x)			(((x) & 0x3F) << 0)
 
 #define SPI_CS_TIMING1				0x008
-#define SPI_SETUP_HOLD(setup, hold)		(((setup - 1) << 4) |	\
-						(hold - 1))
+#define SPI_SETUP_HOLD(setup, hold)		((setup << 4) | hold)
 #define SPI_CS_SETUP_HOLD(reg, cs, val)			\
 		((((val) & 0xFFu) << ((cs) * 8)) |	\
 		((reg) & ~(0xFFu << ((cs) * 8))))
