@@ -247,10 +247,9 @@ FORCE:
 
 .PHONY: $(PHONY)
 
-
-KO_LIST := $(shell ls $(KO_DIR))
-DTBO_LIST := $(shell ls overlays/bb/*.dtbo)
 builddeb:
+	KO_LIST := $(shell ls $(KO_DIR))
+	DTBO_LIST := $(shell ls overlays/bb/*.dtbo)
 	cp debian/control control
 	cp $(KO_DIR)/*.ko .
 	echo "Package: seeed-linux-dtoverlay-bb-${uname_r}" >> control
