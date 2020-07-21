@@ -71,6 +71,68 @@ static const struct can_bittiming_const mcp25xxfd_data_bittiming_const = {
 	.brp_inc = 1,
 };
 
+static int can_rx_offload_napi_poll(struct napi_struct *napi, int quota)
+{
+	struct can_rx_offload *offload = container_of(napi,struct can_rx_offload,napi);
+	struct net_device *dev = offload->dev;
+	struct net_device_stats *stats = &dev->stats;
+	struct sk_buff *skb;
+	int work_done = 0;
+
+	while ((work_done < quota) &&
+	       (skb = skb_dequeue(&offload->skb_queue))) {
+		struct can_frame *cf = (struct can_frame *)skb->data;
+
+		work_done++;
+		stats->rx_packets++;
+		stats->rx_bytes += cf->can_dlc;
+		netif_receive_skb(skb);
+	}
+
+	if (work_done < quota) {
+		napi_complete_done(napi, work_done);
+
+		/* Check if there was another interrupt */
+		if (!skb_queue_empty(&offload->skb_queue))
+			napi_reschedule(&offload->napi);
+	}
+
+	can_led_event(offload->dev, CAN_LED_EVENT_RX);
+
+	return work_done;
+}
+
+static int can_rx_offload_init_queue(struct net_device *dev,
+                                     struct can_rx_offload *offload,
+                                     unsigned int weight)
+{
+	offload->dev = dev;
+
+	/* Limit queue len to 4x the weight (rounted to next power of two) */
+	offload->skb_queue_len_max = 2 << fls(weight);
+	offload->skb_queue_len_max *= 4;
+	skb_queue_head_init(&offload->skb_queue);
+
+	netif_napi_add(dev, &offload->napi, can_rx_offload_napi_poll, weight);
+
+	dev_dbg(dev->dev.parent, "%s: skb_queue_len_max=%d\n",
+		__func__, offload->skb_queue_len_max);
+
+	return 0;
+}
+
+int can_rx_offload_add_manual(struct net_device *dev,
+                              struct can_rx_offload *offload,
+                              unsigned int weight)
+{
+	if (offload->mailbox_read)
+		return -EINVAL;
+
+	return can_rx_offload_init_queue(dev, offload, weight);
+}
+
+
+
 static const char *__mcp25xxfd_get_model_str(enum mcp25xxfd_model model)
 {
 	switch (model) {
@@ -311,8 +373,6 @@ mcp25xxfd_tx_ring_init_tx_obj(const struct mcp25xxfd_priv *priv,
 	xfer->tx_buf = &tx_obj->buf;
 	xfer->len = 0;	/* actual len is assigned on the fly */
 	xfer->cs_change = 1;
-	xfer->cs_change_delay.value = 0;
-	xfer->cs_change_delay.unit = SPI_DELAY_UNIT_NSECS;
 
 	/* FIFO request to send */
 	xfer = &tx_obj->xfer[1];
@@ -2567,7 +2627,7 @@ mcp25xxfd_register_get_dev_id(const struct mcp25xxfd_priv *priv,
 		goto out_kfree_buf_tx;
 
 	*dev_id = be32_to_cpup((__be32 *)buf_rx->data);
-	*effective_speed_hz = xfer->effective_speed_hz;
+	*effective_speed_hz = 0;
 
  out_kfree_buf_tx:
 	kfree(buf_tx);
@@ -2834,7 +2894,6 @@ static int mcp25xxfd_probe(struct spi_device *spi)
 	priv->spi_max_speed_hz_orig = spi->max_speed_hz;
 	spi->max_speed_hz = min(spi->max_speed_hz, freq / 2 / 1000 * 925);
 	spi->bits_per_word = 8;
-	spi->rt = true;
 	err = spi_setup(spi);
 	if (err)
 		goto out_free_candev;

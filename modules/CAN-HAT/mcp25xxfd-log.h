@@ -11,6 +11,9 @@
 
 struct mcp25xxfd_priv;
 
+/*init debug undef*/
+//#undef  CONFIG_CAN_MCP25XXFD_LOG
+
 #ifdef CONFIG_CAN_MCP25XXFD_LOG
 
 struct mcp25xxfd_log {

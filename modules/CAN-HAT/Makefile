@@ -1,19 +1,9 @@
-obj-m				+= mcp25xxfd-can.o
-mcp25xxfd-can-objs                  := mcp25xxfd_base.o
-mcp25xxfd-can-objs                  += mcp25xxfd_can.o
-mcp25xxfd-can-objs                  += mcp25xxfd_can_debugfs.o
-mcp25xxfd-can-objs                  += mcp25xxfd_can_fifo.o
-mcp25xxfd-can-objs                  += mcp25xxfd_can_int.o
-mcp25xxfd-can-objs                  += mcp25xxfd_can_rx.o
-mcp25xxfd-can-objs                  += mcp25xxfd_can_tx.o
-mcp25xxfd-can-objs                  += mcp25xxfd_clock.o
-mcp25xxfd-can-objs                  += mcp25xxfd_cmd.o
-mcp25xxfd-can-objs                  += mcp25xxfd_crc.o
-mcp25xxfd-can-objs                  += mcp25xxfd_debugfs.o
-mcp25xxfd-can-objs                  += mcp25xxfd_ecc.o
-mcp25xxfd-can-objs                  += mcp25xxfd_gpio.o
-mcp25xxfd-can-objs                  += mcp25xxfd_int.o
-
+obj-m          += mcp25xxfd.o
+mcp25xxfd-objs := mcp25xxfd-core.o
+mcp25xxfd-objs += mcp25xxfd-crc16.o
+mcp25xxfd-objs += mcp25xxfd-dump.o
+mcp25xxfd-objs += mcp25xxfd-regmap.o
+mcp25xxfd-objs += mcp25xxfd-log.o
 
 
 
@@ -24,5 +14,5 @@ clean:
 	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) clean
 
 install:
-	sudo cp mcp25xxfd-can.ko /lib/modules/$(shell uname -r)/kernel/drivers/net/can/spi/
+	sudo cp mcp25xxfd.ko /lib/modules/$(shell uname -r)/kernel/drivers/net/can/spi/
 	sudo depmod -a
