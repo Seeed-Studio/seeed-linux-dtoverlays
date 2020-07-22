@@ -16,15 +16,16 @@ uname_r=$(uname -r)
 
 echo "remove dtbos"
 rm  /boot/overlays/2xMCP2517FD.dtbo  || true
+rm  /boot/overlays/2xMCP2518FD-spi0.dtbo  || true
 
 
 
 
 echo "remove dkms"
-rm  -rf /var/lib/dkms/mcp2517fd || true
+rm  -rf /var/lib/dkms/mcp25xxfd || true
 
 echo "remove kernel modules"
-rm  /lib/modules/${uname_r}/kernel/drivers/net/can/spi/mcp25xxfd-can.ko || true
+rm  /lib/modules/${uname_r}/kernel/drivers/net/can/spi/mcp25xxfd.ko || true
 
 echo "------------------------------------------------------"
 echo "Please reboot your raspberry pi to apply all settings"
