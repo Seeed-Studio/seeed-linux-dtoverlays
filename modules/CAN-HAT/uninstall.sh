@@ -18,7 +18,12 @@ echo "remove dtbos"
 rm  /boot/overlays/2xMCP2517FD.dtbo  || true
 rm  /boot/overlays/2xMCP2518FD-spi0.dtbo  || true
 
+echo "remove dtbo in config.txt"
+sed -i '/2xMCP2517FD/d' /boot/config.txt
+sed -i '/2xMCP2518FD-spi0/d' /boot/config.txt
 
+echo "remove modules"
+sed -i '/mcp25xxfd/d' /etc/modules
 
 
 echo "remove dkms"
