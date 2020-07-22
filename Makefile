@@ -136,6 +136,9 @@ BASE_SRC_FOLDER := $(filter-out grove-button, $(BASE_SRC_FOLDER))
 ifneq ($(CUSTOM_MOD_FILTER_OUT),)
 BASE_SRC_FOLDER := $(filter-out $(CUSTOM_MOD_FILTER_OUT), $(BASE_SRC_FOLDER))
 endif
+ifneq ($(CUSTOM_MOD_LIST),)
+BASE_SRC_FOLDER := $(CUSTOM_MOD_LIST)
+endif
 
 uname_r = $(shell uname -r)
 KBUILD ?= /lib/modules/$(uname_r)/build
