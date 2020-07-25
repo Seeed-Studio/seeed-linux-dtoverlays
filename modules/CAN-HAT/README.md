@@ -6,8 +6,8 @@ The drivers of [Raspberry pi  CAN HAT](https://www.seeedstudio.com/2-Channel-CAN
 ### Install CAN-HAT
 Get the CAN-HAT  source code. and install all linux kernel drivers
 ```bash
-git clone https://github.com/seeed-Studio/pi-hats
-cd pi-hats/CAN-HAT
+git clone https://github.com/Seeed-Studio/seeed-linux-dtoverlays
+cd seeed-linux-dtoverlays//modules/CAN-HAT
 sudo ./install.sh 
 sudo reboot
 ```

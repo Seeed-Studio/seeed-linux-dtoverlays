@@ -10,7 +10,7 @@ For Jetson source R32.4.2 or JetPack Image 4.4
 
 ### 2. Build dtbo & driver
 ```shell
-	export CUSTOM_MOD_FILTER_OUT="lis3lv02d mcp25xxfd gt9xx seeed-voicecard"
+	export CUSTOM_MOD_LIST="jtsn-wm8960"
 	make all_jetsonnano
 ```
 
