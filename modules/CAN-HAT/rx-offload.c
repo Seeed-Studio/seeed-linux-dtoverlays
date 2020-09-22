@@ -16,7 +16,7 @@
  */
 
 #include <linux/can/dev.h>
-#include <linux/can/rx-offload.h>
+#include "rx-offload.h"
 
 struct can_rx_offload_cb {
 	u32 timestamp;
@@ -231,6 +231,33 @@ int can_rx_offload_queue_sorted(struct can_rx_offload *offload,
 	return 0;
 }
 EXPORT_SYMBOL_GPL(can_rx_offload_queue_sorted);
+
+struct sk_buff *__can_get_echo_skb(struct net_device *dev, unsigned int idx, u8 *len_ptr)
+{
+	struct can_priv *priv = netdev_priv(dev);
+
+	if (idx >= priv->echo_skb_max) {
+		netdev_err(dev, "%s: BUG! Trying to access can_priv::echo_skb out of bounds (%u/max %u)\n",
+			   __func__, idx, priv->echo_skb_max);
+		return NULL;
+	}
+
+	if (priv->echo_skb[idx]) {
+		/* Using "struct canfd_frame::len" for the frame
+		 * length is supported on both CAN and CANFD frames.
+		 */
+		struct sk_buff *skb = priv->echo_skb[idx];
+		struct canfd_frame *cf = (struct canfd_frame *)skb->data;
+		u8 len = cf->len;
+
+		*len_ptr = len;
+		priv->echo_skb[idx] = NULL;
+
+		return skb;
+	}
+
+	return NULL;
+}
 
 unsigned int can_rx_offload_get_echo_skb(struct can_rx_offload *offload,
 					 unsigned int idx, u32 timestamp)
