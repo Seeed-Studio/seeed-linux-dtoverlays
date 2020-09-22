@@ -21,6 +21,10 @@
 
 #include "mcp25xxfd-log.h"
 
+#ifndef sizeof_field
+#define sizeof_field(TYPE, MEMBER) sizeof((((TYPE *)0)->MEMBER))
+#endif
+
 static inline void __dump(const void *d, unsigned int len)
 {
 	const u8 *data = d;
