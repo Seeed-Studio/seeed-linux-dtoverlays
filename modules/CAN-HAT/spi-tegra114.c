@@ -1800,16 +1800,16 @@ static struct tegra_spi_chip_data tegra186_spi_chip_data = {
 
 static const struct of_device_id tegra_spi_of_match[] = {
 	{
-		.compatible = "nvidia,tegra114-spi",
+		.compatible = "nvidia,tegra114p-spi",
 		.data       = &tegra114_spi_chip_data,
 	}, {
-		.compatible = "nvidia,tegra124-spi",
+		.compatible = "nvidia,tegra124p-spi",
 		.data       = &tegra124_spi_chip_data,
 	}, {
-		.compatible = "nvidia,tegra210-spi",
+		.compatible = "nvidia,tegra210p-spi",
 		.data       = &tegra210_spi_chip_data,
 	}, {
-		.compatible = "nvidia,tegra186-spi",
+		.compatible = "nvidia,tegra186p-spi",
 		.data       = &tegra186_spi_chip_data,
 	},
 	{}
@@ -2157,7 +2157,7 @@ static const struct dev_pm_ops tegra_spi_pm_ops = {
 };
 static struct platform_driver tegra_spi_driver = {
 	.driver = {
-		.name		= "spi-tegra114",
+		.name		= "spi-tegra114p",
 		.pm		= &tegra_spi_pm_ops,
 		.of_match_table	= tegra_spi_of_match,
 	},
@@ -2166,7 +2166,7 @@ static struct platform_driver tegra_spi_driver = {
 };
 module_platform_driver(tegra_spi_driver);
 
-MODULE_ALIAS("platform:spi-tegra114");
+MODULE_ALIAS("platform:spi-tegra114p");
 MODULE_DESCRIPTION("NVIDIA T114/T124/T210/T186 SPI Controller Driver");
 MODULE_AUTHOR("Laxman Dewangan <ldewangan@nvidia.com>");
 MODULE_LICENSE("GPL v2");

@@ -61,6 +61,7 @@
 			/* avoid dtc warning */
 			#address-cells = <1>;
 			#size-cells = <0>;
+			compatible = "nvidia,tegra210p-spi";
 			pinctrl-names = "default";
 			pinctrl-0 = <&spi0_pinmux>;
 			#if MCP_USING_CS_GPIOS
