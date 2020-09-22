@@ -1295,9 +1295,9 @@ mcp25xxfd_handle_tefif_one(struct mcp25xxfd_priv *priv,
 	 * net-yet-completed, i.e. old TEF objects.
 	 */
 	seq_masked = seq &
-		field_mask(MCP25XXFD_OBJ_FLAGS_SEQ_MCP2517FD_MASK);
+		FIELD_GET(MCP25XXFD_OBJ_FLAGS_SEQ_MCP2517FD_MASK, -1UL);
 	tef_tail_masked = priv->tef.tail &
-		field_mask(MCP25XXFD_OBJ_FLAGS_SEQ_MCP2517FD_MASK);
+		FIELD_GET(MCP25XXFD_OBJ_FLAGS_SEQ_MCP2517FD_MASK, -1UL);
 	if (seq_masked != tef_tail_masked)
 		return mcp25xxfd_handle_tefif_recover(priv, seq);
 
@@ -2519,9 +2519,9 @@ static void
 mcp25xxfd_register_quirks(struct mcp25xxfd_priv *priv)
 {
 	const struct spi_device *spi = priv->spi;
-	const struct spi_controller *ctlr = spi->controller;
+	const struct spi_master *ctlr = spi->master;
 
-	if (ctlr->flags & SPI_CONTROLLER_HALF_DUPLEX)
+	if (ctlr->flags & SPI_MASTER_HALF_DUPLEX)
 		priv->devtype_data.quirks |= MCP25XXFD_QUIRK_HALF_DUPLEX;
 }
 
@@ -2867,7 +2867,7 @@ static int mcp25xxfd_probe(struct spi_device *spi)
 	priv->reg_xceiver = reg_xceiver;
 	atomic_set(&priv->cnt, 0);
 
-	match = device_get_match_data(&spi->dev);
+	match = of_device_get_match_data(&spi->dev);
 	if (match)
 		priv->devtype_data = *(struct mcp25xxfd_devtype_data *)match;
 	else
