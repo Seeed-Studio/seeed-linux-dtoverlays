@@ -17,6 +17,15 @@ mcp25xxfd-objs += mcp25xxfd-regmap.o
 #mcp25xxfd-objs += mcp25xxfd-log.o
 
 
+_KERN_VER := $(shell expr $(VERSION) \* 1000 + $(PATCHLEVEL) )
+# $(warning _KERN_VER=$(_KERN_VER) )
+
+# rx-offload only exist in kernel version >= 4.11
+ifneq (,$(shell if [ $(_KERN_VER) -lt 4011 ]; then echo "NA"; fi ))
+mcp25xxfd-objs += rx-offload.o
+endif
+
+
 else # ifneq ($(KERNELRELEASE),)
 
 
