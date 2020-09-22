@@ -958,6 +958,7 @@ static int mcp25xxfd_chip_ecc_init(struct mcp25xxfd_priv *priv)
 	void *ram;
 	u32 val = 0;
 	int err;
+	int of;
 
 	ecc->ecc_stat = 0;
 	ecc->cnt = 0;
@@ -974,8 +975,13 @@ static int mcp25xxfd_chip_ecc_init(struct mcp25xxfd_priv *priv)
 	if (!ram)
 		return -ENOMEM;
 
-	err = regmap_raw_write(priv->map_reg, MCP25XXFD_RAM_START, ram,
-			       MCP25XXFD_RAM_SIZE);
+	for (of = 0; of < MCP25XXFD_RAM_SIZE; of += 64) {
+		err = regmap_raw_write(priv->map_reg,
+		                       MCP25XXFD_RAM_START + of, ram + of,
+		                       min(MCP25XXFD_RAM_SIZE - of, 64));
+		if (err)
+			break;
+	}
 	kfree(ram);
 
 	return err;
