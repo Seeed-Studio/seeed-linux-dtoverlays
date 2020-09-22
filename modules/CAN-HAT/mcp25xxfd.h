@@ -12,7 +12,7 @@
 
 #include <linux/can/core.h>
 #include <linux/can/dev.h>
-#include <linux/can/rx-offload.h>
+#include "spi_can_compatible.h"
 #include <linux/gpio/consumer.h>
 #include <linux/kernel.h>
 #include <linux/regmap.h>
