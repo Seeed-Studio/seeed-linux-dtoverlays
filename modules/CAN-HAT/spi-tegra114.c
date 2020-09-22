@@ -242,6 +242,7 @@ struct tegra_spi_data {
 	unsigned				dma_buf_size;
 	unsigned				max_buf_size;
 	bool					is_hw_based_cs;
+	bool					always_hw_cs;
 	bool					is_curr_dma_xfer;
 
 	struct completion			rx_dma_complete;
@@ -1103,6 +1104,15 @@ static u32 tegra_spi_setup_transfer_one(struct spi_device *spi,
 
 		tegra_spi_set_timing2(spi);
 
+		/*
+		 * tegra210 sometimes activates more than one chip-selects
+		 * the same time if the controller works interleavely between
+		 * modes hw_based_cs and sw_based_cs.
+		 * always_hw_cs = true will avoid above things.
+		 */
+		if (tspi->always_hw_cs)
+			tspi->is_hw_based_cs = true;
+
 		if (!tspi->is_hw_based_cs) {
 			command1 |= SPI_CS_SW_HW;
 			if (spi->mode & SPI_CS_HIGH)
@@ -1735,6 +1745,9 @@ static void tegra_spi_parse_dt(struct tegra_spi_data *tspi)
 	if (of_property_read_u32(np, "nvidia,maximum-dma-buffer-size",
 				 &tspi->dma_buf_size))
 		tspi->dma_buf_size = DEFAULT_SPI_DMA_BUF_LEN;
+
+	if (of_find_property(np, "nvidia,always-hw-cs", NULL))
+		tspi->always_hw_cs = true;
 
 	/*
 	 * Last child node or first node which has property as default-cs will
