@@ -66,6 +66,8 @@
 			#if MCP_USING_CS_GPIOS
 			cs-gpios = <&gpio TEGRA_GPIO(C, 3) GPIO_ACTIVE_LOW>,
 			           <&gpio TEGRA_GPIO(C, 4) GPIO_ACTIVE_LOW>;
+			#else
+			nvidia,always-hw-cs;
 			#endif
 
 			can1: can@1 {
@@ -76,9 +78,9 @@
 				interrupt-parent = <&gpio>;
 				/* RPi GPIO24, HDR PIN18, TEGRA spi2_cs0_pb7 */
 				interrupts = <TEGRA_GPIO(B, 7) IRQ_TYPE_LEVEL_LOW>;
-				spi-max-frequency = <1000000>;
+				spi-max-frequency = <20000000>;
 				controller-data {
-					nvidia,enable-hw-based-cs;
+					/* nvidia,enable-hw-based-cs; */
 					nvidia,cs-setup-clk-count = <0xF>;
 					nvidia,cs-hold-clk-count = <0xF>;
 					nvidia,tx-clk-tap-delay = <0x7>;
@@ -94,9 +96,9 @@
 				interrupt-parent = <&gpio>;
 				/* RPi GPIO25, HDR PIN22, TEGRA spi2_miso_pb5 */
 				interrupts = <TEGRA_GPIO(B, 5) IRQ_TYPE_LEVEL_LOW>;
-				spi-max-frequency = <1000000>;
+				spi-max-frequency = <20000000>;
 				controller-data {
-					nvidia,enable-hw-based-cs;
+					/* nvidia,enable-hw-based-cs; */
 					nvidia,cs-setup-clk-count = <0xF>;
 					nvidia,cs-hold-clk-count = <0xF>;
 					nvidia,tx-clk-tap-delay = <0x7>;
