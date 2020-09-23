@@ -9,7 +9,12 @@
  */
 
 /*
- * set to 1 to test cs_gpios (not works)
+ * All three configurations work.
+ *
+ * 1. cs_gpios as chip selects, set MCP_USING_CS_GPIOS to 1
+ * 2. controller hardware chip selects, with nvidia,always-hw-cs
+ * 3. controller software chip selects, without nvidia,always-hw-cs
+ *
  */
 #define MCP_USING_CS_GPIOS    0
 
@@ -65,8 +70,8 @@
 			pinctrl-names = "default";
 			pinctrl-0 = <&spi0_pinmux>;
 			#if MCP_USING_CS_GPIOS
-			cs-gpios = <&gpio TEGRA_GPIO(C, 3) GPIO_ACTIVE_LOW>,
-			           <&gpio TEGRA_GPIO(C, 4) GPIO_ACTIVE_LOW>;
+			cs-gpios = <&gpio TEGRA_GPIO(C, 3) GPIO_ACTIVE_HIGH>,
+			           <&gpio TEGRA_GPIO(C, 4) GPIO_ACTIVE_HIGH>;
 			#else
 			nvidia,always-hw-cs;
 			#endif
