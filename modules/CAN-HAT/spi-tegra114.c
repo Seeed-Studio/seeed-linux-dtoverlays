@@ -1465,10 +1465,7 @@ static int tegra_spi_transfer_one_message(struct spi_master *master,
 		msg->actual_length += xfer->len;
 
 complete_xfer:
-		if (prefer_last_used_cs)
-			cmd1 = tspi->command1_reg;
-		else
-			cmd1 = tspi->def_command1_reg;
+		cmd1 = tspi->command1_reg;
 		if (ret < 0 || skip) {
 			if (cstate && cstate->cs_gpio_valid)
 				gpio_set_value(spi->cs_gpio, gval);
