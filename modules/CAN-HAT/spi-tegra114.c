@@ -1483,10 +1483,23 @@ complete_xfer:
 				tegra_spi_transfer_delay(xfer->delay_usecs);
 			}
 		} else if (xfer->cs_change) {
+			/*
+			 * CS should de-asserted
+			 * at the end of current transfer
+			 */
 			if (cstate && cstate->cs_gpio_valid)
 				gpio_set_value(spi->cs_gpio, gval);
-			tegra_spi_writel(tspi, cmd1, SPI_COMMAND1);
+			if (!tspi->is_hw_based_cs) {
+				u32 cmd1_ncs = (cmd1 & SPI_CS_SS_VAL)
+				             ? cmd1 & ~SPI_CS_SS_VAL
+				             : cmd1 |  SPI_CS_SS_VAL;
+				tegra_spi_writel(tspi, cmd1_ncs, SPI_COMMAND1);
+			}
 			tegra_spi_transfer_delay(xfer->delay_usecs);
+			/* CS should asserted again for the next transfer */
+			tegra_spi_writel(tspi, cmd1, SPI_COMMAND1);
+			if (cstate && cstate->cs_gpio_valid)
+				gpio_set_value(spi->cs_gpio, !gval);
 		}
 
 	}
