@@ -3,6 +3,7 @@
 *.dtbo
 config-pin
 *.o
+*.a
 *.ko
 *.mod
 *.mod.c
