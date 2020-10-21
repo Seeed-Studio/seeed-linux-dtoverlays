@@ -14,28 +14,28 @@ cd seeed-linux-dtoverlays
 ```
 Step 2: Install *.dtbo:
 ```sh
-make 
+#Select platform by replacing word <platform> to
+#one of {jetsonnano bb stm32mp1 rpi imx6ull}.
+make all_<platform>
 #On iMx6ull-NPI
 sudo make install_imx6ull
 #on RPI
 sudo make install_rpi
 #On beagleboard
 sudo make install_bb
+#On JetsonNano
+sudo make install_jetsonnano
 ```
 more:
 ```sh
 @echo "Targets:"
-@echo "  all:                   Build all device tree binaries for all architectures"
-@echo "  clean:                 Clean all generated files"
-@echo "  install:               Install all generated files (sudo)"
-@echo ""
 @echo "  all_<PLATFORM>:            Build all device tree binaries for <PLATFORM>"
 @echo "  clean_<PLATFORM>:          Clean all generated files for <PLATFORM>"
 @echo "  install_<PLATFORM>:        Install all generated files for <PLATFORM> (sudo)"
 @echo ""
 @echo "  overlays/<PLATFORM>/<DTS>.dtbo   Build a single device tree binary"
 @echo ""
-@echo "PLATFORMES: $(ALL_PLATFORMES)"
+@echo "PLATFORMES: jetsonnano bb stm32mp1 rpi imx6ull"
 
 ```
 

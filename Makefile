@@ -10,13 +10,17 @@ MAKEFLAGS += -rR --no-print-directory
 ALL_PLATFORMES := $(patsubst overlays/%,%,$(wildcard overlays/*))
 
 PHONY += all
-all: $(foreach i,$(ALL_PLATFORMES),all_$(i))
+all: help # $(foreach i,$(ALL_PLATFORMES),all_$(i))
+	@echo ""
+	@echo "nothing to do, please use target all_<platform>"
 
 PHONY += clean
-clean: $(foreach i,$(ALL_PLATFORMES),clean_$(i))
+clean: # $(foreach i,$(ALL_PLATFORMES),clean_$(i))
+	@echo "nothing to do, please use target clean_<platform>"
 
 PHONY += install
-install: $(foreach i,$(ALL_PLATFORMES),install_$(i))
+install: # $(foreach i,$(ALL_PLATFORMES),install_$(i))
+	@echo "nothing to do, please use target install_<platform>"
 
 # Do not:
 # o  use make's built-in rules and variables
@@ -234,9 +238,6 @@ endif
 
 help:
 	@echo "Targets:"
-	@echo "  all:                   Build all device tree binaries for all architectures"
-	@echo "  clean:                 Clean all generated files"
-	@echo "  install:               Install all generated files (sudo)"
 	@echo ""
 	@echo "  all_<PLATFORM>:            Build all device tree binaries for <PLATFORM>"
 	@echo "  clean_<PLATFORM>:          Clean all generated files for <PLATFORM>"
@@ -245,6 +246,11 @@ help:
 	@echo "  overlays/<PLATFORM>/<DTS>.dtbo   Build a single device tree binary"
 	@echo ""
 	@echo "Architectures: $(ALL_PLATFORMES)"
+	@echo ""
+	@echo "Obsolete Targets: (not support now)"
+	@echo "  all:                   Build all device tree binaries for all architectures"
+	@echo "  clean:                 Clean all generated files"
+	@echo "  install:               Install all generated files (sudo)"
 
 PHONY += FORCE
 FORCE:
