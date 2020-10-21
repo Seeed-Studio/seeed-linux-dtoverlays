@@ -36,6 +36,7 @@
 #include <linux/string.h>
 #include <linux/kdev_t.h>
 #include <linux/sysfs.h>
+#include <linux/fs.h>
 
 
 /**************************************************************************************************************/
