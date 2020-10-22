@@ -8,3 +8,4 @@ mpr121
 p9813
 sht3x
 vl53l0x
+hm3301
