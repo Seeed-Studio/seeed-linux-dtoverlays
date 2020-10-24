@@ -1,0 +1,62 @@
+/*
+ * Copyright (C) 2019 Seeed Studio
+ * Peter Yang <turmary@126.com>
+ *
+ * MIT License
+ *
+ */
+/dts-v1/;
+/plugin/;
+
+/ {
+        compatible = "ti,beaglebone", "ti,beaglebone-black", "ti,beaglebone-green";
+
+	/* identification */
+	part-number = "BB-I2C1-HM3301";
+	version = "00A0";
+
+	fragment@0 {
+		target-path="/";
+		__overlay__ {
+			chosen {
+				overlays {
+					BB-I2C1-HM3301 = __TIMESTAMP__;
+				};
+			};
+
+			aliases {
+				/* SLOT I2C1 */
+				hm3301 = "/ocp/i2c@4802a000/hm3301@40";
+				/* SLOT I2C2 */
+				/*
+				hm3301 = "/ocp/i2c@4819c000/hm3301@40";
+				*/
+			};
+		};
+	};
+
+	fragment@1 {
+		/* SLOT I2C1 */
+		target = <&i2c1>;
+		/* SLOT I2C2 */
+		/*
+		target = <&i2c2>;
+		*/
+		__overlay__ {
+			status = "okay";
+
+			/* this is the configuration part */
+			clock-frequency = <400000>;
+
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			hm3301@40 {
+				compatible = "seeed,hm3301";
+				reg = <0x40>;
+				status = "okay";
+			};
+		};
+	};
+};
+
