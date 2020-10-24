@@ -2,13 +2,12 @@
 /*
  * Sensirion HM3301 particulate matter sensor driver
  *
- * Copyright (c) Tomasz Duszynski <tduszyns@gmail.com>
+ * Copyright (c) Tomasz Duszynski <zuobaozhu@gmail.com>
  *
- * I2C slave address: 0x69
+ * I2C slave address: 0x40
  */
 
 #include <asm/unaligned.h>
-#include <linux/crc8.h>
 #include <linux/delay.h>
 #include <linux/i2c.h>
 #include <linux/iio/buffer.h>
@@ -31,7 +30,6 @@
 /* HM3301 commands */
 #define HM3301_START_MEAS 0x0010
 #define HM3301_STOP_MEAS 0x0104
-#define HM3301_RESET 0xd304
 #define HM3301_READ_DATA_READY_FLAG 0x0202
 #define HM3301_READ_DATA 0x0300
 #define HM3301_READ_SERIAL 0xd033
@@ -62,13 +60,11 @@ struct hm3301_state {
 	int state;
 };
 
-DECLARE_CRC8_TABLE(hm3301_crc8_table);
 
 static int hm3301_write_then_read(struct hm3301_state *state, u8 *txbuf,
 				 int txsize, u8 *rxbuf, int rxsize)
 {
-	int ret;
-
+	int ret;  
 	/*
 	 * Sensor does not support repeated start so instead of
 	 * sending two i2c messages in a row we just send one by one.
@@ -76,7 +72,8 @@ static int hm3301_write_then_read(struct hm3301_state *state, u8 *txbuf,
 	ret = i2c_master_send(state->client, txbuf, txsize);
 	if (ret != txsize)
 		return ret < 0 ? ret : -EIO;
-
+      
+        msleep(10);
 	if (!rxbuf)
 		return 0;
 
@@ -100,40 +97,30 @@ static int hm3301_do_cmd(struct hm3301_state *state, u16 cmd, u8 *data, int size
 	 * What follows next are number concentration measurements and
 	 * typical particle size measurement which we omit.
 	 */
-	u8 buf[HM3301_MAX_READ_SIZE] = { cmd >> 8, cmd };
+	unsigned char txbuf[2];
+	unsigned char rxbuf[49] = {1};
 	int i, ret = 0;
 
 	switch (cmd) {
 	case HM3301_START_MEAS:
-		buf[2] = 0x03;
-		buf[3] = 0x00;
-		buf[4] = crc8(hm3301_crc8_table, &buf[2], 2, CRC8_INIT_VALUE);
-		ret = hm3301_write_then_read(state, buf, 5, NULL, 0);
-		break;
+	     txbuf[0] = 0;
+             txbuf[1] = 0x88;
+	     ret = hm3301_write_then_read(state, txbuf, 2, NULL, 0);
+	        break;
 	case HM3301_STOP_MEAS:
-	case HM3301_RESET:
 	case HM3301_START_FAN_CLEANING:
-		ret = hm3301_write_then_read(state, buf, 2, NULL, 0);
 		break;
 	case HM3301_READ_AUTO_CLEANING_PERIOD:
-		buf[0] = HM3301_AUTO_CLEANING_PERIOD >> 8;
-		buf[1] = (u8)(HM3301_AUTO_CLEANING_PERIOD & 0xff);
 		/* fall through */
 	case HM3301_READ_DATA_READY_FLAG:
 	case HM3301_READ_DATA:
 	case HM3301_READ_SERIAL:
 		/* every two data bytes are checksummed */
-		size += size / 2;
-		ret = hm3301_write_then_read(state, buf, 2, buf, size);
+        txbuf[0] = 0x40;
+        txbuf[1] = 0;
+		ret = hm3301_write_then_read(state, txbuf, 2, rxbuf, 29);
 		break;
 	case HM3301_AUTO_CLEANING_PERIOD:
-		buf[2] = data[0];
-		buf[3] = data[1];
-		buf[4] = crc8(hm3301_crc8_table, &buf[2], 2, CRC8_INIT_VALUE);
-		buf[5] = data[2];
-		buf[6] = data[3];
-		buf[7] = crc8(hm3301_crc8_table, &buf[5], 2, CRC8_INIT_VALUE);
-		ret = hm3301_write_then_read(state, buf, 8, NULL, 0);
 		break;
 	}
 
@@ -142,54 +129,17 @@ static int hm3301_do_cmd(struct hm3301_state *state, u16 cmd, u8 *data, int size
 
 	/* validate received data and strip off crc bytes */
 	for (i = 0; i < size; i += 3) {
-		u8 crc = crc8(hm3301_crc8_table, &buf[i], 2, CRC8_INIT_VALUE);
-
-		if (crc != buf[i + 2]) {
-			dev_err(&state->client->dev,
-				"data integrity check failed\n");
-			return -EIO;
-		}
-
-		*data++ = buf[i];
-		*data++ = buf[i + 1];
+		*data++ = rxbuf[i];
+		*data++ = rxbuf[i + 1];
 	}
 
 	return 0;
 }
 
-static s32 hm3301_float_to_int_clamped(const u8 *fp)
-{
-	int val = get_unaligned_be32(fp);
-	int mantissa = val & GENMASK(22, 0);
-	/* this is fine since passed float is always non-negative */
-	int exp = val >> 23;
-	int fraction, shift;
-
-	/* special case 0 */
-	if (!exp && !mantissa)
-		return 0;
-
-	exp -= 127;
-	if (exp < 0) {
-		/* return values ranging from 1 to 99 */
-		return ((((1 << 23) + mantissa) * 100) >> 23) >> (-exp);
-	}
-
-	/* return values ranging from 100 to 300000 */
-	shift = 23 - exp;
-	val = (1 << exp) + (mantissa >> shift);
-	if (val >= HM3301_MAX_PM)
-		return HM3301_MAX_PM * 100;
-
-	fraction = mantissa & GENMASK(shift - 1, 0);
-
-	return val * 100 + ((fraction * 100) >> shift);
-}
-
 static int hm3301_do_meas(struct hm3301_state *state, s32 *data, int size)
 {
 	int i, ret, tries = 5;
-	u8 tmp[16];
+	u8 tmp[32];
 
 	if (state->state == RESET) {
 		ret = hm3301_do_cmd(state, HM3301_START_MEAS, NULL, 0);
@@ -199,6 +149,7 @@ static int hm3301_do_meas(struct hm3301_state *state, s32 *data, int size)
 		state->state = MEASURING;
 	}
 
+#if 0
 	while (tries--) {
 		ret = hm3301_do_cmd(state, HM3301_READ_DATA_READY_FLAG, tmp, 2);
 		if (ret)
@@ -213,14 +164,21 @@ static int hm3301_do_meas(struct hm3301_state *state, s32 *data, int size)
 
 	if (tries == -1)
 		return -ETIMEDOUT;
+#endif
 
 	ret = hm3301_do_cmd(state, HM3301_READ_DATA, tmp, sizeof(int) * size);
 	if (ret)
 		return ret;
 
-	for (i = 0; i < size; i++)
-		data[i] = hm3301_float_to_int_clamped(&tmp[4 * i]);
-
+        int a;
+        for (i = 0; i < size; i++) {
+	    for (a = 2; a< 5; a++)
+		{
+	        u16 value = 0;
+		    value = (u16) tmp[a * 2] << 8 | tmp[a * 2 +1];
+            data[i] = value; 
+		}
+	}
 	return 0;
 }
 
@@ -310,23 +268,7 @@ static int hm3301_read_raw(struct iio_dev *indio_dev,
 	return -EINVAL;
 }
 
-static int hm3301_do_cmd_reset(struct hm3301_state *state)
-{
-	int ret;
 
-	ret = hm3301_do_cmd(state, HM3301_RESET, NULL, 0);
-	msleep(300);
-	/*
-	 * Power-on-reset causes sensor to produce some glitch on i2c bus and
-	 * some controllers end up in error state. Recover simply by placing
-	 * some data on the bus, for example STOP_MEAS command, which
-	 * is NOP in this case.
-	 */
-	hm3301_do_cmd(state, HM3301_STOP_MEAS, NULL, 0);
-	state->state = RESET;
-
-	return ret;
-}
 
 static ssize_t start_cleaning_store(struct device *dev,
 				    struct device_attribute *attr,
@@ -397,10 +339,10 @@ static ssize_t cleaning_period_store(struct device *dev,
 	 * sensor requires reset in order to return up to date self cleaning
 	 * period
 	 */
-	ret = hm3301_do_cmd_reset(state);
-	if (ret)
-		dev_warn(dev,
-			 "period changed but reads will return the old value\n");
+//	ret = hm3301_do_cmd_reset(state);
+//	if (ret)
+//		dev_warn(dev,
+//			 "period changed but reads will return the old value\n");
 
 	mutex_unlock(&state->lock);
 
@@ -463,7 +405,6 @@ static const struct iio_chan_spec hm3301_channels[] = {
 static void hm3301_stop_meas(void *data)
 {
 	struct hm3301_state *state = data;
-
 	hm3301_do_cmd(state, HM3301_STOP_MEAS, NULL, 0);
 }
 
@@ -496,26 +437,9 @@ static int hm3301_probe(struct i2c_client *client)
 	indio_dev->available_scan_masks = hm3301_scan_masks;
 
 	mutex_init(&state->lock);
-	crc8_populate_msb(hm3301_crc8_table, HM3301_CRC8_POLYNOMIAL);
-
-	ret = hm3301_do_cmd_reset(state);
-	if (ret) {
-		dev_err(&client->dev, "failed to reset device\n");
-		return ret;
-	}
-
-	ret = hm3301_do_cmd(state, HM3301_READ_SERIAL, buf, sizeof(buf));
-	if (ret) {
-		dev_err(&client->dev, "failed to read serial number\n");
-		return ret;
-	}
-	/* returned serial number is already NUL terminated */
-	dev_info(&client->dev, "serial number: %s\n", buf);
-
 	ret = devm_add_action_or_reset(&client->dev, hm3301_stop_meas, state);
 	if (ret)
 		return ret;
-
 	ret = devm_iio_triggered_buffer_setup(&client->dev, indio_dev, NULL,
 					      hm3301_trigger_handler, NULL);
 	if (ret)
