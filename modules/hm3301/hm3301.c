@@ -18,11 +18,7 @@
 #include <linux/kernel.h>
 #include <linux/module.h>
 
-#define HM3301_CRC8_POLYNOMIAL 0x31
-/* max number of bytes needed to store PM measurements or serial string */
-#define HM3301_MAX_READ_SIZE 48
-/* sensor measures reliably up to 3000 ug / m3 */
-#define HM3301_MAX_PM 3000
+
 /* minimum and maximum self cleaning periods in seconds */
 #define HM3301_AUTO_CLEANING_PERIOD_MIN 0
 #define HM3301_AUTO_CLEANING_PERIOD_MAX 604800
@@ -41,7 +37,6 @@
 enum {
 	PM1,
 	PM2P5,
-	PM4,
 	PM10,
 };
 
@@ -136,6 +131,8 @@ static int hm3301_do_cmd(struct hm3301_state *state, u16 cmd, u8 *data, int size
 	return 0;
 }
 
+
+
 static int hm3301_do_meas(struct hm3301_state *state, s32 *data, int size)
 {
 	int i, ret, tries = 5;
@@ -148,7 +145,7 @@ static int hm3301_do_meas(struct hm3301_state *state, s32 *data, int size)
 
 		state->state = MEASURING;
 	}
-
+   
 #if 0
 	while (tries--) {
 		ret = hm3301_do_cmd(state, HM3301_READ_DATA_READY_FLAG, tmp, 2);
@@ -165,18 +162,13 @@ static int hm3301_do_meas(struct hm3301_state *state, s32 *data, int size)
 	if (tries == -1)
 		return -ETIMEDOUT;
 #endif
-
-	ret = hm3301_do_cmd(state, HM3301_READ_DATA, tmp, sizeof(int) * size);
-	if (ret)
-		return ret;
-
         int a;
         for (i = 0; i < size; i++) {
 	    for (a = 2; a< 5; a++)
 		{
 	        u16 value = 0;
 		    value = (u16) tmp[a * 2] << 8 | tmp[a * 2 +1];
-            data[i] = value; 
+		    data[i] = value; 
 		}
 	}
 	return 0;
@@ -189,7 +181,7 @@ static irqreturn_t hm3301_trigger_handler(int irq, void *p)
 	struct hm3301_state *state = iio_priv(indio_dev);
 	int ret;
 	struct {
-		s32 data[4]; /* PM1, PM2P5, PM4, PM10 */
+		s32 data[3]; /* PM1, PM2P5, PM10 */
 		s64 ts;
 	} scan;
 
@@ -201,6 +193,7 @@ static irqreturn_t hm3301_trigger_handler(int irq, void *p)
 
 	iio_push_to_buffers_with_timestamp(indio_dev, &scan,
 					   iio_get_time_ns(indio_dev));
+
 err:
 	iio_trigger_notify_done(indio_dev->trig);
 
@@ -227,11 +220,8 @@ static int hm3301_read_raw(struct iio_dev *indio_dev,
 			case IIO_MOD_PM2P5:
 				ret = hm3301_do_meas(state, data, 2);
 				break;
-			case IIO_MOD_PM4:
-				ret = hm3301_do_meas(state, data, 3);
-				break;
 			case IIO_MOD_PM10:
-				ret = hm3301_do_meas(state, data, 4);
+				ret = hm3301_do_meas(state, data, 3);
 				break;
 			}
 			mutex_unlock(&state->lock);
@@ -251,7 +241,6 @@ static int hm3301_read_raw(struct iio_dev *indio_dev,
 			switch (chan->channel2) {
 			case IIO_MOD_PM1:
 			case IIO_MOD_PM2P5:
-			case IIO_MOD_PM4:
 			case IIO_MOD_PM10:
 				*val = 0;
 				*val2 = 10000;
@@ -397,9 +386,8 @@ static const struct iio_info hm3301_info = {
 static const struct iio_chan_spec hm3301_channels[] = {
 	HM3301_CHAN(0, PM1),
 	HM3301_CHAN(1, PM2P5),
-	HM3301_CHAN(2, PM4),
-	HM3301_CHAN(3, PM10),
-	IIO_CHAN_SOFT_TIMESTAMP(4),
+	HM3301_CHAN(2, PM10),
+	IIO_CHAN_SOFT_TIMESTAMP(3),
 };
 
 static void hm3301_stop_meas(void *data)
