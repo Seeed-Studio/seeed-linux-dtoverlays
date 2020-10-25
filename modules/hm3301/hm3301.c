@@ -86,14 +86,13 @@ static int hm3301_do_cmd(struct hm3301_state *state, u16 cmd, u8 *data, int size
 	 *
 	 * PM1: upper two bytes, crc8, lower two bytes, crc8
 	 * PM2P5: upper two bytes, crc8, lower two bytes, crc8
-	 * PM4: upper two bytes, crc8, lower two bytes, crc8
 	 * PM10: upper two bytes, crc8, lower two bytes, crc8
 	 *
 	 * What follows next are number concentration measurements and
 	 * typical particle size measurement which we omit.
 	 */
-	unsigned char txbuf[2];
-	unsigned char rxbuf[49] = {1};
+	u8 txbuf[2];
+	u8 rxbuf[49] = {8};
 	int i, ret = 0;
 
 	switch (cmd) {
@@ -111,9 +110,13 @@ static int hm3301_do_cmd(struct hm3301_state *state, u16 cmd, u8 *data, int size
 	case HM3301_READ_DATA:
 	case HM3301_READ_SERIAL:
 		/* every two data bytes are checksummed */
-        txbuf[0] = 0x40;
-        txbuf[1] = 0;
+                txbuf[0] = 0x40;
+                txbuf[1] = 0;
 		ret = hm3301_write_then_read(state, txbuf, 2, rxbuf, 29);
+	/* validate received data and strip off crc bytes */
+        	for (i = 0; i < 29; i ++) {
+		  *data++ = rxbuf[i];
+	        }
 		break;
 	case HM3301_AUTO_CLEANING_PERIOD:
 		break;
@@ -122,11 +125,6 @@ static int hm3301_do_cmd(struct hm3301_state *state, u16 cmd, u8 *data, int size
 	if (ret)
 		return ret;
 
-	/* validate received data and strip off crc bytes */
-	for (i = 0; i < size; i += 3) {
-		*data++ = rxbuf[i];
-		*data++ = rxbuf[i + 1];
-	}
 
 	return 0;
 }
@@ -135,7 +133,7 @@ static int hm3301_do_cmd(struct hm3301_state *state, u16 cmd, u8 *data, int size
 
 static int hm3301_do_meas(struct hm3301_state *state, s32 *data, int size)
 {
-	int i, ret, tries = 5;
+	int i, ret;
 	u8 tmp[32];
 
 	if (state->state == RESET) {
@@ -162,13 +160,17 @@ static int hm3301_do_meas(struct hm3301_state *state, s32 *data, int size)
 	if (tries == -1)
 		return -ETIMEDOUT;
 #endif
+	ret = hm3301_do_cmd(state, HM3301_READ_DATA, tmp, sizeof(int) * size);
+	if (ret)
+		return ret;
+
         int a;
         for (i = 0; i < size; i++) {
-	    for (a = 2; a< 5; a++)
+	    for (a = 2; a< (size+2); a++)
 		{
-	        u16 value = 0;
+	            u16 value = 0;
 		    value = (u16) tmp[a * 2] << 8 | tmp[a * 2 +1];
-		    data[i] = value; 
+                    data[i] = value * 100; 
 		}
 	}
 	return 0;
@@ -193,7 +195,6 @@ static irqreturn_t hm3301_trigger_handler(int irq, void *p)
 
 	iio_push_to_buffers_with_timestamp(indio_dev, &scan,
 					   iio_get_time_ns(indio_dev));
-
 err:
 	iio_trigger_notify_done(indio_dev->trig);
 
