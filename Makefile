@@ -247,7 +247,7 @@ help:
 	@echo ""
 	@echo "Architectures: $(ALL_PLATFORMES)"
 	@echo ""
-	@echo "Obsolete Targets: (not support now)"
+	@echo "Obsolete Targets: (no longer supported)"
 	@echo "  all:                   Build all device tree binaries for all architectures"
 	@echo "  clean:                 Clean all generated files"
 	@echo "  install:               Install all generated files (sudo)"

@@ -1,1 +1,1 @@
-overlays/stm32mp1/config.txt
+CAN-HAT
