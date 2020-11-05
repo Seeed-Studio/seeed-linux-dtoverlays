@@ -141,7 +141,7 @@ ifneq ($(CUSTOM_MOD_FILTER_OUT),)
 BASE_SRC_FOLDER := $(filter-out $(CUSTOM_MOD_FILTER_OUT), $(BASE_SRC_FOLDER))
 endif
 ifneq ($(CUSTOM_MOD_LIST),)
-BASE_SRC_FOLDER := $(CUSTOM_MOD_LIST)
+kmods := $(CUSTOM_MOD_LIST)
 endif
 
 uname_r = $(shell uname -r)
@@ -150,20 +150,20 @@ KO_DIR ?= /lib/modules/$(uname_r)/extra/seeed
 
 make_options="CROSS_COMPILE=${CC} KDIR=${x86_dir}/KERNEL"
 
-kmods ?= "$(shell pwd)/overlays/$*/config.txt"
+kmods ?= $(shell cat $(shell pwd)/overlays/$*/config.txt)
+
 all_%:
 	$(Q)$(MAKE) PLATFORM=$* all_arch
-	@while IFS= read -r line; do make -C $(KBUILD) M=$(MOD_PATH)/$$line ||exit; done <"$(kmods)"
-
+	@for line in $(kmods); do make -C $(KBUILD) M=$(MOD_PATH)/$$line || exit; done
 
 clean_%:
 	$(Q)$(MAKE) PLATFORM=$* clean_arch
-	@while IFS= read -r line; do make -C $(KBUILD) M=$(MOD_PATH)/$$line clean||exit; done <"$(kmods)"
+	@for line in $(kmods); do make -C $(KBUILD) M=$(MOD_PATH)/$$line clean || exit; done
 
 install_%:
 	$(Q)$(MAKE) PLATFORM=$* install_arch
 	mkdir -p /lib/modules/$(uname_r)/extra/seeed || true
-	@while IFS= read -r line; do echo $(MOD_PATH)/$$line/*.ko; cp  $(MOD_PATH)/$$line/*.ko $(KO_DIR) ||exit; done <"$(kmods)"
+	@for line in $(kmods); do echo $(MOD_PATH)/$$line/*.ko; cp $(MOD_PATH)/$$line/*.ko $(KO_DIR) || exit; done
 	@which depmod >/dev/null 2>&1 && depmod -a || true
 
 ifeq ($(PLATFORM),)
