@@ -88,5 +88,20 @@
 			};
 		};
 	};
+
+	/* am335x temperature hwmon */
+	fragment@2 {
+		target-path = "/ocp";
+
+		__overlay__ {
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			bandgap@44e10448 {
+				compatible = "ti,am335x-bandgap";
+				reg = <0x44e10448 0x8>;
+			};
+		};
+	};
 };
 
