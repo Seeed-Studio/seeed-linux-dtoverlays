@@ -85,6 +85,18 @@ static const struct attribute_group am335x_bandgap_group = {
 	.attrs = am335x_bandgap_attributes,
 };
 
+static void __iomem *devm_request_and_ioremap(struct device *dev,
+	                                      struct resource *res)
+{
+        void __iomem *dest_ptr;
+
+        dest_ptr = devm_ioremap_resource(dev, res);
+        if (IS_ERR(dest_ptr))
+                return NULL;
+
+        return dest_ptr;
+}
+
 static int am335x_bandgap_probe(struct platform_device *pdev)
 {
 	struct am335x_bandgap *data;
@@ -146,6 +158,7 @@ static const struct of_device_id am335x_bandgap_match[] = {
 	{ .compatible = "ti,am335x-bandgap" },
 	{},
 };
+MODULE_DEVICE_TABLE(of, am335x_bandgap_match);
 
 static struct platform_driver am335x_bandgap_driver = {
 	.driver = {

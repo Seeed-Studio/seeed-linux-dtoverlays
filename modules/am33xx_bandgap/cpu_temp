@@ -1,0 +1,56 @@
+#!/bin/bash
+
+# Sample script to get and display bbb cpu temperature.  Requires am335x_bandgap module.
+# Based on code as described below:
+
+# CPU TEMP MONITOR
+# CTRL-C TO STOP
+# WRITTEN BY BRIAN HECKATHORNE - ME@GODFEAR.ORG
+# Modified by Richard St-Pierre - inspire.logicsupply.com
+# Simple script for monitoring the CPU temp on a BeagleBone Black running Debian
+
+# See http://codepoints.net/basic_multilingual_plane
+
+_fast_chr() {
+    local __octal
+    local __char
+    printf -v __octal '%03o' $1
+    printf -v __char \\$__octal
+    REPLY=$__char
+}
+
+# function to print unicode character from value passed in
+
+function unichr {
+    if [[ $LANG == "C" ]]; then
+        echo -n " "
+    else
+        local c=$1  # ordinal of char
+        local l=0   # byte ctr
+        local o=63  # ceiling
+        local p=128 # accum. bits
+        local s=''  # output string
+
+        (( c < 0x80 )) && { _fast_chr "$c"; echo -n "$REPLY"; return; }
+
+        while (( c > o )); do
+            _fast_chr $(( t = 0x80 | c & 0x3f ))
+            s="$REPLY$s"
+            (( c >>= 6, l++, p += o+1, o>>=1 ))
+        done
+
+        _fast_chr $(( t = p | c ))
+        echo -n "$REPLY$s"
+    fi
+}
+
+for (( ; ; ))
+do
+        C=$(cat /sys/class/hwmon/hwmon0/device/temp1_input | sed 's/...$//')
+        F=$(echo $C\*9/5+32 | bc)
+        echo "CPU Temp: ${C}$(unichr 0x00B0)C / ${F}$(unichr 0x00B0)F"
+        # echo -n "CPU Temp [Celsius]: "
+        # cat /sys/class/hwmon/hwmon0/device/temp1_input | sed 's/...$//'
+        if [ -z $1 ]; then break ; fi
+        sleep 2
+done
