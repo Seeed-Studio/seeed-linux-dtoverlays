@@ -1,0 +1,32 @@
+/*
+ * Copyright (C) 2020 Seeed Studio
+ * Zhangqun Ming <north_sea@qq.com>
+ *
+ * MIT License
+ *
+ */
+/dts-v1/;
+/plugin/;
+
+/ {
+	compatible = "brcm,bcm2835", "brcm,bcm2708", "brcm,bcm2709";
+
+	fragment@0 {
+		target = <&i2c1>;
+		__overlay__ {
+			status = "okay";
+
+			/* this is the configuration part */
+			clock-frequency = <400000>;
+
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			bma456@19 {
+				compatible = "bosch,bma456";
+				reg = <0x19>;
+				status = "okay";
+			};
+		};
+	};
+};
