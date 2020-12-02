@@ -42,6 +42,20 @@
 			};
 		};
 	};
+	
+	fragment@3 {
+		target = <&hdmi0>;
+		__overlay__  {
+			status = "disable";
+		};
+	};
+	
+	fragment@4 {
+		target = <&hdmi1>;
+		__overlay__  {
+			status = "disable";
+		};
+	};
 
 /*	fragment@2 {
 		target = <&i2c0if>;

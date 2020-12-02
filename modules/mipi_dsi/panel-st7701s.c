@@ -131,16 +131,13 @@ static void st7701_init_sequence(struct st7701 *st7701)
 //	const struct drm_display_mode *mode = st7701->desc->mode;
 
 	ST7701_DSI(st7701, MIPI_DCS_SOFT_RESET, 0x00);
-
 	/* We need to wait 5ms before sending new commands */
 	msleep(5);
-
 	ST7701_DSI(st7701, MIPI_DCS_EXIT_SLEEP_MODE, 0x00);
-
 	msleep(st7701->sleep_delay);
 
 #if 1
-	ST7701_DSI(st7701, 0x11);
+//	ST7701_DSI(st7701, 0x11);
 	msleep(50);
 	ST7701_DSI(st7701, 0xFF, 0x77,0x01,0x00,0x00,0x10);
 	ST7701_DSI(st7701, 0xC0, 0xE9,0x03);
@@ -177,7 +174,11 @@ static void st7701_init_sequence(struct st7701 *st7701)
 	ST7701_DSI(st7701, 0xED, 0xFA,0x45,0x0B,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xB0,0x54,0xAF);
 	ST7701_DSI(st7701, 0xFF, 0x77,0x01,0x00,0x00,0x00);
 
-	ST7701_DSI(st7701, 0x29);
+	ST7701_DSI(st7701, 0xff, 0x77, 0x01, 0x00, 0x00, 0x12);
+	ST7701_DSI(st7701, 0xD1, 0x81,0x20,0x03,0x56,0x08,0x01,0xC0,0x01,0xE0,0xC0,0x01,0xE0,0x03,0x56);//854
+	ST7701_DSI(st7701, 0xD2, 0x06);//选择图片彩条画面（图片表格从左上角开始0x00，最右下角0x0f)
+
+//	ST7701_DSI(st7701, 0x29);
 #else
 	/* Command2, BK0 */
 	ST7701_DSI(st7701, DSI_CMD2BKX_SEL,
@@ -378,11 +379,11 @@ static const char * const ts8550b_supply_names[] = {
 	"VCC",
 	"IOVCC",
 };
-
 static const struct st7701_panel_desc ts8550b_desc = {
 	.mode = &ts8550b_mode,
 	.lanes = 2,
-	.flags = MIPI_DSI_MODE_VIDEO,
+	.flags = MIPI_DSI_MODE_LPM | MIPI_DSI_MODE_VIDEO,
+
 	.format = MIPI_DSI_FMT_RGB888,
 	.supply_names = ts8550b_supply_names,
 	.num_supplies = ARRAY_SIZE(ts8550b_supply_names),

@@ -54,19 +54,21 @@ static void i2c_md_write(struct i2c_client *client, u8 reg, u8 val)
 /* drm_panel_funcs */
 int i2c_md_enable(void)
 {
-	i2c_md_write(i2c_md->i2c, REG_PWM, 250);
+	i2c_md_write(i2c_md->i2c, REG_PWM, 200);
 	msleep(50);
 	return  0;
 }
 
 int i2c_md_disable(void)
 {
-	i2c_md_write(i2c_md->i2c, REG_PWM, 0);
+	i2c_md_write(i2c_md->i2c, REG_PWM, 255);
+	//i2c_md_write(i2c_md->i2c, REG_PWM, 0);
 	return 0;
 }
 
 int i2c_md_prepare(void)
 {
+	i2c_md_write(i2c_md->i2c, REG_PWM, 255);
 	i2c_md_write(i2c_md->i2c, REG_POWERON, 1);
 	i2c_md_write(i2c_md->i2c, REG_LCD_RST, 0);
 	msleep(100);
@@ -77,7 +79,8 @@ int i2c_md_prepare(void)
 
 int i2c_md_unprepare(void)
 {
-	i2c_md_write(i2c_md->i2c, REG_PWM, 0);
+	i2c_md_write(i2c_md->i2c, REG_PWM, 255);
+	//i2c_md_write(i2c_md->i2c, REG_PWM, 0);
 	i2c_md_write(i2c_md->i2c, REG_LCD_RST, 0);
 	i2c_md_write(i2c_md->i2c, REG_POWERON, 0);
 	return 0;
