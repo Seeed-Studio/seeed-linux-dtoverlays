@@ -187,9 +187,11 @@ static int i2c_md_remove(struct i2c_client *i2c)
 	struct i2c_mipi_dsi *md = i2c_get_clientdata(i2c);
 
 	DBG_FUNC();
-	mipi_dsi_detach(md->dsi);
-	mipi_dsi_device_unregister(md->dsi);
-	kfree(md->dsi);
+	if (md && md->dsi) {
+		mipi_dsi_detach(md->dsi);
+		mipi_dsi_device_unregister(md->dsi);
+		kfree(md->dsi);
+	}
 
 	return 0;
 }
