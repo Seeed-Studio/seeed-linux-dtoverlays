@@ -9,11 +9,11 @@
 struct i2c_mipi_dsi *i2c_md = NULL;
 
 
-static int i2c_md_read(struct i2c_client *client, u8 reg)
+/*static */int i2c_md_read(struct i2c_client *client, u8 reg, u8 *buf, int len)
 {
 	struct i2c_msg msgs[1];
 	u8 addr_buf[1] = { reg };
-	u8 data_buf[1] = { 0, };
+	u8 data_buf[1] = { 0 };
 	int ret;
 
 	/* Write register address */
@@ -22,32 +22,52 @@ static int i2c_md_read(struct i2c_client *client, u8 reg)
 	msgs[0].len = ARRAY_SIZE(addr_buf);
 	msgs[0].buf = addr_buf;
 
+	mutex_lock(&i2c_md->mutex);
 	ret = i2c_transfer(client->adapter, msgs, ARRAY_SIZE(msgs));
-	if (ret != ARRAY_SIZE(msgs))
+	if (ret != ARRAY_SIZE(msgs)) {
+		mutex_unlock(&i2c_md->mutex);
 		return -EIO;
+	}
 
 	usleep_range(100, 300);
 
 	/* Read data from register */
 	msgs[0].addr = client->addr;
 	msgs[0].flags = I2C_M_RD;
-	msgs[0].len = 1;
-	msgs[0].buf = data_buf;
+	if (NULL == buf) {
+		msgs[0].len = 1;
+		msgs[0].buf = data_buf;
+	}
+	else {
+		msgs[0].len = len;
+		msgs[0].buf = buf;
+	}
 
 	ret = i2c_transfer(client->adapter, msgs, ARRAY_SIZE(msgs));
-	if (ret != ARRAY_SIZE(msgs))
+	if (ret != ARRAY_SIZE(msgs)) {
+		mutex_unlock(&i2c_md->mutex);
 		return -EIO;
+	}
+	mutex_unlock(&i2c_md->mutex);
 
-	return data_buf[0];
+	if (NULL == buf) {
+		return data_buf[0];	
+	}
+	else {
+		return ret;
+	}
 }
 
-static void i2c_md_write(struct i2c_client *client, u8 reg, u8 val)
+/*static */void i2c_md_write(struct i2c_client *client, u8 reg, u8 val)
 {
 	int ret;
 
+	mutex_lock(&i2c_md->mutex);
 	ret = i2c_smbus_write_byte_data(client, reg, val);
-	if (ret)
+	if (ret) {
 		dev_err(&client->dev, "I2C write failed: %d\n", ret);
+	}
+	mutex_unlock(&i2c_md->mutex);
 }
 
 
@@ -158,8 +178,9 @@ static int i2c_md_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
 
 	i2c_set_clientdata(i2c, md);
 	md->i2c = i2c;
+	mutex_init(&md->mutex);
 
-	ret = i2c_md_read(i2c, REG_ID);
+	ret = i2c_md_read(i2c, REG_ID, NULL, 0);
 	if (ret < 0) {
 		dev_err(dev, "I2C ID read failed: %d\n", ret);
 		return -ENODEV;
@@ -179,6 +200,10 @@ static int i2c_md_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
 		return ret;
 	}
 
+	tp_init(md);
+
+	DBG_FUNC("End");
+
 	return 0;
 }
 
@@ -187,11 +212,17 @@ static int i2c_md_remove(struct i2c_client *i2c)
 	struct i2c_mipi_dsi *md = i2c_get_clientdata(i2c);
 
 	DBG_FUNC();
-	if (md && md->dsi) {
-		mipi_dsi_detach(md->dsi);
-		mipi_dsi_device_unregister(md->dsi);
-		kfree(md->dsi);
+	if (md) {
+		tp_deinit(md);
+
+		if (md->dsi) {
+			mipi_dsi_detach(md->dsi);
+			mipi_dsi_device_unregister(md->dsi);
+			kfree(md->dsi);
+		}
 	}
+	
+	i2c_md_write(i2c, REG_POWERON, 0);
 
 	return 0;
 }

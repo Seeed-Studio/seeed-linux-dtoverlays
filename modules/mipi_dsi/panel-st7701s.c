@@ -137,7 +137,7 @@ static void st7701_init_sequence(struct st7701 *st7701)
 	msleep(st7701->sleep_delay);
 
 #if 1
-//	ST7701_DSI(st7701, 0x11);
+	ST7701_DSI(st7701, 0x11);
 	msleep(50);
 	ST7701_DSI(st7701, 0xFF, 0x77,0x01,0x00,0x00,0x10);
 	ST7701_DSI(st7701, 0xC0, 0xE9,0x03);
@@ -178,7 +178,7 @@ static void st7701_init_sequence(struct st7701 *st7701)
 	ST7701_DSI(st7701, 0xD1, 0x81,0x20,0x03,0x56,0x08,0x01,0xC0,0x01,0xE0,0xC0,0x01,0xE0,0x03,0x56);//854
 	ST7701_DSI(st7701, 0xD2, 0x06);//选择图片彩条画面（图片表格从左上角开始0x00，最右下角0x0f)
 
-//	ST7701_DSI(st7701, 0x29);
+	ST7701_DSI(st7701, 0x29);
 #else
 	/* Command2, BK0 */
 	ST7701_DSI(st7701, DSI_CMD2BKX_SEL,

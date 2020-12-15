@@ -26,7 +26,7 @@
 	};
 
 	fragment@1 {
-		target = <&i2c1>;
+		target = <&i2c_csi_dsi>;
 		__overlay__ {
 			#address-cells = <1>;
 			#size-cells = <0>;
@@ -43,21 +43,7 @@
 		};
 	};
 	
-	fragment@3 {
-		target = <&hdmi0>;
-		__overlay__  {
-			status = "disable";
-		};
-	};
-	
-	fragment@4 {
-		target = <&hdmi1>;
-		__overlay__  {
-			status = "disable";
-		};
-	};
-
-/*	fragment@2 {
+	fragment@2 {
 		target = <&i2c0if>;
 		__overlay__ {
 			status = "okay";
@@ -70,5 +56,18 @@
 			status = "okay";
 		};
 	};
-*/
+
+	fragment@4 {
+		target = <&hdmi0>;
+		__overlay__  {
+			status = "disable";
+		};
+	};
+	
+	fragment@5 {
+		target = <&hdmi1>;
+		__overlay__  {
+			status = "disable";
+		};
+	};
 };

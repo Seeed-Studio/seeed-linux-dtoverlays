@@ -36,6 +36,10 @@
 
 #include <video/mipi_display.h>
 
+#include <linux/input.h>
+#include <linux/input/mt.h>
+#include <linux/input/touchscreen.h>
+
 
 #define I2C_MIPI_DSI
 
@@ -71,17 +75,29 @@ enum REG_ADDR {
 
     REG_LCD_RST,
     REG_TP_RST,
+    REG_TP_STATUS,
+    REG_TP_POINT,
 
     REG_MAX
 };
 
 struct i2c_mipi_dsi {
 	struct i2c_client *i2c;
+	struct mutex mutex;
+	
+	// dsi
 	struct mipi_dsi_device *dsi;
+
+	// tp
+	struct input_dev *input;
+	struct touchscreen_properties prop;
 };
 
 extern struct i2c_mipi_dsi *i2c_md;
 
+/* i2c */
+int i2c_md_read(struct i2c_client *client, u8 reg, u8 *buf, int len);
+void i2c_md_write(struct i2c_client *client, u8 reg, u8 val);
 
 /* drm_panel_funcs */
 int i2c_md_enable(void);
@@ -89,5 +105,8 @@ int i2c_md_disable(void);
 int i2c_md_prepare(void);
 int i2c_md_unprepare(void);
 
+// touch panel
+int tp_init(struct i2c_mipi_dsi *md);
+int tp_deinit(struct i2c_mipi_dsi *md);
 
 #endif /*End of header guard macro */
