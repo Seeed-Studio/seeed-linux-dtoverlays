@@ -4,8 +4,6 @@
 This is a linux kernel driver for MIPI-DSI panel with touch panel attached to I2C bus.
 
 ### How to use
-Get the mipi_dsi source code, and install all linux kernel drivers.
-
 Add these lines to '/boot/config.txt':
 ```
 dtparam=i2c_arm=on
@@ -15,6 +13,7 @@ dtoverlay=vc4-kms-v3d-pi4
 dtoverlay=mipi_dsi-i2c10
 ```
 
+Get the mipi_dsi source code, and install all linux kernel drivers:
 ```bash
 git clone https://github.com/Seeed-Studio/seeed-linux-dtoverlays.git
 git checkout mipi_dsi
