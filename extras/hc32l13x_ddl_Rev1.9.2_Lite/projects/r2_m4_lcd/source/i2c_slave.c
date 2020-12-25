@@ -65,7 +65,7 @@ static void App_PortCfg(void)
 
 
 ///< I2C 模块配置
-void App_I2cCfg(void)
+void App_I2cSlaveCfg(void)
 {
     stc_i2c_cfg_t stcI2cCfg;
     
@@ -99,13 +99,17 @@ void App_I2cSlaveHandle(void)
 
         TxCnt = 0;
         if (REG_TP_STATUS == CurReg) {
-            goodix_i2c_read(GOODIX_READ_COOR_ADDR, TxBuf, 2);
-            //printf("S:0x%x,0x%x\r\n", TxBuf[0], TxBuf[1]);
+            if (App_GetTpState()) {
+                goodix_i2c_read(GOODIX_READ_COOR_ADDR, TxBuf, 2);
+                //printf("S:0x%x,0x%x\r\n", TxBuf[0], TxBuf[1]);
+            }
         }
         else if (REG_TP_POINT == CurReg) {
-            goodix_i2c_read(GOODIX_READ_COOR_ADDR+2, TxBuf, 40);
-            goodix_i2c_write_u8(GOODIX_READ_COOR_ADDR, 0);
-            //printf("P:0x%x,0x%x,0x%x,0x%x\r\n", TxBuf[0], TxBuf[1], TxBuf[2], TxBuf[3]);
+            if (App_GetTpState()) {
+                goodix_i2c_read(GOODIX_READ_COOR_ADDR+2, TxBuf, 40);
+                goodix_i2c_write_u8(GOODIX_READ_COOR_ADDR, 0);
+                //printf("P:0x%x,0x%x,0x%x,0x%x\r\n", TxBuf[0], TxBuf[1], TxBuf[2], TxBuf[3]);
+            }
         }
         else {
             TxBuf[0] = Regs[CurReg];
@@ -203,4 +207,6 @@ void I2c0_IRQHandler(void)
     }
     
     I2C_ClearIrq(M0P_I2C0);
+
+    App_I2cSlaveHandle();
 }

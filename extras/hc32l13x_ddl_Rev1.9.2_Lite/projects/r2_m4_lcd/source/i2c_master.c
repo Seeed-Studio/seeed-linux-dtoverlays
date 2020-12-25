@@ -57,13 +57,20 @@ en_result_t I2C_MasterReadData(M0P_I2C_TypeDef* I2CX, uint8_t slave_addr, uint8_
 {
     en_result_t enRet = Error;
     uint8_t u8i=0,u8State;
+    uint32_t timeout = 1000;
     
     I2C_SetFunc(I2CX,I2cStart_En);
     
-    while(1)
-    {
-        while(0 == I2C_GetIrq(I2CX))
-        {;}
+    while(1) {
+        while(0 == I2C_GetIrq(I2CX)) {
+            timeout--;
+            if (timeout == 0) {
+                I2C_SetFunc(I2CX,I2cStop_En);
+                return ErrorTimeout;
+            }
+            delay100us(1);
+        }
+
         u8State = I2C_GetState(I2CX);
         switch(u8State)
         {
@@ -131,11 +138,21 @@ en_result_t I2C_MasterWriteData(M0P_I2C_TypeDef* I2CX, uint8_t slave_addr, uint8
 {
     en_result_t enRet = Error;
     uint8_t u8i=0,u8State;
+    uint32_t timeout = 1000;
+
     I2C_SetFunc(I2CX,I2cStart_En);
     while(1)
     {
         while(0 == I2C_GetIrq(I2CX))
-        {;}
+        {
+            timeout--;
+            if (timeout == 0) {
+                I2C_SetFunc(I2CX,I2cStop_En);
+                return ErrorTimeout;
+            }
+            delay100us(1);
+        }
+
         u8State = I2C_GetState(I2CX);
         switch(u8State)
         {

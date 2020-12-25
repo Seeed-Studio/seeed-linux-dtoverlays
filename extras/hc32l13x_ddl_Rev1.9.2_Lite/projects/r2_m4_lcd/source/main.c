@@ -45,42 +45,29 @@ static void App_ClkCfg(void);
  **
  ******************************************************************************/
 int32_t main(void)
-{
-	uint32_t count = 0;
-	uint8_t pulse = 0;
-	
+{	
     App_ClkCfg();
     App_UartCfg();
+    App_PoutCfg();
 
-	DBG_FUNC("POUT");
-	App_PoutCfg();
-/*	APP_Pout(VCC_LCD2V8, FALSE);
-	APP_Pout(VCC_LCD1V8, FALSE);
-	APP_Pout(LCD_RST, FALSE);
-	APP_Pout(TP_RST, FALSE);
-*/
-	DBG_FUNC("PWM");
-	App_PcaInit();
-//	App_PcaCfg(250);
-//	Pca_StartPca(TRUE);
+    DBG_FUNC("PWM");
+    App_PcaInit();
 
 #ifdef I2C_MASTER
-	DBG_FUNC("I2C Master");
-	App_I2cMasterCfg();
-	App_I2cMaster_Test();
+    DBG_FUNC("I2C Master");
+    App_I2cMasterCfg();
+    App_I2cMaster_Test();
 #else
-	DBG_FUNC("I2C Slave");
-	App_I2cCfg();
-
-	App_I2cTPCfg();
-	App_I2cTPTest();
+    DBG_FUNC("I2C Slave");
+    App_I2cSlaveCfg();
+    App_I2cTPCfg();
 #endif
 
-	DBG_FUNC("loop");
+    DBG_FUNC("loop");
     while (1)
     {
-		App_I2cSlaveHandle();
-	}
+        //App_I2cSlaveHandle();
+    }
 }
 
 

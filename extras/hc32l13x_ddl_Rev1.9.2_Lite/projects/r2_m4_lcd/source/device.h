@@ -66,12 +66,12 @@ en_result_t I2C_MasterWriteData(M0P_I2C_TypeDef* I2CX, uint8_t slave_addr, uint8
 void App_I2cMasterCfg(void);
 void App_I2cMaster_Test(void);
 #else
-void App_I2cCfg(void);
+void App_I2cSlaveCfg(void);
 
-int goodix_i2c_read(u16_t reg, u8_t *buf, s32_t len);
-int goodix_i2c_write_u8(u16_t reg, u8_t value);
+en_result_t goodix_i2c_read(u16_t reg, u8_t *buf, s32_t len);
+en_result_t goodix_i2c_write_u8(u16_t reg, u8_t value);
+uint8_t App_GetTpState(void);
 void App_I2cTPCfg(void);
-void App_I2cTPTest(void);
 #endif
 void App_I2cSlaveHandle(void);
 
