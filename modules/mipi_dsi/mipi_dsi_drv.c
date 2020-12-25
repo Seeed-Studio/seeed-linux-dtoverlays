@@ -1,31 +1,36 @@
-// SPDX-License-Identifier: GPL-2.0+
+// SPDX-License-Identifier: GPL-2.0
 /*
- * Copyright (C) 2019, Amarula Solutions.
- * Author: Jagan Teki <jagan@amarulasolutions.com>
+ * This is a linux kernel driver for MIPI-DSI 
+ * panel with touch panel attached to I2C bus.
+ *
+ * Copyright (c) 2020 Seeed Studio
+ * Zhangqun Ming<north_sea@qq.com>
+ *
+ * I2C slave address: 0x45
  */
 #include "mipi_dsi.h"
 
 
-struct i2c_mipi_dsi *i2c_md = NULL;
+#define MIPI_DSI_DRIVER_NAME		"mipi_dsi"
 
-
-/*static */int i2c_md_read(struct i2c_client *client, u8 reg, u8 *buf, int len)
+/*static */int i2c_md_read(struct i2c_mipi_dsi *md, u8 reg, u8 *buf, int len)
 {
+	struct i2c_client *client = md->i2c;
 	struct i2c_msg msgs[1];
 	u8 addr_buf[1] = { reg };
-	u8 data_buf[1] = { 0 };
+	u8 data_buf[1] = { 0, };
 	int ret;
 
+	mutex_lock(&md->mutex);
 	/* Write register address */
 	msgs[0].addr = client->addr;
 	msgs[0].flags = 0;
 	msgs[0].len = ARRAY_SIZE(addr_buf);
 	msgs[0].buf = addr_buf;
 
-	mutex_lock(&i2c_md->mutex);
 	ret = i2c_transfer(client->adapter, msgs, ARRAY_SIZE(msgs));
 	if (ret != ARRAY_SIZE(msgs)) {
-		mutex_unlock(&i2c_md->mutex);
+		mutex_unlock(&md->mutex);
 		return -EIO;
 	}
 
@@ -45,10 +50,10 @@ struct i2c_mipi_dsi *i2c_md = NULL;
 
 	ret = i2c_transfer(client->adapter, msgs, ARRAY_SIZE(msgs));
 	if (ret != ARRAY_SIZE(msgs)) {
-		mutex_unlock(&i2c_md->mutex);
+		mutex_unlock(&md->mutex);
 		return -EIO;
 	}
-	mutex_unlock(&i2c_md->mutex);
+	mutex_unlock(&md->mutex);
 
 	if (NULL == buf) {
 		return data_buf[0];	
@@ -58,109 +63,182 @@ struct i2c_mipi_dsi *i2c_md = NULL;
 	}
 }
 
-/*static */void i2c_md_write(struct i2c_client *client, u8 reg, u8 val)
+/*static */void i2c_md_write(struct i2c_mipi_dsi *md, u8 reg, u8 val)
+{
+	struct i2c_client *client = md->i2c;
+	int ret;
+
+	mutex_lock(&md->mutex);
+	ret = i2c_smbus_write_byte_data(client, reg, val);
+	if (ret)
+		dev_err(&client->dev, "I2C write failed: %d\n", ret);
+	mutex_unlock(&md->mutex);
+}
+
+
+/* mipi driver */
+static int mipi_dsi_probe(struct mipi_dsi_device *dsi)
 {
 	int ret;
 
-	mutex_lock(&i2c_md->mutex);
-	ret = i2c_smbus_write_byte_data(client, reg, val);
+	DBG_FUNC();
+	ret = mipi_dsi_attach(dsi);
 	if (ret) {
-		dev_err(&client->dev, "I2C write failed: %d\n", ret);
+		dev_err(&dsi->dev, "failed to attach dsi to host: %d\n", ret);
 	}
-	mutex_unlock(&i2c_md->mutex);
+
+	return ret;
 }
 
+static struct mipi_dsi_driver mipi_dsi_driver = {
+	.driver.name = MIPI_DSI_DRIVER_NAME,
+	.probe = mipi_dsi_probe,
+};
 
-/* drm_panel_funcs */
-int i2c_md_enable(void)
+
+/* mipi device */
+static struct mipi_dsi_device *mipi_dsi_device(struct device *dev)
 {
-	i2c_md_write(i2c_md->i2c, REG_PWM, 200);
-	msleep(50);
-	return  0;
-}
-
-int i2c_md_disable(void)
-{
-	i2c_md_write(i2c_md->i2c, REG_PWM, 255);
-	//i2c_md_write(i2c_md->i2c, REG_PWM, 0);
-	return 0;
-}
-
-int i2c_md_prepare(void)
-{
-	i2c_md_write(i2c_md->i2c, REG_PWM, 255);
-	i2c_md_write(i2c_md->i2c, REG_POWERON, 1);
-	i2c_md_write(i2c_md->i2c, REG_LCD_RST, 0);
-	msleep(100);
-	i2c_md_write(i2c_md->i2c, REG_LCD_RST, 1);
-	msleep(200);
-	return 0;
-}
-
-int i2c_md_unprepare(void)
-{
-	i2c_md_write(i2c_md->i2c, REG_PWM, 255);
-	//i2c_md_write(i2c_md->i2c, REG_PWM, 0);
-	i2c_md_write(i2c_md->i2c, REG_LCD_RST, 0);
-	i2c_md_write(i2c_md->i2c, REG_POWERON, 0);
-	return 0;
-}
-
-
-/* mipi_dsi_device */
-static int i2c_mipi_dsi_device(struct i2c_mipi_dsi *md)
-{
-	struct device *dev = &md->i2c->dev;
+	struct mipi_dsi_device *dsi = NULL;
 	struct device_node *endpoint, *dsi_host_node;
 	struct mipi_dsi_host *host;
 	struct mipi_dsi_device_info info = {
-		.type = DSI_DRIVER_NAME,
+		.type = MIPI_DSI_DRIVER_NAME,
 		.channel = 0,
 		.node = NULL,
 	};
 
+	DBG_FUNC();
 	/* Look up the DSI host.  It needs to probe before we do. */
 	endpoint = of_graph_get_next_endpoint(dev->of_node, NULL);
-	if (!endpoint)
-		return -ENODEV;
-	DBG_FUNC("endpoint[0x%x]%s,%s", (int)endpoint, 
-		endpoint->name, endpoint->full_name);
+	if (!endpoint) {
+		dev_err(dev, "No endpoint node!");
+		return NULL;
+	}
 
 	dsi_host_node = of_graph_get_remote_port_parent(endpoint);
-	if (!dsi_host_node)
+	if (!dsi_host_node) {
+		dev_err(dev, "No dsi_host node!");
 		goto error;
-	DBG_FUNC("host_node[0x%x]%s,%s", (int)dsi_host_node,
-		dsi_host_node->name, dsi_host_node->full_name);
+	}
 
 	host = of_find_mipi_dsi_host_by_node(dsi_host_node);
 	of_node_put(dsi_host_node);
 	if (!host) {
-		of_node_put(endpoint);
-		return -EPROBE_DEFER;
+		dev_err(dev, "Can't find mipi_dsi_host!");
+		goto error;
 	}
-	DBG_FUNC("host[0x%x]%s", (int)host, host->dev->init_name);
 
 	info.node = of_graph_get_remote_port(endpoint);
-	if (!info.node)
+	if (!info.node) {
+		dev_err(dev, "Can't get remote port!");
 		goto error;
-	DBG_FUNC("info_node[0x%x]%s,%s", (int)info.node, 
-		info.node->name, info.node->full_name);
-	of_node_put(endpoint);
-
-	md->dsi = mipi_dsi_device_register_full(host, &info);
-	if (IS_ERR(md->dsi)) {
-		dev_err(dev, "DSI device registration failed: %ld\n",
-			PTR_ERR(md->dsi));
-		return PTR_ERR(md->dsi);
 	}
-	DBG_FUNC("dsi[0x%x]%s", (int)md->dsi, md->dsi->name);
 
-	return mipi_dsi_attach(md->dsi);
+	of_node_put(endpoint);
+	dsi = mipi_dsi_device_register_full(host, &info);
+
+	return dsi;
 
 error:
 	of_node_put(endpoint);
-	return -ENODEV;
+	return NULL;
 }
+
+
+/* panel_funcs */
+static int panel_prepare(struct drm_panel *panel)
+{
+	int i = 0;
+	struct i2c_mipi_dsi *md = panel_to_md(panel);
+	const struct drm_panel_funcs *funcs = md->panel_data->funcs;
+
+	/* i2c */
+	i2c_md_write(md, REG_POWERON, 1);
+	usleep_range(20000, 25000);
+	/* Wait for nPWRDWN to go low to indicate poweron is done. */
+	for (i = 0; i < 100; i++) {
+		if (i2c_md_read(md, REG_PORTB, NULL, 0) & 0x01)
+			break;
+	}
+
+	/* reset pin */
+	i2c_md_write(md, REG_LCD_RST, 1);
+	msleep(100);
+	i2c_md_write(md, REG_LCD_RST, 0);
+	msleep(100);
+	i2c_md_write(md, REG_LCD_RST, 1);
+	msleep(100);
+
+	/* panel */
+	if (funcs && funcs->prepare)
+		funcs->prepare(panel);
+
+	return 0;
+}
+
+static int panel_unprepare(struct drm_panel *panel)
+{
+	struct i2c_mipi_dsi *md = panel_to_md(panel);
+	const struct drm_panel_funcs *funcs = md->panel_data->funcs;
+
+	if (funcs && funcs->unprepare)
+		funcs->unprepare(panel);
+
+	return 0;
+}
+
+static int panel_enable(struct drm_panel * panel)
+{
+	struct i2c_mipi_dsi *md = panel_to_md(panel);
+	const struct drm_panel_funcs *funcs = md->panel_data->funcs;
+
+	/* i2c */
+	/* Turn on the backlight. */
+	i2c_md_write(md, REG_PWM, 255);
+
+	/* panel */
+	if (funcs && funcs->enable)
+		funcs->enable(panel);
+
+	return 0;
+}
+
+static int panel_disable(struct drm_panel * panel)
+{
+	struct i2c_mipi_dsi *md = panel_to_md(panel);
+	const struct drm_panel_funcs *funcs = md->panel_data->funcs;
+
+	/* i2c */
+	i2c_md_write(md, REG_PWM, 0);
+	i2c_md_write(md, REG_POWERON, 0);
+	udelay(1);
+
+	/* panel */
+	if (funcs && funcs->disable)
+		funcs->disable(panel);
+
+	return 0;
+}
+
+static int panel_get_modes(struct drm_panel *panel, struct drm_connector *connector)
+{
+	struct i2c_mipi_dsi *md = panel_to_md(panel);
+	const struct drm_panel_funcs *funcs = md->panel_data->funcs;
+
+	if (funcs && funcs->get_modes)
+		funcs->get_modes(panel, connector);
+
+	return 0;
+}
+
+static const struct drm_panel_funcs panel_funcs = {
+	.prepare = panel_prepare,
+	.unprepare = panel_unprepare,
+	.enable = panel_enable,
+	.disable = panel_disable,
+	.get_modes = panel_get_modes,
+};
 
 
 /* i2c */
@@ -170,39 +248,48 @@ static int i2c_md_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
 	struct i2c_mipi_dsi *md;
 	int ret = 0;
 
-	DBG_FUNC();
+	DBG_FUNC("start");
 	md = devm_kzalloc(dev, sizeof(*md), GFP_KERNEL);
 	if (!md)
 		return -ENOMEM;
-	i2c_md = md;
 
 	i2c_set_clientdata(i2c, md);
-	md->i2c = i2c;
 	mutex_init(&md->mutex);
-
-	ret = i2c_md_read(i2c, REG_ID, NULL, 0);
-	if (ret < 0) {
-		dev_err(dev, "I2C ID read failed: %d\n", ret);
+	md->i2c = i2c;
+	md->panel_data = (struct panel_data *)of_device_get_match_data(dev);
+	if (!md->panel_data) {
+		dev_err(dev, "No valid panel data.\n");
 		return -ENODEV;
 	}
-	DBG_FUNC("READ_ID=0x%x", ret);
-	if (ret != 0xc3) {
-		dev_err(dev, "Unknown firmware revision: 0x%02x\n", ret);
+
+	ret = i2c_md_read(md, REG_ID, NULL, 0);
+	if (ret < 0) {
+		dev_err(dev, "I2C read id failed: %d\n", ret);
+		return -ENODEV;
+	}
+	dev_info(dev, "I2C read id: 0x%x\n", ret);
+	if (ret != 0xC3) {
+		dev_err(dev, "Unknown chip id: 0x%02x\n", ret);
 		return -ENODEV;
 	}
 
 	/* Turn off at boot, so we can cleanly sequence powering on. */
-	i2c_md_write(i2c, REG_POWERON, 0);
+	i2c_md_write(md, REG_POWERON, 0);
+	i2c_md_write(md, REG_PWM, 0);
 
-	ret = i2c_mipi_dsi_device(md);
-	if (ret < 0) {
-		dev_err(dev, "failed: i2c_mipi_dsi_device\n");
-		return ret;
+	md->dsi = mipi_dsi_device(dev);
+	if (IS_ERR(md->dsi)) {
+		dev_err(dev, "DSI device registration failed: %ld\n", PTR_ERR(md->dsi));
+		return PTR_ERR(md->dsi);
 	}
+
+	md->panel_data->set_dsi(md->dsi);
+	drm_panel_init(&md->panel, dev, /*md->panel_data->funcs*/&panel_funcs, DRM_MODE_CONNECTOR_DSI);
+	drm_panel_add(&md->panel);
 
 	tp_init(md);
 
-	DBG_FUNC("End");
+	DBG_FUNC("finished.");
 
 	return 0;
 }
@@ -212,54 +299,70 @@ static int i2c_md_remove(struct i2c_client *i2c)
 	struct i2c_mipi_dsi *md = i2c_get_clientdata(i2c);
 
 	DBG_FUNC();
-	if (md) {
-		tp_deinit(md);
+	/* Turn off power */
+	i2c_md_write(md, REG_POWERON, 0);
+	i2c_md_write(md, REG_PWM, 0);
 
-		if (md->dsi) {
-			mipi_dsi_detach(md->dsi);
-			mipi_dsi_device_unregister(md->dsi);
-			kfree(md->dsi);
-		}
-	}
-	
-	i2c_md_write(i2c, REG_POWERON, 0);
+	tp_deinit(md);
+
+	mipi_dsi_detach(md->dsi);
+	drm_panel_remove(&md->panel);
+	mipi_dsi_device_unregister(md->dsi);
+	kfree(md->dsi);
 
 	return 0;
 }
 
-static const struct of_device_id rpi_touchscreen_of_ids[] = {
-	{ .compatible = "seeed,mipi_dsi" },
+extern const struct panel_data st7701s_data;
+extern const struct panel_data ili9881d_data;
+static const struct of_device_id i2c_md_of_ids[] = {
+	{
+		.compatible = "i2c_dsi,st7701s",
+		.data = (const void*)&st7701s_data,
+	},
+	{
+		.compatible = "i2c_dsi,ili9881d",
+		.data = (const void*)&ili9881d_data,
+	},
 	{ } /* sentinel */
 };
-MODULE_DEVICE_TABLE(of, rpi_touchscreen_of_ids);
+MODULE_DEVICE_TABLE(of, i2c_md_of_ids);
 
 static struct i2c_driver i2c_md_driver = {
 	.driver = {
-		.name = "mipi_dsi",
-		.of_match_table = rpi_touchscreen_of_ids,
+		.name = "i2c_mipi_dsi",
+		.of_match_table = i2c_md_of_ids,
 	},
 	.probe = i2c_md_probe,
 	.remove = i2c_md_remove,
 };
 
-extern struct mipi_dsi_driver st7701_dsi_driver;
 static int __init i2c_md_init(void)
 {
+	int ret;
+
 	DBG_FUNC();
-	mipi_dsi_driver_register(&st7701_dsi_driver);
-	return i2c_add_driver(&i2c_md_driver);
+	ret = i2c_add_driver(&i2c_md_driver);
+	if (ret < 0)
+		return ret;
+
+	ret = mipi_dsi_driver_register(&mipi_dsi_driver);
+	if (ret < 0)
+		return ret;
+
+	return ret;
 }
 module_init(i2c_md_init);
 
 static void __exit i2c_md_exit(void)
 {
 	DBG_FUNC();
+	mipi_dsi_driver_unregister(&mipi_dsi_driver);
 	i2c_del_driver(&i2c_md_driver);
-	mipi_dsi_driver_unregister(&st7701_dsi_driver);
 }
 module_exit(i2c_md_exit);
 
 MODULE_AUTHOR("Zhangqun Ming <north_sea@qq.com>");
 MODULE_AUTHOR("Seeed, Inc.");
-MODULE_DESCRIPTION("MIPI DSI driver");
+MODULE_DESCRIPTION("MIPI-DSI driver");
 MODULE_LICENSE("GPL v2");

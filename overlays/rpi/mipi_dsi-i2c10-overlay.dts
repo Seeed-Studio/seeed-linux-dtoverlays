@@ -32,7 +32,8 @@
 			#size-cells = <0>;
 			status = "okay";
 			mipi_dsi@45 {
-				compatible = "seeed,mipi_dsi";
+				//compatible = "i2c_dsi,st7701s";
+				compatible = "i2c_dsi,ili9881d";
 				reg = <0x45>;
 				port {
 					panel_dsi_port: endpoint {
@@ -54,20 +55,6 @@
 		target = <&i2c0mux>;
 		__overlay__ {
 			status = "okay";
-		};
-	};
-
-	fragment@4 {
-		target = <&hdmi0>;
-		__overlay__  {
-			status = "disable";
-		};
-	};
-	
-	fragment@5 {
-		target = <&hdmi1>;
-		__overlay__  {
-			status = "disable";
 		};
 	};
 };
