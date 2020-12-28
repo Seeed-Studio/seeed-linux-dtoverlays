@@ -21,6 +21,8 @@ static void tp_poll_func(struct input_dev *input)
 	u8 data[40];
 
 	ret = i2c_md_read(md, REG_TP_STATUS, data, 2);
+	if (0xFF == data[0])
+		return;
 	//DBG_FUNC("0x%x,0x%x", data[0], data[1]);
 	if (data[0] & GOODIX_BUFFER_STATUS_READY) {
 		num = data[0] & 0x0F;
