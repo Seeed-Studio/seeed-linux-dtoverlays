@@ -278,13 +278,13 @@ static int i2c_md_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
 	i2c_md_write(md, REG_PWM, 0);
 
 	md->dsi = mipi_dsi_device(dev);
-	if (IS_ERR(md->dsi)) {
-		dev_err(dev, "DSI device registration failed: %ld\n", PTR_ERR(md->dsi));
-		return PTR_ERR(md->dsi);
+	if (NULL == md->dsi) {
+		dev_err(dev, "DSI device registration failed!\n");
+		return -ENODEV;
 	}
 
 	md->panel_data->set_dsi(md->dsi);
-	drm_panel_init(&md->panel, dev, /*md->panel_data->funcs*/&panel_funcs, DRM_MODE_CONNECTOR_DSI);
+	drm_panel_init(&md->panel, dev, &panel_funcs, DRM_MODE_CONNECTOR_DSI);
 	drm_panel_add(&md->panel);
 
 	tp_init(md);
