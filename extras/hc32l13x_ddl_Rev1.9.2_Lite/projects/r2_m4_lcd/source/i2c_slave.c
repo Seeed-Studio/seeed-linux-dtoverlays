@@ -145,10 +145,10 @@ void App_I2cSlaveHandle(void)
             printf("C:0x%x\n", Regs[CurReg]);
         break;
         
-        case REG_TP_RST:
+        /*case REG_TP_RST:
             APP_Pout(TP_RST, Regs[CurReg]);
             printf("D:0x%x\n", Regs[CurReg]);
-        break;
+        break;*/
         }
     }
 }
@@ -208,5 +208,5 @@ void I2c0_IRQHandler(void)
     
     I2C_ClearIrq(M0P_I2C0);
 
-    App_I2cSlaveHandle();
+    //App_I2cSlaveHandle();
 }

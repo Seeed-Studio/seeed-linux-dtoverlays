@@ -47,12 +47,16 @@ static en_result_t App_I2cTPTest(void)
     en_result_t ret = Error;
     u8_t buf[6] = {0};
 
+    DBG_FUNC();
+
+    APP_Pdir(TP_INT, 1); // output
+    APP_Pout(TP_INT, 0);
     APP_Pout(TP_RST, 0);
     delay1ms(100);
     APP_Pout(TP_RST, 1);
-    delay1ms(100);
+    delay1ms(1000);
+    APP_Pdir(TP_INT, 0); // input
 
-    DBG_FUNC();
     ret = goodix_i2c_read(GOODIX_REG_ID, buf, sizeof(buf));
     DBG_FUNC("ret=%d,%s,0x%x,0x%x", ret, buf, buf[4], buf[5]);
 
@@ -62,14 +66,17 @@ static en_result_t App_I2cTPTest(void)
     u8_t data[GOODIX_CONTACT_SIZE];
 
     for (;;) {
-        //delay1ms(1000);
         addr = GOODIX_READ_COOR_ADDR;
         goodix_i2c_read(addr, data, 2);
+/*      DBG_FUNC("0x%x,0x%x", data[0], data[1]);
+        delay1ms(1000);*/
         addr += 2;
         if (data[0] & GOODIX_BUFFER_STATUS_READY) {
-            int i = 0;
+            int i = 0, n = 0;
             int x=0, y=0;
-            for (i=0; i<1; i++) {
+            n = data[0] & 0x0F;
+            DBG_FUNC("MAX:%d", n);
+            for (i=0; i<n; i++) {
                 goodix_i2c_read(addr, data, GOODIX_CONTACT_SIZE);
                 addr += GOODIX_CONTACT_SIZE;
 
@@ -79,7 +86,7 @@ static en_result_t App_I2cTPTest(void)
                 y = data[3];
                 y <<= 8;
                 y += data[2];
-                DBG_FUNC("x=%d,y=%d", x, y);
+                DBG_FUNC("[%d]x=%d,y=%d", i, x, y);
             }
             goodix_i2c_write_u8(GOODIX_READ_COOR_ADDR, 0);
         }

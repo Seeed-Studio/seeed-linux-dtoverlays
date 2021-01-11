@@ -47,6 +47,7 @@ typedef unsigned int u32_t, u32;
 #define VCC_LCD2V8		GpioPin0
 #define VCC_LCD1V8		GpioPin1
 #define LCD_RST			GpioPin5
+#define TP_INT			GpioPin4
 #define TP_RST			GpioPin7
 
 void APP_Pout(en_gpio_pin_t pin, boolean_t enable);
@@ -81,6 +82,8 @@ void App_PcaCfg(uint8_t pulse);
 
 /* pout */
 void App_PoutCfg(void);
+void APP_Pdir(en_gpio_pin_t pin, uint8_t dir);
+void APP_Pout(en_gpio_pin_t pin, boolean_t enable);
 
 /* uart */
 void App_UartCfg(void);

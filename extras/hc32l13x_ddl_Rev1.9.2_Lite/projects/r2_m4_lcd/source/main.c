@@ -66,7 +66,7 @@ int32_t main(void)
     DBG_FUNC("loop");
     while (1)
     {
-        //App_I2cSlaveHandle();
+        App_I2cSlaveHandle();
     }
 }
 
