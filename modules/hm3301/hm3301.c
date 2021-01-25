@@ -176,19 +176,23 @@ static int hm3301_do_meas(struct hm3301_state *state, s32 *data, int size)
 	return 0;
 }
 
+#if 0
 static irqreturn_t hm3301_trigger_handler(int irq, void *p)
 {
+
+	printk("inot irq return trigger handler\n");
 	struct iio_poll_func *pf = p;
 	struct iio_dev *indio_dev = pf->indio_dev;
 	struct hm3301_state *state = iio_priv(indio_dev);
 	int ret;
 	struct {
-		s32 data[3]; /* PM1, PM2P5, PM10 */
+		s32 data[4]; /* PM1, PM2P5, PM10 */
 		s64 ts;
 	} scan;
 
 	mutex_lock(&state->lock);
 	ret = hm3301_do_meas(state, scan.data, ARRAY_SIZE(scan.data));
+	printk("ret = %d\n");
 	mutex_unlock(&state->lock);
 	if (ret)
 		goto err;
@@ -200,6 +204,7 @@ err:
 
 	return IRQ_HANDLED;
 }
+#endif
 
 static int hm3301_read_raw(struct iio_dev *indio_dev,
 			  struct iio_chan_spec const *chan,
@@ -424,16 +429,16 @@ static int hm3301_probe(struct i2c_client *client)
 	indio_dev->num_channels = ARRAY_SIZE(hm3301_channels);
 	indio_dev->modes = INDIO_DIRECT_MODE;
 	indio_dev->available_scan_masks = hm3301_scan_masks;
-
 	mutex_init(&state->lock);
 	ret = devm_add_action_or_reset(&client->dev, hm3301_stop_meas, state);
 	if (ret)
 		return ret;
+#if 0
 	ret = devm_iio_triggered_buffer_setup(&client->dev, indio_dev, NULL,
 					      hm3301_trigger_handler, NULL);
 	if (ret)
 		return ret;
-
+#endif
 	return devm_iio_device_register(&client->dev, indio_dev);
 }
 
