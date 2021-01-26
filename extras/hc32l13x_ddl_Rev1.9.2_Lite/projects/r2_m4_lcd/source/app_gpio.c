@@ -19,8 +19,8 @@ void App_PoutCfg(void)
     Gpio_Init(GpioPortA, GpioPin5, &stcGpioCfg);
     Gpio_Init(GpioPortA, GpioPin7, &stcGpioCfg);
 
-    APP_Pout(VCC_LCD2V8, TRUE);
-    APP_Pout(VCC_LCD1V8, TRUE);
+    APP_Pout(VCC_LCD2V8, FALSE);
+    APP_Pout(VCC_LCD1V8, FALSE);
     APP_Pout(LCD_RST, TRUE);
 //    APP_Pout(TP_RST, TRUE);
 }
