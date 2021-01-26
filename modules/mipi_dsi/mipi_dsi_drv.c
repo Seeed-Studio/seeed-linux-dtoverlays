@@ -153,6 +153,7 @@ static int panel_prepare(struct drm_panel *panel)
 	struct i2c_mipi_dsi *md = panel_to_md(panel);
 	const struct drm_panel_funcs *funcs = md->panel_data->funcs;
 
+	DBG_FUNC("");
 	/* i2c */
 	i2c_md_write(md, REG_POWERON, 1);
 	usleep_range(20000, 25000);
@@ -164,11 +165,11 @@ static int panel_prepare(struct drm_panel *panel)
 
 	/* reset pin */
 	i2c_md_write(md, REG_LCD_RST, 1);
-	msleep(100);
+	msleep(50);
 	i2c_md_write(md, REG_LCD_RST, 0);
-	msleep(100);
+	msleep(120);
 	i2c_md_write(md, REG_LCD_RST, 1);
-	msleep(100);
+	msleep(150);
 
 	/* panel */
 	if (funcs && funcs->prepare)
@@ -182,6 +183,7 @@ static int panel_unprepare(struct drm_panel *panel)
 	struct i2c_mipi_dsi *md = panel_to_md(panel);
 	const struct drm_panel_funcs *funcs = md->panel_data->funcs;
 
+	DBG_FUNC("");
 	if (funcs && funcs->unprepare)
 		funcs->unprepare(panel);
 
@@ -193,6 +195,7 @@ static int panel_enable(struct drm_panel * panel)
 	struct i2c_mipi_dsi *md = panel_to_md(panel);
 	const struct drm_panel_funcs *funcs = md->panel_data->funcs;
 
+	DBG_FUNC("");
 	/* i2c */
 	/* Turn on the backlight. */
 	i2c_md_write(md, REG_PWM, 255);
@@ -209,6 +212,7 @@ static int panel_disable(struct drm_panel * panel)
 	struct i2c_mipi_dsi *md = panel_to_md(panel);
 	const struct drm_panel_funcs *funcs = md->panel_data->funcs;
 
+	DBG_FUNC("");
 	/* i2c */
 	i2c_md_write(md, REG_PWM, 0);
 	i2c_md_write(md, REG_POWERON, 0);
@@ -218,6 +222,8 @@ static int panel_disable(struct drm_panel * panel)
 	if (funcs && funcs->disable)
 		funcs->disable(panel);
 
+	i2c_md_write(md, REG_LCD_RST, 0);
+
 	return 0;
 }
 
@@ -226,6 +232,7 @@ static int panel_get_modes(struct drm_panel *panel, struct drm_connector *connec
 	struct i2c_mipi_dsi *md = panel_to_md(panel);
 	const struct drm_panel_funcs *funcs = md->panel_data->funcs;
 
+	DBG_FUNC("");
 	if (funcs && funcs->get_modes)
 		funcs->get_modes(panel, connector);
 
