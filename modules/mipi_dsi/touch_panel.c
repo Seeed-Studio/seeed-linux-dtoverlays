@@ -82,11 +82,13 @@ int tp_init(struct i2c_mipi_dsi *md)
 	input->id.product = 0x1001;
 	input->id.version = 0x0100;
 
+#if 0
 	i2c_md_write(md, REG_TP_RST, 1);
 	msleep(10);
 	i2c_md_write(md, REG_TP_RST, 0);
 	msleep(10);
 	i2c_md_write(md, REG_TP_RST, 1);
+#endif
 
 	input_set_abs_params(input, ABS_MT_POSITION_X, 0, TP_DEFAULT_WIDTH, 0, 0);
 	input_set_abs_params(input, ABS_MT_POSITION_Y, 0, TP_DEFAULT_HEIGHT, 0, 0);
