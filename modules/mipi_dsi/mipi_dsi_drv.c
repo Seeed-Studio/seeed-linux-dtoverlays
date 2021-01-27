@@ -196,13 +196,14 @@ static int panel_enable(struct drm_panel * panel)
 	const struct drm_panel_funcs *funcs = md->panel_data->funcs;
 
 	DBG_FUNC("");
-	/* i2c */
-	/* Turn on the backlight. */
-	i2c_md_write(md, REG_PWM, 255);
-
 	/* panel */
 	if (funcs && funcs->enable)
 		funcs->enable(panel);
+
+	/* i2c */
+	/* Turn on the backlight. */
+	i2c_md_write(md, REG_PWM, 255);
+	msleep(1);
 
 	return 0;
 }
@@ -213,16 +214,18 @@ static int panel_disable(struct drm_panel * panel)
 	const struct drm_panel_funcs *funcs = md->panel_data->funcs;
 
 	DBG_FUNC("");
-	/* i2c */
-	i2c_md_write(md, REG_PWM, 0);
-	i2c_md_write(md, REG_POWERON, 0);
-	udelay(1);
 
 	/* panel */
 	if (funcs && funcs->disable)
 		funcs->disable(panel);
 
+	/* i2c */
+	i2c_md_write(md, REG_POWERON, 0);
+	msleep(1);
 	i2c_md_write(md, REG_LCD_RST, 0);
+	msleep(1);
+	i2c_md_write(md, REG_PWM, 0);
+	msleep(1);
 
 	return 0;
 }
@@ -282,7 +285,9 @@ static int i2c_md_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
 
 	/* Turn off at boot, so we can cleanly sequence powering on. */
 	i2c_md_write(md, REG_POWERON, 0);
+	msleep(1);
 	i2c_md_write(md, REG_PWM, 0);
+	msleep(1);
 
 	md->dsi = mipi_dsi_device(dev);
 	if (NULL == md->dsi) {
@@ -308,7 +313,9 @@ static int i2c_md_remove(struct i2c_client *i2c)
 	DBG_FUNC();
 	/* Turn off power */
 	i2c_md_write(md, REG_POWERON, 0);
+	msleep(1);
 	i2c_md_write(md, REG_PWM, 0);
+	msleep(1);
 
 	tp_deinit(md);
 
