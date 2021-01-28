@@ -1,17 +1,15 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
- * bma456.h - IIO driver for Bosch BMA456 triaxial acceleration sensor
+ * bma456.h - Linux kernel driver for Bosch BMA456 triaxial acceleration sensor
  *
  * Copyright 2020 Zhangqun Ming <north_sea@qq.com>
- *
- * SPI is not supported by driver
- * BMA456: 7-bit I2C slave address 0x19
  */
 
 #ifndef __BMA456_H__
 #define __BMA456_H__
 
 #include <linux/module.h>
+#include <linux/input.h>
 #include <linux/i2c.h>
 #include <linux/interrupt.h>
 #include <linux/delay.h>
@@ -27,12 +25,21 @@
 #include <linux/iio/trigger_consumer.h>
 #include <linux/iio/triggered_buffer.h>
 
-//#include "api/bma4_common.h"
 #include "api/bma456.h"
 
-//#define DBG_PRINT(format, x...)	printk(KERN_INFO "[TST]%d:%s " format, __LINE__, __func__, ##x)
-#define DBG_FUNC(format, x...)		printk(KERN_INFO "[BMA]%s:" format"\n", __func__, ##x)
+
+#define BMA456_DBG      0
+#if BMA456_DBG
+#define DBG_FUNC(format, x...)		printk(KERN_INFO "[BMA]%d:%s " format"\n", __LINE__, __func__, ##x)
 #define DBG_PRINT(format, x...)		printk(KERN_INFO "[BMA]" format"\n", ##x)
+#else
+#define DBG_FUNC(format, x...)
+#define DBG_PRINT(format, x...)
+#endif
+
+
+#define GRAVITY_EARTH      9807	//(9.80665f)
+
 
 enum bma456_chan {
 	AXIS_X,
@@ -43,60 +50,51 @@ enum bma456_chan {
 
 struct bma456_data {
 	struct i2c_client *client;
-	struct iio_trigger *trig;
-	struct iio_mount_matrix orientation;
-	struct mutex mutex;
-	//u8 buff[16]; /* 3x 16-bit + 8-bit + padding + timestamp */
-
-	// feature
-	uint8_t step_enable;
-	uint32_t step_count;
-
-	// workqueue
+    struct mutex mutex;
 	struct delayed_work work_irq;
+
+    // iio
+    struct iio_dev *indio_dev;
+	struct iio_mount_matrix orientation;
+
+    // input
+    struct input_dev *input;
+
+	// features
+    uint16_t int_map;
+    uint16_t int_status;
+
+    uint8_t single_tap_sens;
+    uint8_t double_tap_sens;
 
 	// api data struct
 	struct bma4_dev bma;
 	struct bma4_accel_config accel;
+    struct bma456_any_no_mot_config any_mot;
+    struct bma456_any_no_mot_config no_mot;
 };
 
-/* data */
-#define BMA456_ACC_CHANNEL(_axis, _bits) {	\
-	.type = IIO_ACCEL,						\
-	.modified = 1,							\
-	.channel2 = IIO_MOD_##_axis,			\
-	.info_mask_separate = BIT(IIO_CHAN_INFO_RAW)			\
-		| BIT(IIO_CHAN_INFO_OFFSET),						\
-	.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE)	\
-		| BIT(IIO_CHAN_INFO_LOW_PASS_FILTER_3DB_FREQUENCY),	\
-	.scan_index = AXIS_##_axis,				\
-	.scan_type = {							\
-		.sign = 's',						\
-		.realbits = _bits,					\
-		.storagebits = 16,					\
-		.shift = 16 - _bits,				\
-	},										\
-	.ext_info = bma456_ext_info,			\
-}
 
-#define BMA456_TEMP_CHANNEL {				\
-	.type = IIO_TEMP,						\
-	.info_mask_separate = BIT(IIO_CHAN_INFO_RAW)				\
-		| BIT(IIO_CHAN_INFO_SCALE) | BIT(IIO_CHAN_INFO_OFFSET),	\
-	.scan_index = TEMP,						\
-	.scan_type = {							\
-		.sign = 's',						\
-		.realbits = 8,						\
-		.storagebits = 16,					\
-	},										\
-}
+/* global use */
+extern const int scale_table[];
+extern const int bw_table[];
 
-/*#define BMA456_ACTIVITY_CHANNEL(_chan) {	\
-	.type = IIO_ACTIVITY,					\
-	.modified = 1,							\
-	.channel2 = _chan,						\
-	.info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED),			\
-	.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_ENABLE),
-}*/
+/* bma456 */
+int8_t bma456_probe(struct device *dev, struct bma456_data *data);
+int bma456_remove(struct bma456_data *data);
+
+/* iio */
+int bma456_iio_init(struct device *dev, struct bma456_data *data, const char *name);
+int bma456_iio_deinit(struct bma456_data *data);
+
+/* input */
+void bma456_do_tap(struct bma456_data *data);
+int bma456_input_init(struct device *dev, uint16_t bus_type, 
+		struct bma456_data *data, const char *name);
+int bma456_input_deinit(struct bma456_data *data);
+
+/* irq */
+int bma456_irq_request(struct device *dev, int irq, const char *devname, struct bma456_data *data);
+int bma456_irq_free(struct bma456_data *data, int irq);
 
 #endif /*End of header guard macro */
