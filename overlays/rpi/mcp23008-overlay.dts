@@ -1,0 +1,61 @@
+// Definitions for MCP23008 Gpio Extender from Microchip Semiconductor
+
+/dts-v1/;
+/plugin/;
+
+/ {
+	compatible = "brcm,bcm2835";
+
+	fragment@0 {
+		target = <&i2c0>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@1 {
+		target = <&gpio>;
+		__overlay__ {
+			mcp23008_pins: mcp23008_pins@20 {
+				brcm,pins = <12>;
+				brcm,function = <0>;
+			};
+		};
+	};
+
+	fragment@2 {
+		target = <&i2c0>;
+		__overlay__ {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			mcp23008: mcp@20 {
+				compatible = "microchip,mcp23008";
+				reg = <0x20>;
+				gpio-controller;
+				#gpio-cells = <2>;
+
+				status = "okay";
+			};
+		};
+	};
+
+	fragment@3 {
+		target = <&mcp23008>;
+		mcp23008_irq: __overlay__ {
+			#interrupt-cells=<2>;
+			interrupt-parent = <&gpio>;
+			interrupts = <12 2>;
+			interrupt-controller;
+			microchip,irq-mirror;
+		};
+	};
+
+	__overrides__ {
+		gpiopin = <&mcp23008_pins>,"brcm,pins:0",
+				<&mcp23008_irq>,"interrupts:0";
+		addr = <&mcp23008>,"reg:0", <&mcp23008_pins>,"reg:0";
+		noints = <0>,"!1!4";
+	};
+};
+
