@@ -251,6 +251,52 @@ static const struct drm_panel_funcs panel_funcs = {
 };
 
 
+/* backlight */
+static int backlight_update(struct backlight_device *bd)
+{
+	struct i2c_mipi_dsi *md = bl_get_data(bd);
+	int brightness = bd->props.brightness;
+
+	if (bd->props.power != FB_BLANK_UNBLANK ||
+		bd->props.fb_blank != FB_BLANK_UNBLANK ||
+		bd->props.state & (BL_CORE_SUSPENDED | BL_CORE_FBBLANK)) {
+			brightness = 0;
+		}
+
+	i2c_md_write(md, REG_PWM, brightness);
+
+	return 0;
+}
+
+static const struct backlight_ops backlight_ops = {
+	.options = BL_CORE_SUSPENDRESUME,
+	.update_status	= backlight_update,
+};
+
+static int backlight_init(struct i2c_mipi_dsi *md)
+{
+	struct device *dev = &md->i2c->dev;
+	struct backlight_properties props;
+	struct backlight_device *bd;
+
+	memset(&props, 0, sizeof(props));
+	props.type = BACKLIGHT_RAW;
+	props.max_brightness = 255;
+	bd = devm_backlight_device_register(dev, dev_name(dev),
+					dev, md, &backlight_ops,
+					&props);
+	if (IS_ERR(bd)) {
+		dev_err(dev, "failed to register backlight\n");
+		return PTR_ERR(bd);
+	}
+
+	bd->props.brightness = 255;
+	backlight_update_status(bd);
+
+	return 0;
+}
+
+
 /* i2c */
 static int i2c_md_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
 {
@@ -300,6 +346,7 @@ static int i2c_md_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
 	drm_panel_add(&md->panel);
 
 	tp_init(md);
+	backlight_init(md);
 
 	DBG_FUNC("finished.");
 

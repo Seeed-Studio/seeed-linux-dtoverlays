@@ -28,6 +28,20 @@ You can get these file nodes from sysfs:
 /dev/input/event0
 ```
 
+Change Backlight:
+```
+# use root account
+su root
+# turn off
+echo 0 > /sys/class/backlight/10-0045/brightness
+# Half brightness
+echo 125 > /sys/class/backlight/10-0045/brightness
+# full brightness
+echo 255 > /sys/class/backlight/10-0045/brightness
+# exit root account
+exit
+```
+
 Touchpanel Test:
 ```
 $ evtest 
