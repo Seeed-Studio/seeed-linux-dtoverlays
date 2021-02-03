@@ -19,6 +19,7 @@
 			mcp23008_pins: mcp23008_pins@20 {
 				brcm,pins = <12>;
 				brcm,function = <0>;
+				brcm,pull = <2>; /* 0 = none, 1 = pull down, 2 = pull up */
 			};
 		};
 	};
@@ -45,9 +46,40 @@
 		mcp23008_irq: __overlay__ {
 			#interrupt-cells=<2>;
 			interrupt-parent = <&gpio>;
-			interrupts = <12 2>;
+			interrupts = <12 2>; /* IRQ_TYPE_EDGE_FALLING */
 			interrupt-controller;
 			microchip,irq-mirror;
+		};
+	};
+
+	fragment@4 {
+		target = <&leds>;
+		__overlay__ {
+			compatible = "gpio-leds";
+
+			usr_led@0 {
+				label = "usr_led0";
+				linux,default-trigger = "default-off";
+				gpios = <&mcp23008 4 1>;
+			};
+
+			usr_led@1 {
+				label = "usr_led1";
+				linux,default-trigger = "default-off";
+				gpios = <&mcp23008 5 1>;
+			};
+
+			usr_led@2 {
+				label = "usr_led2";
+				linux,default-trigger = "default-off";
+				gpios = <&mcp23008 6 1>;
+			};
+
+			usr_led@3 {
+				label = "usr_buzzer";
+				linux,default-trigger = "default-off";
+				gpios = <&mcp23008 7 1>;
+			};
 		};
 	};
 
