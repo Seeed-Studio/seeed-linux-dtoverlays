@@ -45,7 +45,7 @@ void App_PcaCfg(uint8_t pulse)
     stc_pcacfg_t  PcaInitStruct;
 
     DDL_ZERO_STRUCT(PcaInitStruct);
-    PcaInitStruct.pca_clksrc = PcaPclkdiv32;
+    PcaInitStruct.pca_clksrc = PcaPclkdiv2;
     PcaInitStruct.pca_cidl   = FALSE;
     PcaInitStruct.pca_ecom   = PcaEcomEnable;       //允许比较器功能
     PcaInitStruct.pca_capp   = PcaCappDisable;      //禁止上升沿捕获
