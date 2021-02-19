@@ -98,6 +98,7 @@ void App_I2cSlaveHandle(void)
             return;
 
         TxCnt = 0;
+        memset(TxBuf, 0, sizeof(TxBuf));
         if (REG_TP_STATUS == CurReg) {
             if (App_GetTpState()) {
                 goodix_i2c_read(GOODIX_READ_COOR_ADDR, TxBuf, 2);
