@@ -74,7 +74,7 @@
 		dev_err(&client->dev, "I2C write failed: %d\n", ret);
 	mutex_unlock(&md->mutex);
 
-	msleep(1);
+	usleep_range(5000, 10000);
 }
 
 
@@ -169,7 +169,7 @@ static int panel_prepare(struct drm_panel *panel)
 	i2c_md_write(md, REG_LCD_RST, 1);
 	msleep(50);
 	i2c_md_write(md, REG_LCD_RST, 0);
-	msleep(120);
+	msleep(150);
 	i2c_md_write(md, REG_LCD_RST, 1);
 	msleep(150);
 
@@ -202,6 +202,8 @@ static int panel_enable(struct drm_panel * panel)
 	if (funcs && funcs->enable)
 		funcs->enable(panel);
 
+	i2c_md_write(md, REG_PWM, md->brightness);
+
 	return 0;
 }
 
@@ -219,6 +221,7 @@ static int panel_disable(struct drm_panel * panel)
 	/* i2c */
 	i2c_md_write(md, REG_POWERON, 0);
 	i2c_md_write(md, REG_LCD_RST, 0);
+	i2c_md_write(md, REG_PWM, 0);
 
 	return 0;
 }
@@ -256,6 +259,7 @@ static int backlight_update(struct backlight_device *bd)
 			brightness = 0;
 		}
 
+	md->brightness = brightness;
 	i2c_md_write(md, REG_PWM, brightness);
 
 	return 0;

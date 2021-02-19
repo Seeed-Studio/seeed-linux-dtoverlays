@@ -12,7 +12,7 @@ static struct mipi_dsi_device *ili9881d_dsi = NULL;
 
 static const struct drm_display_mode ili9881d_modes[] = {
 	{
-		.clock		= /*62000*/ /*73164*/ /*83616*/ /*94068*/ 104520,
+		.clock		= 62712 /*73164*/ /*83616*/ /*94068*/ /*104520*/,
 
 		.hdisplay	= 720,
 		.hsync_start= 720 + 10,

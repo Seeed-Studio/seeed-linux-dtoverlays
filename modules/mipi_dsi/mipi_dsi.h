@@ -109,6 +109,9 @@ struct i2c_mipi_dsi {
 	// tp
 	struct input_dev *input;
 	struct touchscreen_properties prop;
+
+	// backlight
+	int brightness;
 };
 #define panel_to_md(_p)	container_of(_p, struct i2c_mipi_dsi, panel)
 

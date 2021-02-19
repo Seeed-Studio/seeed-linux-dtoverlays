@@ -6,8 +6,8 @@
 #define GOODIX_HAVE_KEY			        (((uint32_t)0x01)<<4)//BIT(4)
 
 
-#define TP_DEFAULT_WIDTH	480
-#define TP_DEFAULT_HEIGHT	854
+#define TP_DEFAULT_WIDTH	1280
+#define TP_DEFAULT_HEIGHT	720
 #define TP_MAX_POINTS       5
 #define TP_POLL_INTERVAL    17
 
@@ -26,11 +26,7 @@ static void tp_poll_func(struct input_dev *input)
 	//DBG_FUNC("0x%x,0x%x", data[0], data[1]);
 	if (data[0] & GOODIX_BUFFER_STATUS_READY) {
 		num = data[0] & 0x0F;
-		//DBG_FUNC("touched:%d", num);
 		ret = i2c_md_read(md, REG_TP_POINT, data, GOODIX_CONTACT_SIZE);
-		/*DBG_FUNC("0x%x,0x%x,0x%x,0x%x, 0x%x,0x%x,0x%x,0x%x,", 
-		data[0],data[1],data[2],data[3],
-		data[4],data[5],data[6],data[7]);*/
 		if (num) {
 			int x, y;
 
@@ -81,14 +77,6 @@ int tp_init(struct i2c_mipi_dsi *md)
 	input->id.vendor = 0x1234;
 	input->id.product = 0x1001;
 	input->id.version = 0x0100;
-
-#if 0
-	i2c_md_write(md, REG_TP_RST, 1);
-	msleep(10);
-	i2c_md_write(md, REG_TP_RST, 0);
-	msleep(10);
-	i2c_md_write(md, REG_TP_RST, 1);
-#endif
 
 	input_set_abs_params(input, ABS_MT_POSITION_X, 0, TP_DEFAULT_WIDTH, 0, 0);
 	input_set_abs_params(input, ABS_MT_POSITION_Y, 0, TP_DEFAULT_HEIGHT, 0, 0);
