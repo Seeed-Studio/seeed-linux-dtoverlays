@@ -1,0 +1,48 @@
+/*
+ * Device tree overlay for pwm
+ * zcat /proc/config.gz | grep PWM
+ */
+
+#include "dt-bindings/gpio/gpio.h"
+#include "dt-bindings/pinctrl/stm32-pinfunc.h"
+
+/dts-v1/;
+/plugin/;
+
+/ {
+    compatible = "seeed,npi-stm32mp1", "st,stm32mp157";
+
+    fragment@0 {
+        target = <&pinctrl>;
+        __overlay__ {
+            tim5_pwm_pins: tim5_pwm_pins-0 {
+                pins {
+                    pinmux = <STM32_PINMUX('A', 3, AF2)>; /* TIM5_CH4 */
+                    bias-disable;
+                    drive-push-pull;
+                    slew-rate = <3>;
+                };
+            };
+
+            tim5_pwm_sleep_pins: tim5_pwm_sleep_pins-0 {
+                pins {
+                    pinmux = <STM32_PINMUX('A', 3, ANALOG)>; /* TIM5_CH4 */
+                };
+            };
+        };
+    };
+
+    fragment@1 {
+        target = <&timers5>;
+        __overlay__ {
+            status = "okay";
+            pwm {
+                compatible = "st,stm32-pwm";
+                status = "okay";
+                pinctrl-0 = <&tim5_pwm_pins>;
+                pinctrl-1 = <&tim5_pwm_sleep_pins>;
+                pinctrl-names = "default", "sleep";
+            };
+        };
+    };
+};
