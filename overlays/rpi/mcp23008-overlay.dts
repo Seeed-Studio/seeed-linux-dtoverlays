@@ -87,7 +87,8 @@
 			usr_buzzer: usr_led3 {
 				label = "usr_buzzer";
 				linux,default-trigger = "default-off";
-				gpios = <&mcp23008 7 1>;
+				gpios = <&mcp23008 7 0>;
+				default-state = "off";
 			};
 		};
 	};
