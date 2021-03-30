@@ -4,7 +4,7 @@
 #define GOODIX_CONTACT_SIZE		        8
 #define GOODIX_BUFFER_STATUS_READY	    (((uint32_t)0x01)<<7)//BIT(7)
 #define GOODIX_HAVE_KEY			        (((uint32_t)0x01)<<4)//BIT(4)
-
+#define GOODIX_BUFFER_STATUS_TIMEOUT	20
 
 #define TP_DEFAULT_WIDTH	1280
 #define TP_DEFAULT_HEIGHT	720
@@ -12,44 +12,93 @@
 #define TP_POLL_INTERVAL    17
 
 
-static u32 touch_rec = 0;
+static uint8_t ts_down = 0;
+static int goodix_ts_read_input_report(struct i2c_mipi_dsi *md, u8 *data)
+{
+	unsigned long max_timeout;
+	int touch_num;
+	int ret;
+
+	max_timeout = jiffies + msecs_to_jiffies(GOODIX_BUFFER_STATUS_TIMEOUT);
+	do {
+		ret = i2c_md_read(md, REG_TP_STATUS, data, 2);
+		if (ret < 0) {
+			return -EIO;
+		}
+
+		if (data[0] & GOODIX_BUFFER_STATUS_READY) {
+			touch_num = data[0] & 0x0f;
+			if (touch_num > TP_MAX_POINTS)
+				return -EPROTO;
+
+			/*if (touch_num > 1) */{
+				ret = i2c_md_read(md, REG_TP_POINT, data+2, touch_num*GOODIX_CONTACT_SIZE);
+				if (ret < 0)
+					return -EIO;
+			}
+			return touch_num;
+		}
+
+		usleep_range(1000, 2000); /* Poll every 1 - 2 ms */
+	} while (time_before(jiffies, max_timeout));
+
+	/*
+	 * The Goodix panel will send spurious interrupts after a
+	 * 'finger up' event, which will always cause a timeout.
+	 */
+	return -ENOMSG;
+}
+
+static void goodix_ts_report_touch_8b(struct i2c_mipi_dsi *md, u8 *coor_data)
+{
+	struct input_dev *input_dev = md->input;
+	int id = coor_data[7];
+	int input_x = 0;
+	int input_y = 0;
+	int input_w = coor_data[4];
+
+	input_x = coor_data[1];
+	input_x <<= 8;
+	input_x += coor_data[0];
+	
+	input_y = coor_data[3];
+	input_y <<= 8;
+	input_y += coor_data[2];
+
+/*	DBG_FUNC("0x%x,0x%x,0x%x,0x%x,0x%x,0x%x,0x%x,0x%x", 
+		coor_data[0], coor_data[1], coor_data[2], coor_data[3],
+		coor_data[4], coor_data[5], coor_data[6], coor_data[7]);*/
+//	DBG_FUNC("[%d]%d -> %d,%d", id, input_w, input_x, input_y);
+
+	input_mt_slot(input_dev, id);
+	input_mt_report_slot_state(input_dev, MT_TOOL_FINGER, true);
+	touchscreen_report_pos(input_dev, &md->prop, input_x, input_y, true);
+	input_report_abs(input_dev, ABS_MT_TOUCH_MAJOR, input_w);
+	input_report_abs(input_dev, ABS_MT_WIDTH_MAJOR, input_w);
+}
+
 static void tp_poll_func(struct input_dev *input)
 {
 	struct i2c_mipi_dsi *md = (struct i2c_mipi_dsi *)input_get_drvdata(input);
-	int num = 0;
-	int ret;
-	u8 data[40];
+	u8  point_data[2 + TP_MAX_POINTS * GOODIX_CONTACT_SIZE];
+	int touch_num;
+	int i;
 
-	ret = i2c_md_read(md, REG_TP_STATUS, data, 2);
-	if (0xFF == data[0])
-		return;
-	//DBG_FUNC("0x%x,0x%x", data[0], data[1]);
-	if (data[0] & GOODIX_BUFFER_STATUS_READY) {
-		num = data[0] & 0x0F;
-		ret = i2c_md_read(md, REG_TP_POINT, data, GOODIX_CONTACT_SIZE);
-		if (num) {
-			int x, y;
-
-			touch_rec = 1;
-			x = data[1];
-			x <<= 8;
-			x += data[0];
-			y = data[3];
-			y <<= 8;
-			y += data[2];
-
-			input_mt_slot(input, 0);
-			input_mt_report_slot_state(input, MT_TOOL_FINGER, 1);
-			touchscreen_report_pos(input, &md->prop, x, y, true);
-			//DBG_FUNC("%d,%d", x, y);
-		}
-	}
+	touch_num = goodix_ts_read_input_report(md, point_data);
+	if (touch_num < 0) {
+		if (!ts_down)
+			return;
+		ts_down = 0;
+	} 
 	else {
-		if (touch_rec) {
-			touch_rec = 0;
-			input_mt_slot(input, 0);
-			input_mt_report_slot_inactive(input);
-		}
+		ts_down = 1;
+	}
+
+//	DBG_FUNC("--------ts=%d-----------", ts_down);
+//	DBG_FUNC("0x%x,0x%x", point_data[0], point_data[1]);
+
+	for (i = 0; i < touch_num; i++) {
+		goodix_ts_report_touch_8b(md, &point_data[2 + i*GOODIX_CONTACT_SIZE]);
 	}
 
 	input_mt_sync_frame(input);
@@ -78,6 +127,8 @@ int tp_init(struct i2c_mipi_dsi *md)
 	input->id.product = 0x1001;
 	input->id.version = 0x0100;
 
+	input_set_abs_params(input, ABS_MT_WIDTH_MAJOR, 0, 255, 0, 0);
+	input_set_abs_params(input, ABS_MT_TOUCH_MAJOR, 0, 255, 0, 0);
 	input_set_abs_params(input, ABS_MT_POSITION_X, 0, TP_DEFAULT_WIDTH, 0, 0);
 	input_set_abs_params(input, ABS_MT_POSITION_Y, 0, TP_DEFAULT_HEIGHT, 0, 0);
 	//touchscreen_parse_properties(input, true, &md->prop);
@@ -88,7 +139,7 @@ int tp_init(struct i2c_mipi_dsi *md)
 	md->prop.invert_y = 1;
 	md->prop.swap_x_y = 1;
 #endif
-	ret = input_mt_init_slots(input, TP_MAX_POINTS, INPUT_MT_DIRECT);
+	ret = input_mt_init_slots(input, TP_MAX_POINTS, INPUT_MT_DIRECT | INPUT_MT_DROP_UNUSED);
 	if (ret) {
 		dev_err(dev, "could not init mt slots, %d\n", ret);
 		return ret;
