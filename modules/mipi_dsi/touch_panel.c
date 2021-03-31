@@ -1,6 +1,7 @@
 #include "mipi_dsi.h"
 
 
+#define GOODIX_STATUS_SIZE		        2
 #define GOODIX_CONTACT_SIZE		        8
 #define GOODIX_BUFFER_STATUS_READY	    (((uint32_t)0x01)<<7)//BIT(7)
 #define GOODIX_HAVE_KEY			        (((uint32_t)0x01)<<4)//BIT(4)
@@ -9,19 +10,19 @@
 #define TP_DEFAULT_WIDTH	1280
 #define TP_DEFAULT_HEIGHT	720
 #define TP_MAX_POINTS       5
-#define TP_POLL_INTERVAL    17
+#define TP_POLL_INTERVAL    15
 
 
-static uint8_t ts_down = 0;
 static int goodix_ts_read_input_report(struct i2c_mipi_dsi *md, u8 *data)
 {
+	int header = GOODIX_STATUS_SIZE + GOODIX_CONTACT_SIZE;
 	unsigned long max_timeout;
 	int touch_num;
 	int ret;
 
 	max_timeout = jiffies + msecs_to_jiffies(GOODIX_BUFFER_STATUS_TIMEOUT);
 	do {
-		ret = i2c_md_read(md, REG_TP_STATUS, data, 2);
+		ret = i2c_md_read(md, REG_TP_STATUS, data, header);
 		if (ret < 0) {
 			return -EIO;
 		}
@@ -31,15 +32,15 @@ static int goodix_ts_read_input_report(struct i2c_mipi_dsi *md, u8 *data)
 			if (touch_num > TP_MAX_POINTS)
 				return -EPROTO;
 
-			/*if (touch_num > 1) */{
-				ret = i2c_md_read(md, REG_TP_POINT, data+2, touch_num*GOODIX_CONTACT_SIZE);
+			if (touch_num > 1) {
+				ret = i2c_md_read(md, REG_TP_POINT, data+header, (touch_num-1)*GOODIX_CONTACT_SIZE);
 				if (ret < 0)
 					return -EIO;
 			}
 			return touch_num;
 		}
 
-		usleep_range(1000, 2000); /* Poll every 1 - 2 ms */
+		usleep_range(3000, 5000); /* Poll every 3 - 5 ms */
 	} while (time_before(jiffies, max_timeout));
 
 	/*
@@ -65,11 +66,6 @@ static void goodix_ts_report_touch_8b(struct i2c_mipi_dsi *md, u8 *coor_data)
 	input_y <<= 8;
 	input_y += coor_data[2];
 
-/*	DBG_FUNC("0x%x,0x%x,0x%x,0x%x,0x%x,0x%x,0x%x,0x%x", 
-		coor_data[0], coor_data[1], coor_data[2], coor_data[3],
-		coor_data[4], coor_data[5], coor_data[6], coor_data[7]);*/
-//	DBG_FUNC("[%d]%d -> %d,%d", id, input_w, input_x, input_y);
-
 	input_mt_slot(input_dev, id);
 	input_mt_report_slot_state(input_dev, MT_TOOL_FINGER, true);
 	touchscreen_report_pos(input_dev, &md->prop, input_x, input_y, true);
@@ -80,25 +76,17 @@ static void goodix_ts_report_touch_8b(struct i2c_mipi_dsi *md, u8 *coor_data)
 static void tp_poll_func(struct input_dev *input)
 {
 	struct i2c_mipi_dsi *md = (struct i2c_mipi_dsi *)input_get_drvdata(input);
-	u8  point_data[2 + TP_MAX_POINTS * GOODIX_CONTACT_SIZE];
+	u8  point_data[GOODIX_STATUS_SIZE + TP_MAX_POINTS * GOODIX_CONTACT_SIZE] = { 0 };
 	int touch_num;
 	int i;
 
 	touch_num = goodix_ts_read_input_report(md, point_data);
 	if (touch_num < 0) {
-		if (!ts_down)
-			return;
-		ts_down = 0;
-	} 
-	else {
-		ts_down = 1;
+		return;
 	}
 
-//	DBG_FUNC("--------ts=%d-----------", ts_down);
-//	DBG_FUNC("0x%x,0x%x", point_data[0], point_data[1]);
-
 	for (i = 0; i < touch_num; i++) {
-		goodix_ts_report_touch_8b(md, &point_data[2 + i*GOODIX_CONTACT_SIZE]);
+		goodix_ts_report_touch_8b(md, &point_data[GOODIX_STATUS_SIZE + i*GOODIX_CONTACT_SIZE]);
 	}
 
 	input_mt_sync_frame(input);

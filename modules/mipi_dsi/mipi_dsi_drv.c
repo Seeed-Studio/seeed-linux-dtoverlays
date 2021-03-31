@@ -34,7 +34,7 @@
 		return -EIO;
 	}
 
-	usleep_range(100, 300);
+	usleep_range(1000, 1500);
 
 	/* Read data from register */
 	msgs[0].addr = client->addr;
@@ -72,9 +72,9 @@
 	ret = i2c_smbus_write_byte_data(client, reg, val);
 	if (ret)
 		dev_err(&client->dev, "I2C write failed: %d\n", ret);
-	mutex_unlock(&md->mutex);
 
-	usleep_range(5000, 10000);
+	usleep_range(1000, 1500);
+	mutex_unlock(&md->mutex);
 }
 
 
@@ -151,19 +151,13 @@ error:
 /* panel_funcs */
 static int panel_prepare(struct drm_panel *panel)
 {
-	int i = 0;
 	struct i2c_mipi_dsi *md = panel_to_md(panel);
 	const struct drm_panel_funcs *funcs = md->panel_data->funcs;
 
 	DBG_FUNC("");
+
 	/* i2c */
 	i2c_md_write(md, REG_POWERON, 1);
-	usleep_range(20000, 25000);
-	/* Wait for nPWRDWN to go low to indicate poweron is done. */
-	for (i = 0; i < 100; i++) {
-		if (i2c_md_read(md, REG_PORTB, NULL, 0) & 0x01)
-			break;
-	}
 
 	/* reset pin */
 	i2c_md_write(md, REG_LCD_RST, 1);
@@ -176,6 +170,7 @@ static int panel_prepare(struct drm_panel *panel)
 	/* panel */
 	if (funcs && funcs->prepare)
 		funcs->prepare(panel);
+	msleep(100);
 
 	return 0;
 }
@@ -326,7 +321,7 @@ static int i2c_md_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
 		return -ENODEV;
 	}
 
-	/* Turn off at boot, so we can cleanly sequence powering on. */
+	/* Turn off */
 	i2c_md_write(md, REG_POWERON, 0);
 
 	md->dsi = mipi_dsi_device(dev);
@@ -352,11 +347,11 @@ static int i2c_md_remove(struct i2c_client *i2c)
 	struct i2c_mipi_dsi *md = i2c_get_clientdata(i2c);
 
 	DBG_FUNC();
+	tp_deinit(md);
+
 	/* Turn off power */
 	i2c_md_write(md, REG_POWERON, 0);
 	i2c_md_write(md, REG_PWM, 0);
-
-	tp_deinit(md);
 
 	mipi_dsi_detach(md->dsi);
 	drm_panel_remove(&md->panel);
