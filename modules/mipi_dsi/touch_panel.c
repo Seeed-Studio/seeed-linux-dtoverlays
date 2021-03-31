@@ -5,7 +5,6 @@
 #define GOODIX_CONTACT_SIZE		        8
 #define GOODIX_BUFFER_STATUS_READY	    (((uint32_t)0x01)<<7)//BIT(7)
 #define GOODIX_HAVE_KEY			        (((uint32_t)0x01)<<4)//BIT(4)
-#define GOODIX_BUFFER_STATUS_TIMEOUT	20
 
 #define TP_DEFAULT_WIDTH	1280
 #define TP_DEFAULT_HEIGHT	720
@@ -16,12 +15,9 @@
 static int goodix_ts_read_input_report(struct i2c_mipi_dsi *md, u8 *data)
 {
 	int header = GOODIX_STATUS_SIZE + GOODIX_CONTACT_SIZE;
-	unsigned long max_timeout;
-	int touch_num;
-	int ret;
+	int i, ret, touch_num;
 
-	max_timeout = jiffies + msecs_to_jiffies(GOODIX_BUFFER_STATUS_TIMEOUT);
-	do {
+	for (i=0; i<2; i++) {
 		ret = i2c_md_read(md, REG_TP_STATUS, data, header);
 		if (ret < 0) {
 			return -EIO;
@@ -41,7 +37,7 @@ static int goodix_ts_read_input_report(struct i2c_mipi_dsi *md, u8 *data)
 		}
 
 		usleep_range(3000, 5000); /* Poll every 3 - 5 ms */
-	} while (time_before(jiffies, max_timeout));
+	}
 
 	/*
 	 * The Goodix panel will send spurious interrupts after a
