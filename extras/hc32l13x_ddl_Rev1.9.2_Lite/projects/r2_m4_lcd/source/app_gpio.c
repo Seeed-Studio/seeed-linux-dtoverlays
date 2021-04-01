@@ -21,8 +21,8 @@ void App_PoutCfg(void)
 
     APP_Pout(VCC_LCD2V8, FALSE);
     APP_Pout(VCC_LCD1V8, FALSE);
-    APP_Pout(LCD_RST, TRUE);
-//    APP_Pout(TP_RST, TRUE);
+    APP_Pout(LCD_RST, FALSE);
+	APP_Pout(TP_RST, FALSE);
 }
 
 void APP_Pdir(en_gpio_pin_t pin, uint8_t dir)

@@ -94,25 +94,29 @@ void App_I2cSlaveHandle(void)
             CurReg = RxBuf[0] - 0x80;
         }
 
-        if (CurReg >= REG_MAX)
-            return;
+        if (CurReg >= REG_MAX) {
+            CurReg = 0;
+        }
 
-        TxCnt = 0;
-        memset(TxBuf, 0, sizeof(TxBuf));
         if (REG_TP_STATUS == CurReg) {
             if (App_GetTpState()) {
-                goodix_i2c_read(GOODIX_READ_COOR_ADDR, TxBuf, 2);
+                TxCnt = 0;
+                if (Ok != goodix_i2c_read(GOODIX_READ_COOR_ADDR, TxBuf, 42)) {
+                    memset(TxBuf, 0, 42);
+                }
+                else {
+                    goodix_i2c_write_u8(GOODIX_READ_COOR_ADDR, 0);
+                }
                 //printf("S:0x%x,0x%x\r\n", TxBuf[0], TxBuf[1]);
             }
         }
         else if (REG_TP_POINT == CurReg) {
             if (App_GetTpState()) {
-                goodix_i2c_read(GOODIX_READ_COOR_ADDR+2, TxBuf, 40);
-                goodix_i2c_write_u8(GOODIX_READ_COOR_ADDR, 0);
                 //printf("P:0x%x,0x%x,0x%x,0x%x\r\n", TxBuf[0], TxBuf[1], TxBuf[2], TxBuf[3]);
             }
         }
         else {
+            TxCnt = 0;
             TxBuf[0] = Regs[CurReg];
         }
     }
@@ -122,8 +126,7 @@ void App_I2cSlaveHandle(void)
             return;
         }
 
-        printf("R:0x%x,0x%x\n", RxBuf[0], RxBuf[1]);
-
+        //printf("R:0x%x,0x%x\n", RxBuf[0], RxBuf[1]);
         Regs[CurReg] = RxBuf[1];
         TxCnt = 0;
         TxBuf[0] = RxBuf[1];
@@ -132,18 +135,18 @@ void App_I2cSlaveHandle(void)
             APP_Pout(VCC_LCD2V8, Regs[CurReg]);
             APP_Pout(VCC_LCD1V8, Regs[CurReg]);
             Regs[REG_PORTB] = Regs[CurReg];
-            printf("A:0x%x\n", Regs[CurReg]);
+            //printf("A:0x%x\n", Regs[CurReg]);
         break;
         
         case REG_PWM:
             App_PcaCfg(Regs[CurReg]);
 	        Pca_StartPca(Regs[CurReg]?TRUE:FALSE);
-            printf("B:0x%x\n", Regs[CurReg]);
+            //printf("B:0x%x\n", Regs[CurReg]);
         break;
         
         case REG_LCD_RST:
             APP_Pout(LCD_RST, Regs[CurReg]);
-            printf("C:0x%x\n", Regs[CurReg]);
+            //printf("C:0x%x\n", Regs[CurReg]);
         break;
         
         /*case REG_TP_RST:

@@ -68,7 +68,7 @@ en_result_t I2C_MasterReadData(M0P_I2C_TypeDef* I2CX, uint8_t slave_addr, uint8_
                 I2C_SetFunc(I2CX,I2cStop_En);
                 return ErrorTimeout;
             }
-            delay100us(1);
+            //delay100us(1);
         }
 
         u8State = I2C_GetState(I2CX);
@@ -150,7 +150,7 @@ en_result_t I2C_MasterWriteData(M0P_I2C_TypeDef* I2CX, uint8_t slave_addr, uint8
                 I2C_SetFunc(I2CX,I2cStop_En);
                 return ErrorTimeout;
             }
-            delay100us(1);
+            //delay100us(1);
         }
 
         u8State = I2C_GetState(I2CX);
