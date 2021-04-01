@@ -289,7 +289,7 @@ static int ili9881d_prepare(struct drm_panel *panel)
 	IILI9881_COMMAND(0x35,0x00);           
 
 	IILI9881_COMMAND(0x11);
-	msleep(100);
+	msleep(120);
 	IILI9881_COMMAND(0x29);
 
 	return 0;

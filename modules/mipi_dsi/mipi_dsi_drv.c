@@ -160,10 +160,12 @@ static int panel_prepare(struct drm_panel *panel)
 	i2c_md_write(md, REG_POWERON, 1);
 
 	/* reset pin */
-	i2c_md_write(md, REG_LCD_RST, 0);
-	msleep(10);
 	i2c_md_write(md, REG_LCD_RST, 1);
-	msleep(150);
+	msleep(10);
+	i2c_md_write(md, REG_LCD_RST, 0);
+	msleep(50);
+	i2c_md_write(md, REG_LCD_RST, 1);
+	msleep(200);
 
 	/* panel */
 	if (funcs && funcs->prepare)
