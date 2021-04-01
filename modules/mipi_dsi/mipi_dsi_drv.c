@@ -160,17 +160,14 @@ static int panel_prepare(struct drm_panel *panel)
 	i2c_md_write(md, REG_POWERON, 1);
 
 	/* reset pin */
-	i2c_md_write(md, REG_LCD_RST, 1);
-	msleep(50);
 	i2c_md_write(md, REG_LCD_RST, 0);
-	msleep(150);
+	msleep(10);
 	i2c_md_write(md, REG_LCD_RST, 1);
 	msleep(150);
 
 	/* panel */
 	if (funcs && funcs->prepare)
 		funcs->prepare(panel);
-	msleep(100);
 
 	return 0;
 }
@@ -351,6 +348,7 @@ static int i2c_md_remove(struct i2c_client *i2c)
 
 	/* Turn off power */
 	i2c_md_write(md, REG_POWERON, 0);
+	i2c_md_write(md, REG_LCD_RST, 0);
 	i2c_md_write(md, REG_PWM, 0);
 
 	mipi_dsi_detach(md->dsi);
