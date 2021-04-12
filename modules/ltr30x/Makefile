@@ -5,8 +5,8 @@
 # MIT License
 #
 
-obj-m := alps_ltr30x.o
-alps_ltr30x-objs := ltr30x.o
+obj-m := als_ltr30x.o
+als_ltr30x-objs := ltr30x.o
 
 all:
 	make -C $(KDIR) M=$(PWD) modules

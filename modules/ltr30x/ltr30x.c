@@ -15,6 +15,8 @@
 #include <linux/delay.h>
 #include <linux/regmap.h>
 #include <linux/acpi.h>
+#include <linux/of_device.h>
+#include <linux/of.h>
 
 #include <linux/iio/iio.h>
 #include <linux/iio/events.h>
@@ -24,6 +26,8 @@
 #include <linux/iio/triggered_buffer.h>
 
 #define LTR501_DRV_NAME "ltr501"
+
+static const struct i2c_device_id ltr501_id[];
 
 #define LTR501_ALS_CONTR 0x80 /* ALS operation mode, SW reset */
 #define LTR501_PS_CONTR 0x81 /* PS operation mode */
@@ -61,6 +65,8 @@
 #define LTR501_ALS_DEF_PERIOD 500000
 #define LTR501_PS_DEF_PERIOD 100000
 
+#define LTR501_ALS_DEF_GAIN		(BIT(4)|BIT(3)|BIT(2))
+
 #define LTR501_REGMAP_NAME "ltr501_regmap"
 
 #define LTR501_LUX_CONV(vis_coeff, vis_data, ir_coeff, ir_data) \
@@ -94,6 +100,9 @@ enum {
 	ltr501 = 0,
 	ltr559,
 	ltr301,
+	ltr303,
+
+	ltr_max
 };
 
 struct ltr501_gain {
@@ -1225,6 +1234,18 @@ static struct ltr501_chip_info ltr501_chip_info_tbl[] = {
 		.channels = ltr301_channels,
 		.no_channels = ARRAY_SIZE(ltr301_channels),
 	},
+	[ltr303] = {
+		.partid = 0x0A,
+		.als_gain = ltr559_als_gain_tbl,
+		.als_gain_tbl_size = ARRAY_SIZE(ltr559_als_gain_tbl),
+		.als_mode_active = BIT(0),
+		.als_gain_mask = BIT(2) | BIT(3) | BIT(4),
+		.als_gain_shift = 2,
+		.info = &ltr301_info,
+		.info_no_irq = &ltr301_info_no_irq,
+		.channels = ltr301_channels,
+		.no_channels = ARRAY_SIZE(ltr301_channels),
+	},
 };
 
 static int ltr501_write_contr(struct ltr501_data *data, u8 als_val, u8 ps_val)
@@ -1331,7 +1352,7 @@ static int ltr501_init(struct ltr501_data *data)
 	if (ret < 0)
 		return ret;
 
-	data->als_contr = status | data->chip_info->als_mode_active;
+	data->als_contr = status | data->chip_info->als_mode_active | LTR501_ALS_DEF_GAIN;
 
 	ret = regmap_read(data->regmap, LTR501_PS_CONTR, &status);
 	if (ret < 0)
@@ -1354,7 +1375,9 @@ static bool ltr501_is_volatile_reg(struct device *dev, unsigned int reg)
 {
 	switch (reg) {
 	case LTR501_ALS_DATA1:
+	case LTR501_ALS_DATA1+1:
 	case LTR501_ALS_DATA0:
+	case LTR501_ALS_DATA0+1:
 	case LTR501_ALS_PS_STATUS:
 	case LTR501_PS_DATA:
 		return true;
@@ -1469,12 +1492,31 @@ static int ltr501_probe(struct i2c_client *client,
 	if (ret < 0)
 		return ret;
 
-	if (id) {
+	if (client->dev.of_node) {
+		int i = 0;
+
+		chip_idx = (int)of_device_get_match_data(&client->dev);
+		for (i=0; i<ltr_max; i++) {
+			if (NULL == ltr501_id[i].name) {
+				break;
+			}
+			if (ltr501_id[i].driver_data == chip_idx) {
+				name = ltr501_id[i].name;
+				break;
+			}
+		}
+		if (i >= ltr_max) {
+			name = LTR501_DRV_NAME;
+		}
+	}
+	else if (id) {
 		name = id->name;
 		chip_idx = id->driver_data;
-	} else  if (ACPI_HANDLE(&client->dev)) {
+	}
+	else if (ACPI_HANDLE(&client->dev)) {
 		name = ltr501_match_acpi_device(&client->dev, &chip_idx);
-	} else {
+	}
+	else {
 		return -ENODEV;
 	}
 
@@ -1562,6 +1604,7 @@ static const struct acpi_device_id ltr_acpi_match[] = {
 	{"LTER0501", ltr501},
 	{"LTER0559", ltr559},
 	{"LTER0301", ltr301},
+	{"LTER0303", ltr303},
 	{ },
 };
 MODULE_DEVICE_TABLE(acpi, ltr_acpi_match);
@@ -1570,15 +1613,26 @@ static const struct i2c_device_id ltr501_id[] = {
 	{ "ltr501", ltr501},
 	{ "ltr559", ltr559},
 	{ "ltr301", ltr301},
+	{ "ltr303", ltr303},
 	{ }
 };
 MODULE_DEVICE_TABLE(i2c, ltr501_id);
+
+static const struct of_device_id ltr303_of_ids[] = {
+	{
+		.compatible = "ltr303,liteon",
+		.data = (const void*)ltr303,
+	},
+	{ } /* sentinel */
+};
+MODULE_DEVICE_TABLE(of, ltr303_of_ids);
 
 static struct i2c_driver ltr501_driver = {
 	.driver = {
 		.name   = LTR501_DRV_NAME,
 		.pm	= &ltr501_pm_ops,
 		.acpi_match_table = ACPI_PTR(ltr_acpi_match),
+		.of_match_table = ltr303_of_ids,
 	},
 	.probe  = ltr501_probe,
 	.remove	= ltr501_remove,
