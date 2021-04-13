@@ -1,0 +1,203 @@
+/*
+ * Copyright (C) 2018 Seeed Studio
+ * Peter Yang <turmary@126.com>
+ *
+ * MIT License
+ *
+ */
+/dts-v1/;
+/plugin/;
+
+/ {
+    compatible = "brcm,bcm2835", "brcm,bcm2708", "brcm,bcm2709";
+
+	fragment@0 {
+		target = <&dsi1>;
+		__overlay__ {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			status = "okay";
+
+			port {
+				dsi_out_port: endpoint {
+					remote-endpoint = <&panel_dsi_port>;
+				};
+			};
+		};
+	};
+	
+	fragment@1 {
+		target = <&gpio>;
+		__overlay__ {
+			mcp23008_pins: mcp23008_pins@20 {
+				brcm,pins = <12>;    /* gpio number */
+				brcm,function = <0>; /* 0 = input, 1 = output */
+				brcm,pull = <2>;     /* 0 = none, 1 = pull down, 2 = pull up */
+			};
+		};
+	};
+
+	fragment@2 {
+		target = <&i2c1>;
+		__overlay__ {
+			status = "okay";
+
+			/* this is the configuration part */
+			clock-frequency = <300000>;
+
+			#address-cells = <1>;
+			#size-cells = <0>;
+			
+			lis331dlh@19 {
+				compatible = "st,lis331dlh";
+				reg = <0x19>;
+				status = "okay";
+			};
+			
+			mcp23008: mcp@20 {
+				compatible = "microchip,mcp23008";
+				reg = <0x20>;
+				status = "okay";
+
+				gpio-controller;
+				#gpio-cells = <2>;
+
+				input_pins: pinmux {
+					pins =
+						"gpio0",
+						"gpio1",
+						"gpio2",
+						"gpio3";
+					bias-pull-up;
+				};
+			};
+
+			ltr303@29 {
+				compatible = "ltr303,liteon";
+				reg = <0x29>;
+				status = "okay";
+			};
+			
+			mipi_dsi@45 {
+				compatible = "i2c_dsi,ili9881d";
+				reg = <0x45>;
+				port {
+					panel_dsi_port: endpoint {
+						remote-endpoint = <&dsi_out_port>;
+					};
+				};
+			};
+			
+			pcf8563@51 {
+				compatible = "nxp,pcf8563";
+				reg = <0x51>;
+			};
+		};
+	};
+	
+	fragment@3 {
+		target = <&mcp23008>;
+		mcp23008_irq: __overlay__ {
+			#interrupt-cells=<2>;
+			interrupt-parent = <&gpio>;
+			interrupts = <12 2>; /* IRQ_TYPE_EDGE_FALLING */
+			interrupt-controller;
+			microchip,irq-mirror;
+		};
+	};
+
+	fragment@4 {
+		target = <&leds>;
+		__overlay__ {
+			compatible = "gpio-leds";
+
+			usr_led0: usr_led0 {
+				label = "usr_led0";
+				linux,default-trigger = "default-off";
+				gpios = <&mcp23008 4 1>;
+			};
+
+			usr_led1: usr_led1 {
+				label = "usr_led1";
+				linux,default-trigger = "default-off";
+				gpios = <&mcp23008 5 1>;
+			};
+
+			usr_led2: usr_led2 {
+				label = "usr_led2";
+				linux,default-trigger = "default-off";
+				gpios = <&mcp23008 6 1>;
+			};
+
+			usr_buzzer: usr_led3 {
+				label = "usr_buzzer";
+				linux,default-trigger = "default-off";
+				gpios = <&mcp23008 7 0>;
+				default-state = "off";
+			};
+		};
+	};
+
+	fragment@5 {
+		target-path="/";
+		__overlay__ {
+			gpio_keys {
+				compatible = "gpio-keys";
+				pinctrl-names = "default";
+				pinctrl-0 = <&input_pins>;
+
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				usr_btn0: usr_btn0 {
+					debounce-interval = <50>;
+					linux,code = <0x100>; /* BTN_0 */
+					label = "usr_btn0";
+					gpios = <&mcp23008 0 1>;
+					gpio-key,wakeup;
+					autorepeat;
+				};
+
+				usr_btn1: usr_btn1 {
+					debounce-interval = <50>;
+					linux,code = <0x101>; /* BTN_1 */
+					label = "usr_btn1";
+					gpios = <&mcp23008 1 1>;
+					gpio-key,wakeup;
+					autorepeat;
+				};
+
+				usr_btn2: usr_btn2 {
+					debounce-interval = <50>;
+					linux,code = <0x102>; /* BTN_2 */
+					label = "usr_btn2";
+					gpios = <&mcp23008 2 1>;
+					gpio-key,wakeup;
+					autorepeat;
+				};
+
+				usr_btn3: usr_btn3 {
+					debounce-interval = <50>;
+					linux,code = <0x103>; /* BTN_3 */
+					label = "usr_btn3";
+					gpios = <&mcp23008 3 1>;
+					gpio-key,wakeup;
+					autorepeat;
+				};
+			};
+		};
+	};
+
+	__overrides__ {
+		gpiopin = <&mcp23008_pins>,"brcm,pins:0",
+				<&mcp23008_irq>,"interrupts:0";
+		addr = <&mcp23008>,"reg:0", <&mcp23008_pins>,"reg:0";
+		noints = <0>,"!1!3";
+
+		key0 = <&usr_btn0>,"linux,code:0";
+		key1 = <&usr_btn1>,"linux,code:0";
+		key2 = <&usr_btn2>,"linux,code:0";
+		key3 = <&usr_btn3>,"linux,code:0";
+	};
+};
+
