@@ -151,7 +151,7 @@
 
 				usr_btn0: usr_btn0 {
 					debounce-interval = <5>;
-					linux,code = <0x100>; /* BTN_0 */
+					linux,code = <30>; /* BTN_0 */
 					label = "usr_btn0";
 					gpios = <&mcp23008 0 1>;
 					gpio-key,wakeup;
@@ -160,25 +160,25 @@
 
 				usr_btn1: usr_btn1 {
 					debounce-interval = <5>;
-					linux,code = <0x101>; /* BTN_1 */
+					linux,code = <31>; /* BTN_1 */
 					label = "usr_btn1";
-					gpios = <&mcp23008 1 1>;
+					gpios = <&mcp23008 2 1>;
 					gpio-key,wakeup;
 					autorepeat;
 				};
 
 				usr_btn2: usr_btn2 {
 					debounce-interval = <5>;
-					linux,code = <0x102>; /* BTN_2 */
+					linux,code = <32>; /* BTN_2 */
 					label = "usr_btn2";
-					gpios = <&mcp23008 2 1>;
+					gpios = <&mcp23008 1 1>;
 					gpio-key,wakeup;
 					autorepeat;
 				};
 
 				usr_btn3: usr_btn3 {
 					debounce-interval = <5>;
-					linux,code = <0x103>; /* BTN_3 */
+					linux,code = <33>; /* BTN_3 */
 					label = "usr_btn3";
 					gpios = <&mcp23008 3 1>;
 					gpio-key,wakeup;
