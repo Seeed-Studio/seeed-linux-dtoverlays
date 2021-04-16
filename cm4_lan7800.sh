@@ -21,7 +21,7 @@ function check_kernel_headers() {
 	echo "Installed: $RPI_HDR"
 	return 0;
   fi
-  
+
   echo " !!! Your kernel version is `uname -r`"
   echo "     Couldn't find *** corresponding *** kernel headers with apt-get."
   echo "     This may happen if you ran 'rpi-update'."
@@ -67,7 +67,7 @@ function install_modules {
     echo "No module to install!"
 	exit 1;
   fi
-  
+
   mkdir -p $INS_PATH;
 
   for i
@@ -89,7 +89,7 @@ function uninstall_modules {
     echo "No module to uninstall!"
 	exit 1;
   fi
-  
+
   for i
   do
     if [ -e $INS_PATH/$i.ko ]; then
@@ -110,7 +110,7 @@ function add_blacklist {
 
   CMDLINE=$(cat $CLI_PATH | sed 's/\binitcall_blacklist=\S*\b *//g')
   BLACKLIST=$(grep -o "\binitcall_blacklist=\S*\b" $CLI_PATH)
-  
+
   for i
   do
      if [ $(echo $BLACKLIST | grep -c "$i") -eq 0 ]; then
@@ -122,7 +122,7 @@ function add_blacklist {
 	   BLACKLIST="$BLACKLIST$i";
 	 fi
   done
-  
+
   CMDLINE="$CMDLINE $BLACKLIST"
   echo $CMDLINE > $CLI_PATH
 }
@@ -132,9 +132,9 @@ function remove_blacklist {
     echo "No module to remove from blacklist!"
 	exit 1;
   fi
-  
+
   CMDLINE=$(cat $CLI_PATH | sed 's/\binitcall_blacklist=\S*\b *//g')
-  
+
   echo $CMDLINE > $CLI_PATH
 }
 
@@ -149,11 +149,12 @@ __EOF__
   exit 1
 }
 
-function install() {
+function install {
   check_kernel_headers
   build_modules lan7800
   install_modules lan7800
   add_blacklist lan78xx_driver_init
+  depmod -a
 
   echo "------------------------------------------------------"
   echo "Please reboot your device to apply all settings"
@@ -161,11 +162,16 @@ function install() {
   echo "------------------------------------------------------"
 }
 
+function uninstall {
+  clean_modules lan7800
+  uninstall_modules lan7800
+  remove_blacklist lan78xx_driver_init
+  depmod -a
+}
+
 if [[ ! -z $1 ]]; then
   if [ $1 = "--autoremove" ]; then
-    clean_modules lan7800
-	uninstall_modules lan7800
-	remove_blacklist lan78xx_driver_init
+    uninstall
   elif [ $1 = "--install" ]; then
     install
   else
