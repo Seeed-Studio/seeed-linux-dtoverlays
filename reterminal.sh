@@ -104,7 +104,7 @@ function install_overlay {
   for i
   do
     make overlays/rpi/$i-overlay.dtbo || exit 1;
-    mv -v overlays/rpi/$i-overlay.dtbo /boot/overlays/$i.dtbo || exit 1;
+    cp -v overlays/rpi/$i-overlay.dtbo /boot/overlays/$i.dtbo || exit 1;
 	
 	grep -q "^dtoverlay=$i$" $CFG_PATH || \
 	  echo "dtoverlay=$i" >> $CFG_PATH
@@ -126,7 +126,7 @@ function uninstall_overlay {
   
   for i
   do
-    rm -v /boot/overlays/$i.dtbo || exit 1;
+    rm -fv /boot/overlays/$i.dtbo || exit 1;
 	sed -i "/^dtoverlay="$i"$/d" ${CFG_PATH}
   done
   
@@ -161,7 +161,9 @@ function install {
 function uninstall {
   clean_modules mipi_dsi ltr30x lis3lv02d
   uninstall_modules mipi_dsi als_ltr30x lis331dlh-i2c
-  rm -fv overlays/rpi/*.tmp *.dtbo
+  rm -fv overlays/rpi/.*.tmp
+  rm -fv overlays/rpi/.*.cmd
+  rm -fv overlays/rpi/*.dtbo
   depmod -a
   
   uninstall_overlay ReTerminal
