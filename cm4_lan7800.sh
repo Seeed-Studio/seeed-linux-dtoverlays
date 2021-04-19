@@ -3,8 +3,9 @@
 
 # Common path
 MOD_PATH=`pwd`/modules
+MOD_CFG=/etc/modules
 CLI_PATH=/boot/cmdline.txt
-INS_PATH=/lib/modules/`uname -r`/extra
+INS_PATH=/lib/modules/`uname -r`/extra/seeed
 KBUILD=/lib/modules/`uname -r`/build
 
 # Check root
@@ -18,8 +19,8 @@ function check_kernel_headers() {
   RPI_HDR=/usr/src/linux-headers-`uname -r`
 
   if [ -d $RPI_HDR ]; then
-	echo "Installed: $RPI_HDR"
-	return 0;
+    echo "Installed: $RPI_HDR"
+    return 0;
   fi
 
   echo " !!! Your kernel version is `uname -r`"
@@ -40,7 +41,7 @@ function check_kernel_headers() {
 function build_modules {
   if [ $# -eq 0 ]; then
     echo "No module to compile!"
-	exit 1;
+    exit 1;
   fi
 
   for i
@@ -52,7 +53,7 @@ function build_modules {
 function clean_modules {
   if [ $# -eq 0 ]; then
     echo "No module to clean!"
-	exit 1;
+    exit 1;
   fi
 
   for i
@@ -65,7 +66,7 @@ function clean_modules {
 function install_modules {
   if [ $# -eq 0 ]; then
     echo "No module to install!"
-	exit 1;
+    exit 1;
   fi
 
   mkdir -p $INS_PATH;
@@ -73,31 +74,32 @@ function install_modules {
   for i
   do
     if [ -e $MOD_PATH/$i/$i.ko ]; then
-      cp $MOD_PATH/$i/$i.ko $INS_PATH
-	  grep -q "^$i$" /etc/modules || \
-	    echo $i >> /etc/modules
-	  echo Copied: $INS_PATH/$i.ko
-	else
-	  echo Not exist: $MOD_PATH/$i/$i.ko
-	  exit 1;
-	fi
+      cp -fv $MOD_PATH/$i/$i.ko $INS_PATH
+      grep -q "^$i$" $MOD_CFG || \
+        echo $i >> $MOD_CFG
+    else
+      echo Not exist: $MOD_PATH/$i/$i.ko
+      exit 1;
+    fi
   done
 }
 
 function uninstall_modules { 
   if [ $# -eq 0 ]; then
     echo "No module to uninstall!"
-	exit 1;
+    exit 1;
   fi
 
   for i
   do
     if [ -e $INS_PATH/$i.ko ]; then
-      rm -f $INS_PATH/$i.ko
-	  echo Removed: $INS_PATH/$i.ko
+      rm -fv $INS_PATH/$i.ko
+    else
+      echo Not exist: $INS_PATH/$i.ko
+      exit 1;
     fi
 
-	sed -i "/^"$i"$/d" /etc/modules
+    sed -i "/^"$i"$/d" $MOD_CFG
   done
 }
 
@@ -105,7 +107,7 @@ function uninstall_modules {
 function add_blacklist {
   if [ $# -eq 0 ]; then
     echo "No module to add to blacklist!"
-	exit 1;
+    exit 1;
   fi
 
   CMDLINE=$(cat $CLI_PATH | sed 's/\binitcall_blacklist=\S*\b *//g')
@@ -113,14 +115,14 @@ function add_blacklist {
 
   for i
   do
-     if [ $(echo $BLACKLIST | grep -c "$i") -eq 0 ]; then
-	   if [ ${#BLACKLIST} -eq 0 ]; then
-	     BLACKLIST="initcall_blacklist=";
-	   else
-	     BLACKLIST="$BLACKLIST,";
-	   fi
-	   BLACKLIST="$BLACKLIST$i";
-	 fi
+    if [ $(echo $BLACKLIST | grep -c "$i") -eq 0 ]; then
+      if [ ${#BLACKLIST} -eq 0 ]; then
+        BLACKLIST="initcall_blacklist=";
+      else
+        BLACKLIST="$BLACKLIST,";
+      fi
+      BLACKLIST="$BLACKLIST$i";
+    fi
   done
 
   CMDLINE="$CMDLINE $BLACKLIST"
@@ -130,7 +132,7 @@ function add_blacklist {
 function remove_blacklist {
   if [ $# -eq 0 ]; then
     echo "No module to remove from blacklist!"
-	exit 1;
+    exit 1;
   fi
 
   CMDLINE=$(cat $CLI_PATH | sed 's/\binitcall_blacklist=\S*\b *//g')
