@@ -151,6 +151,8 @@ function install {
   depmod -a
 
   install_overlay ReTerminal
+  
+  cp -fv ./dispsetup.sh /usr/share/
 
   echo "------------------------------------------------------"
   echo "Please reboot your device to apply all settings"
