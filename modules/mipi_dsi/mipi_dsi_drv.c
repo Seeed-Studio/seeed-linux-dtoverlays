@@ -157,8 +157,6 @@ static int panel_prepare(struct drm_panel *panel)
 	DBG_FUNC("");
 
 	/* i2c */
-	i2c_md_write(md, REG_POWERON, 1);
-
 	/* reset pin */
 	i2c_md_write(md, REG_LCD_RST, 1);
 	msleep(10);
@@ -213,7 +211,6 @@ static int panel_disable(struct drm_panel * panel)
 		funcs->disable(panel);
 
 	/* i2c */
-	i2c_md_write(md, REG_POWERON, 0);
 	i2c_md_write(md, REG_LCD_RST, 0);
 	i2c_md_write(md, REG_PWM, 0);
 
@@ -321,7 +318,7 @@ static int i2c_md_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
 	}
 
 	/* Turn off */
-	i2c_md_write(md, REG_POWERON, 0);
+	i2c_md_write(md, REG_POWERON, 1);
 
 	md->dsi = mipi_dsi_device(dev);
 	if (NULL == md->dsi) {
