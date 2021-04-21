@@ -358,13 +358,8 @@ static int i2c_md_remove(struct i2c_client *i2c)
 	return 0;
 }
 
-extern const struct panel_data st7701s_data;
 extern const struct panel_data ili9881d_data;
 static const struct of_device_id i2c_md_of_ids[] = {
-	{
-		.compatible = "i2c_dsi,st7701s",
-		.data = (const void*)&st7701s_data,
-	},
 	{
 		.compatible = "i2c_dsi,ili9881d",
 		.data = (const void*)&ili9881d_data,
