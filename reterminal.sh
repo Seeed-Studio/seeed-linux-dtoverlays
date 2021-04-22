@@ -45,7 +45,12 @@ function build_modules {
 
   for i
   do
-    make -C $KBUILD M=$MOD_PATH/$i || echo Build failed: $i exit 1;
+    RET=1
+    make -C $KBUILD M=$MOD_PATH/$i || RET=0
+    if [ $RET -eq 0 ]; then
+      echo Build failed: $i
+      exit 1
+    fi
   done
 }
 
@@ -101,6 +106,15 @@ function install_overlay {
     exit 1;
   fi
 
+  grep -q "^ignore_lcd=1$" $CFG_PATH || \
+    echo "ignore_lcd=1" >> $CFG_PATH
+  grep -q "^enable_uart=1$" $CFG_PATH || \
+    echo "enable_uart=1" >> $CFG_PATH
+  grep -q "^dtoverlay=dwc2,dr_mode=host$" $CFG_PATH || \
+    echo "dtoverlay=dwc2,dr_mode=host" >> $CFG_PATH
+  grep -q "^dtoverlay=vc4-kms-v3d-pi4$" $CFG_PATH || \
+    echo "dtoverlay=vc4-kms-v3d-pi4" >> $CFG_PATH
+
   for i
   do
     make overlays/rpi/$i-overlay.dtbo || exit 1;
@@ -109,13 +123,6 @@ function install_overlay {
 	grep -q "^dtoverlay=$i$" $CFG_PATH || \
 	  echo "dtoverlay=$i" >> $CFG_PATH
   done
-
-  grep -q "^dtoverlay=vc4-kms-v3d-pi4$" $CFG_PATH || \
-    echo "dtoverlay=vc4-kms-v3d-pi4" >> $CFG_PATH
-  grep -q "^enable_uart=1$" $CFG_PATH || \
-    echo "enable_uart=1" >> $CFG_PATH
-  grep -q "^dtoverlay=dwc2,dr_mode=host$" $CFG_PATH || \
-    echo "dtoverlay=dwc2,dr_mode=host" >> $CFG_PATH
 }
 
 function uninstall_overlay {

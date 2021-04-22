@@ -46,7 +46,12 @@ function build_modules {
 
   for i
   do
-    make -C $KBUILD M=$MOD_PATH/$i || echo Build failed: $i exit 1;
+    RET=1
+    make -C $KBUILD M=$MOD_PATH/$i || RET=0
+    if [ $RET -eq 0 ]; then
+      echo Build failed: $i
+      exit 1
+    fi
   done
 }
 
