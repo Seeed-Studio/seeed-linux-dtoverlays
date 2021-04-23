@@ -1,2 +1,1 @@
-CAN-HAT
-seeed-voicecard
+imx415

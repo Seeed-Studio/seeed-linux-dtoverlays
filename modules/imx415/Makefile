@@ -1,11 +1,11 @@
 #
-# Peter Yang <turmary@126.com>
-# Copyright (c) 2019 Seeed Studio
+# Hongtai.Liu <lht856@foxmail.com>
+# Copyright (c) 2021 Seeed Studio
 #
 # MIT License
 #
-obj-m += imx415.o
 
+obj-m += imx415.o
 
 all:
 	make -C $(KDIR) M=$(PWD) modules
@@ -15,4 +15,3 @@ install:
 
 clean:
 	make -C $(KDIR) M=$(PWD) clean
-
