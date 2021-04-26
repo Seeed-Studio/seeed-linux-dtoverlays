@@ -118,7 +118,7 @@ function install_overlay {
   for i
   do
     make overlays/rpi/$i-overlay.dtbo || exit 1;
-    cp -v overlays/rpi/$i-overlay.dtbo /boot/overlays/$i.dtbo || exit 1;
+    cp -fv overlays/rpi/$i-overlay.dtbo /boot/overlays/$i.dtbo || exit 1;
 	
 	grep -q "^dtoverlay=$i$" $CFG_PATH || \
 	  echo "dtoverlay=$i" >> $CFG_PATH
@@ -142,7 +142,7 @@ function uninstall_overlay {
 
 function usage() {
   cat <<-__EOF__
-    usage: sudo ./reterminal.sh [ --autoremove | --install ] [ -h | --help ]
+    usage: sudo ./reTerminal.sh [ --autoremove | --install ] [ -h | --help ]
              default action is update lan7800 module.
              --install       used for update module
              --autoremove    used for automatic cleaning
@@ -157,9 +157,11 @@ function install {
   install_modules mipi_dsi ltr30x/als_ltr30x lis3lv02d/lis331dlh-i2c
   depmod -a
 
-  install_overlay ReTerminal
+  install_overlay reTerminal
   
-  cp -fv ./dispsetup.sh /usr/share/
+  cp -fv reTerminal/10-disp.conf /usr/share/X11/xorg.conf.d/ || exit 1;
+  cp -fv reTerminal/plymouth/plymouthd.conf /etc/plymouth/ || exit 1;
+  cp -rfv reTerminal/plymouth/seeed/ /usr/share/plymouth/themes/ || exit 1;
 
   echo "------------------------------------------------------"
   echo "Please reboot your device to apply all settings"
@@ -175,7 +177,7 @@ function uninstall {
   rm -fv overlays/rpi/*.dtbo
   depmod -a
   
-  uninstall_overlay ReTerminal
+  uninstall_overlay reTerminal
 }
 
 if [[ ! -z $1 ]]; then
