@@ -151,6 +151,7 @@ error:
 /* panel_funcs */
 static int panel_prepare(struct drm_panel *panel)
 {
+	int ret = 0;
 	struct i2c_mipi_dsi *md = panel_to_md(panel);
 	const struct drm_panel_funcs *funcs = md->panel_data->funcs;
 
@@ -158,75 +159,92 @@ static int panel_prepare(struct drm_panel *panel)
 
 	/* i2c */
 	/* reset pin */
-	i2c_md_write(md, REG_LCD_RST, 1);
-	msleep(10);
 	i2c_md_write(md, REG_LCD_RST, 0);
-	msleep(50);
+	msleep(20);
 	i2c_md_write(md, REG_LCD_RST, 1);
-	msleep(200);
+	msleep(20);
 
 	/* panel */
-	if (funcs && funcs->prepare)
-		funcs->prepare(panel);
+	if (funcs && funcs->prepare) {
+		ret = funcs->prepare(panel);
+		if (ret < 0)
+			return ret;
+	}
 
-	return 0;
+	return ret;
 }
 
 static int panel_unprepare(struct drm_panel *panel)
 {
+	int ret = 0;
 	struct i2c_mipi_dsi *md = panel_to_md(panel);
 	const struct drm_panel_funcs *funcs = md->panel_data->funcs;
 
 	DBG_FUNC("");
-	if (funcs && funcs->unprepare)
-		funcs->unprepare(panel);
+	if (funcs && funcs->unprepare) {
+		ret = funcs->unprepare(panel);
+		if (ret < 0)
+			return ret;
+	}
 
-	return 0;
+	return ret;
 }
 
 static int panel_enable(struct drm_panel * panel)
 {
+	int ret = 0;
 	struct i2c_mipi_dsi *md = panel_to_md(panel);
 	const struct drm_panel_funcs *funcs = md->panel_data->funcs;
 
 	DBG_FUNC("");
 	/* panel */
-	if (funcs && funcs->enable)
-		funcs->enable(panel);
+	if (funcs && funcs->enable) {
+		ret = funcs->enable(panel);
+		if (ret < 0)
+			return ret;
+	}
 
+	/* i2c */
 	i2c_md_write(md, REG_PWM, md->brightness);
 
-	return 0;
+	return ret;
 }
 
 static int panel_disable(struct drm_panel * panel)
 {
+	int ret = 0;
 	struct i2c_mipi_dsi *md = panel_to_md(panel);
 	const struct drm_panel_funcs *funcs = md->panel_data->funcs;
 
 	DBG_FUNC("");
+	/* i2c */
+	i2c_md_write(md, REG_PWM, 0);
+	i2c_md_write(md, REG_LCD_RST, 0);
 
 	/* panel */
-	if (funcs && funcs->disable)
-		funcs->disable(panel);
+	if (funcs && funcs->disable) {
+		ret = funcs->disable(panel);
+		if (ret < 0)
+			return ret;
+	}
 
-	/* i2c */
-	i2c_md_write(md, REG_LCD_RST, 0);
-	i2c_md_write(md, REG_PWM, 0);
-
-	return 0;
+	return ret;
 }
 
 static int panel_get_modes(struct drm_panel *panel, struct drm_connector *connector)
 {
+	int ret = 0;
 	struct i2c_mipi_dsi *md = panel_to_md(panel);
 	const struct drm_panel_funcs *funcs = md->panel_data->funcs;
 
-	DBG_FUNC("");
-	if (funcs && funcs->get_modes)
-		funcs->get_modes(panel, connector);
+//	DBG_FUNC("");
+	if (funcs && funcs->get_modes) {
+		ret = funcs->get_modes(panel, connector);
+		if (ret < 0)
+			return ret;
+	}
 
-	return 0;
+	return ret;
 }
 
 static const struct drm_panel_funcs panel_funcs = {

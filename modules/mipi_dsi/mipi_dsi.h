@@ -85,10 +85,12 @@ enum REG_ADDR {
 
 #define DSI_DCS_WRITE(dsi, seq...)		\
 	{									\
+		int ret = 0;					\
 		const u8 d[] = { seq };			\
-		mipi_dsi_dcs_write_buffer(dsi, d, ARRAY_SIZE(d));	\
+		ret = mipi_dsi_dcs_write_buffer(dsi, d, ARRAY_SIZE(d));	\
+		if (ret < 0)		\
+			return ret;		\
 	}
-
 
 struct panel_data {
 	void (*set_dsi)(struct mipi_dsi_device *dsi);

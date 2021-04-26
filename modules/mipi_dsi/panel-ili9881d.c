@@ -10,54 +10,39 @@
 
 static struct mipi_dsi_device *ili9881d_dsi = NULL;
 
-static const struct drm_display_mode ili9881d_modes[] = {
-	{
-		.clock		= 62712 /*73164*/ /*83616*/ /*94068*/ /*104520*/,
+static const struct drm_display_mode ili9881d_modes = {
+	.clock		= 62712 /*73164*/ /*83616*/ /*94068*/ /*104520*/,
 
-		.hdisplay	= 720,
-		.hsync_start= 720 + 10,
-		.hsync_end	= 720 + 10 + 20,
-		.htotal		= 720 + 10 + 20 + 30,
+	.hdisplay	= 720,
+	.hsync_start= 720 + 10,
+	.hsync_end	= 720 + 10 + 20,
+	.htotal		= 720 + 10 + 20 + 30,
 
-		.vdisplay	= 1280,
-		.vsync_start= 1280 + 10,
-		.vsync_end	= 1280 + 10 + 20,
-		.vtotal		= 1280 + 10 + 20 + 30,
-	},
+	.vdisplay	= 1280,
+	.vsync_start= 1280 + 10,
+	.vsync_end	= 1280 + 10 + 20,
+	.vtotal		= 1280 + 10 + 20 + 30,
 };
 
 static int ili9881d_get_modes(struct drm_panel *panel, struct drm_connector *connector)
 {
-	unsigned int i, num = 0;
-	static const u32 bus_format = MEDIA_BUS_FMT_RGB888_1X24;
+	struct drm_display_mode *mode;
 
-	for (i = 0; i < ARRAY_SIZE(ili9881d_modes); i++) {
-		const struct drm_display_mode *m = &ili9881d_modes[i];
-		struct drm_display_mode *mode;
-
-		mode = drm_mode_duplicate(connector->dev, m);
-		if (!mode) {
-			dev_err(panel->dev, "failed to add mode %ux%u@%u\n",
-				m->hdisplay, m->vdisplay,
-				drm_mode_vrefresh(m));
-			continue;
-		}
-
-		mode->type |= DRM_MODE_TYPE_DRIVER;
-		if (i == 0)
-			mode->type |= DRM_MODE_TYPE_PREFERRED;
-
-		drm_mode_set_name(mode);
-		drm_mode_probed_add(connector, mode);
-		num++;
+	mode = drm_mode_duplicate(connector->dev, &ili9881d_modes);
+	if (!mode) {
+		dev_err(panel->dev, "failed to add mode %ux%u@%u\n",
+			mode->hdisplay, mode->vdisplay,
+			drm_mode_vrefresh(mode));
+		return -ENOMEM;
 	}
+	mode->type = DRM_MODE_TYPE_DRIVER | DRM_MODE_TYPE_PREFERRED;
+	drm_mode_set_name(mode);
 
-	connector->display_info.bpc = 8;
-	connector->display_info.width_mm = 62;
-	connector->display_info.height_mm = 110;
-	drm_display_info_set_bus_formats(&connector->display_info, &bus_format, 1);
+	connector->display_info.width_mm = mode->width_mm;
+	connector->display_info.height_mm = mode->height_mm;
+	drm_mode_probed_add(connector, mode);
 
-	return num;
+	return 1;
 }
 
 #define ILI9881_PAGE(_page)					DSI_DCS_WRITE(dsi,0xff,0x98,0x81,_page)
@@ -303,7 +288,7 @@ static const struct drm_panel_funcs ili9881d_funcs = {
 static void ili9881d_set_dsi(struct mipi_dsi_device *dsi)
 {
 	ili9881d_dsi = dsi;
-	dsi->mode_flags = (MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_SYNC_PULSE);
+	dsi->mode_flags = (MIPI_DSI_MODE_VIDEO /*| MIPI_DSI_MODE_VIDEO_SYNC_PULSE*/);
 	dsi->format = MIPI_DSI_FMT_RGB888;
 	dsi->lanes = 4;
 }
