@@ -4,6 +4,7 @@
 # Common path
 MOD_PATH=`pwd`/modules
 CFG_PATH=/boot/config.txt
+CLI_PATH=/boot/cmdline.txt
 INS_PATH=/lib/modules/`uname -r`/extra/seeed
 KBUILD=/lib/modules/`uname -r`/build
 
@@ -106,12 +107,15 @@ function install_overlay {
     exit 1;
   fi
 
-  grep -q "^ignore_lcd=1$" $CFG_PATH || \
-    echo "ignore_lcd=1" >> $CFG_PATH
   grep -q "^enable_uart=1$" $CFG_PATH || \
     echo "enable_uart=1" >> $CFG_PATH
   grep -q "^dtoverlay=dwc2,dr_mode=host$" $CFG_PATH || \
     echo "dtoverlay=dwc2,dr_mode=host" >> $CFG_PATH
+
+  grep -q "^disable_splash=1$" $CFG_PATH || \
+    echo "disable_splash=1" >> $CFG_PATH
+  grep -q "^ignore_lcd=1$" $CFG_PATH || \
+    echo "ignore_lcd=1" >> $CFG_PATH
   grep -q "^dtoverlay=vc4-kms-v3d-pi4$" $CFG_PATH || \
     echo "dtoverlay=vc4-kms-v3d-pi4" >> $CFG_PATH
 
@@ -123,6 +127,18 @@ function install_overlay {
 	grep -q "^dtoverlay=$i$" $CFG_PATH || \
 	  echo "dtoverlay=$i" >> $CFG_PATH
   done
+
+  # cmdline
+  CMDLINE=$(cat $CLI_PATH)
+  grep -q "\blogo.nologo\b" $CLI_PATH || \
+    CMDLINE="$CMDLINE logo.nologo"
+  grep -q "\bvt.global_cursor_default=0\b" $CLI_PATH || \
+    CMDLINE="$CMDLINE vt.global_cursor_default=0"
+  grep -q "\bconsole=tty3\b" $CLI_PATH || \
+    CMDLINE="$CMDLINE console=tty3"
+  grep -q "\bloglevel=0\b" $CLI_PATH || \
+    CMDLINE="$CMDLINE loglevel=0"
+  echo $CMDLINE > $CLI_PATH
 }
 
 function uninstall_overlay {
@@ -130,14 +146,24 @@ function uninstall_overlay {
     echo "No dtbo to remove!"
     exit 1;
   fi
-  
+
+  sed -i "/^disable_splash=1$/d" ${CFG_PATH}
+  sed -i "/^ignore_lcd=1$/d" ${CFG_PATH}
+  sed -i "/^dtoverlay=vc4-kms-v3d-pi4$/d" ${CFG_PATH}
+
   for i
   do
     rm -fv /boot/overlays/$i.dtbo || exit 1;
 	sed -i "/^dtoverlay="$i"$/d" ${CFG_PATH}
   done
-  
-  sed -i "/^dtoverlay=vc4-kms-v3d-pi4$/d" ${CFG_PATH}
+
+  # cmdline
+  CMDLINE=$(cat $CLI_PATH)
+  CMDLINE=$(echo $CMDLINE | sed 's/ *\blogo.nologo\b//g')
+  CMDLINE=$(echo $CMDLINE | sed 's/ *\bvt.global_cursor_default=0\b//g')
+  CMDLINE=$(echo $CMDLINE | sed 's/ *\bconsole=tty3\b//g')
+  CMDLINE=$(echo $CMDLINE | sed 's/ *\bloglevel=0\b//g')
+  echo $CMDLINE > $CLI_PATH
 }
 
 function usage() {
@@ -158,7 +184,8 @@ function install {
   depmod -a
 
   install_overlay reTerminal
-  
+
+  # display
   cp -fv reTerminal/10-disp.conf /usr/share/X11/xorg.conf.d/ || exit 1;
   cp -fv reTerminal/plymouth/plymouthd.conf /etc/plymouth/ || exit 1;
   cp -rfv reTerminal/plymouth/seeed/ /usr/share/plymouth/themes/ || exit 1;
