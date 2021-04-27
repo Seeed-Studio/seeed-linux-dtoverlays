@@ -161,7 +161,6 @@ struct imx415
 	u32 xclk_freq;
 
 	u8 nlanes;
-	u8 bpp;
 
 	struct v4l2_subdev sd;
 	struct media_pad pad;
@@ -170,7 +169,6 @@ struct imx415
 
 
 	bool streaming;
-	bool power_on;
 	u32 cfg_num;
 	u32 cur_vts;
 
@@ -541,27 +539,69 @@ static int imx415_enum_frame_sizes(struct v4l2_subdev *sd,
 	return 0;
 }
 
+static int imx415_set_fmt(struct v4l2_subdev *sd,
+						  struct v4l2_subdev_pad_config *cfg,
+						  struct v4l2_subdev_format *fmt)
+{  
+	struct imx415 *imx415 = to_imx415(sd);
+	const struct imx415_mode *mode;
+	struct v4l2_mbus_framefmt *format;
+	unsigned int i;
+	u32 h_blank, vblank_def, vblank_min;
+
+	mutex_lock(&imx415->lock);
+
+	mode = imx415->cur_mode;
+
+	fmt->format.width = mode->width;
+	fmt->format.height = mode->height;
+
+
+	fmt->format.code = imx415->cur_mode->bus_fmt;
+	fmt->format.field = V4L2_FIELD_NONE;
+	fmt->format.colorspace = V4L2_COLORSPACE_SRGB;
+	fmt->format.ycbcr_enc =
+		V4L2_MAP_YCBCR_ENC_DEFAULT(fmt->format.colorspace);
+	fmt->format.quantization =
+		V4L2_MAP_QUANTIZATION_DEFAULT(true, fmt->format.colorspace,
+									  fmt->format.ycbcr_enc);
+	fmt->format.xfer_func =
+		V4L2_MAP_XFER_FUNC_DEFAULT(fmt->format.colorspace);
+
+	if (fmt->which == V4L2_SUBDEV_FORMAT_TRY)
+	{
+		format = v4l2_subdev_get_try_format(sd, cfg, fmt->pad);
+	}
+	else
+	{
+		format = &imx415->current_format;
+		imx415->cur_mode = mode;
+	}
+
+	*format = fmt->format;
+
+	mutex_unlock(&imx415->lock);
+
+	return 0;
+}
+
 static int imx415_get_fmt(struct v4l2_subdev *sd,
 						  struct v4l2_subdev_pad_config *cfg,
 						  struct v4l2_subdev_format *fmt)
 {  
 	struct imx415 *imx415 = to_imx415(sd);
-	const struct imx415_mode *mode = imx415->cur_mode;
+	struct v4l2_mbus_framefmt *framefmt;
 
 	mutex_lock(&imx415->lock);
-	if (fmt->which == V4L2_SUBDEV_FORMAT_TRY) {
-#ifdef CONFIG_VIDEO_V4L2_SUBDEV_API
-		fmt->format = *v4l2_subdev_get_try_format(sd, cfg, fmt->pad);
-#else
-		mutex_unlock(&imx415->lock);
-		return -ENOTTY;
-#endif
-	} else {
-		fmt->format.width = mode->width;
-		fmt->format.height = mode->height;
-		fmt->format.code = mode->bus_fmt;
-		fmt->format.field = V4L2_FIELD_NONE;
-	}
+
+	if (fmt->which == V4L2_SUBDEV_FORMAT_TRY)
+		framefmt = v4l2_subdev_get_try_format(&imx415->sd, cfg,
+						      fmt->pad);
+	else
+		framefmt = &imx415->current_format;
+
+	fmt->format = *framefmt;
+
 	mutex_unlock(&imx415->lock);
 
 	return 0;
@@ -593,46 +633,22 @@ static u64 imx415_calc_pixel_rate(struct imx415 *imx415)
 	return pixel_rate;
 }
 
-static int imx415_set_fmt(struct v4l2_subdev *sd,
-						  struct v4l2_subdev_pad_config *cfg,
-						  struct v4l2_subdev_format *fmt)
-{  
-	struct imx415 *imx415 = to_imx415(sd);
-	const struct imx415_mode *mode;
-	s64 h_blank, vblank_def, vblank_min;
+static void imx415_set_default_format(struct imx415 *imx415)
+{
+	struct v4l2_mbus_framefmt *fmt;
 
-	mutex_lock(&imx415->lock);
-
-	mode = imx415_find_best_fit(imx415, fmt);
-	fmt->format.code = mode->bus_fmt;
-	fmt->format.width = mode->width;
-	fmt->format.height = mode->height;
-	fmt->format.field = V4L2_FIELD_NONE;
-	if (fmt->which == V4L2_SUBDEV_FORMAT_TRY) {
-#ifdef CONFIG_VIDEO_V4L2_SUBDEV_API
-		*v4l2_subdev_get_try_format(sd, cfg, fmt->pad) = fmt->format;
-#else
-		mutex_unlock(&imx415->lock);
-		return -ENOTTY;
-#endif
-	} else {
-		imx415_change_mode(imx415, mode);
-		h_blank = mode->hts_def - mode->width;
-		__v4l2_ctrl_modify_range(imx415->hblank, h_blank,
-					 h_blank, 1, h_blank);
-		vblank_def = mode->vts_def - mode->height;
-		/* VMAX >= (PIX_VWIDTH / 2) + 46 = height + 46 */
-		vblank_min = (mode->height + 46) - mode->height;
-		__v4l2_ctrl_modify_range(imx415->vblank, vblank_min,
-					 IMX415_VTS_MAX - mode->height,
-					 1, vblank_def);
-	}
-
-	mutex_unlock(&imx415->lock);
-
-	return 0;
+	fmt = &imx415->current_format;
+	fmt->code = MEDIA_BUS_FMT_SRGGB10_1X10;
+	fmt->colorspace = V4L2_COLORSPACE_SRGB;
+	fmt->ycbcr_enc = V4L2_MAP_YCBCR_ENC_DEFAULT(fmt->colorspace);
+	fmt->quantization = V4L2_MAP_QUANTIZATION_DEFAULT(true,
+							  fmt->colorspace,
+							  fmt->ycbcr_enc);
+	fmt->xfer_func = V4L2_MAP_XFER_FUNC_DEFAULT(fmt->colorspace);
+	fmt->width = supported_modes[0].width;
+	fmt->height = supported_modes[0].height;
+	fmt->field = V4L2_FIELD_NONE;
 }
-
 
 static int imx415_get_selection(struct v4l2_subdev *sd,
 								struct v4l2_subdev_pad_config *cfg,
@@ -1006,6 +1022,10 @@ static const struct v4l2_subdev_ops imx415_subdev_ops = {
 	.pad = &imx415_pad_ops,
 };
 
+static const struct media_entity_operations imx415_subdev_entity_ops = {
+	.link_validate = v4l2_subdev_link_validate,
+};
+
 static int imx415_probe(struct i2c_client *client)
 {  
 	struct device *dev = &client->dev;
@@ -1025,6 +1045,7 @@ static int imx415_probe(struct i2c_client *client)
 
 	imx415->dev = dev;
 	imx415->client = client;
+	imx415->cfg_num = ARRAY_SIZE(supported_modes);
 	
 	endpoint = fwnode_graph_get_next_endpoint(dev_fwnode(dev), NULL);
 	if (!endpoint)
@@ -1210,6 +1231,7 @@ static int imx415_probe(struct i2c_client *client)
 		goto error_power_off;
 
 	imx415->sd.dev = &client->dev;
+	imx415->sd.entity.ops = &imx415_subdev_entity_ops;
 	imx415->sd.entity.function = MEDIA_ENT_F_CAM_SENSOR;
 #ifdef CONFIG_VIDEO_V4L2_SUBDEV_API
 	imx415->sd.internal_ops = &imx415_internal_ops;
@@ -1218,6 +1240,9 @@ static int imx415_probe(struct i2c_client *client)
 #endif
 
 	imx415->pad.flags = MEDIA_PAD_FL_SOURCE;
+
+	imx415_set_default_format(imx415);
+
 	ret = media_entity_pads_init(&imx415->sd.entity, 1, &imx415->pad);
 	if (ret < 0)
 	{
