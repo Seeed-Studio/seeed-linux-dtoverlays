@@ -4,15 +4,16 @@
 #
 # MIT License
 #
+KVERSION ?= $(shell uname -r)
 
 obj-m := als_ltr30x.o
 als_ltr30x-objs := ltr30x.o
 
 all:
-	make -C $(KDIR) M=$(PWD) modules
+	$(MAKE) -C /lib/modules/$(KVERSION)/build M=$(PWD) modules
 
 install:
-	make -C $(KDIR) M=$(PWD) modules_install
+	$(MAKE) -C /lib/modules/$(KVERSION)/build M=$(shell pwd) modules_install
 
 clean:
-	make -C $(KDIR) M=$(PWD) clean
+	$(MAKE) -C /lib/modules/$(KVERSION)/build M=$(PWD) clean

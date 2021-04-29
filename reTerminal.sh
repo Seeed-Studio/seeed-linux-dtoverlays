@@ -1,29 +1,49 @@
 #!/bin/bash
 
+# module version
+ver="0.1"
+
+# we create a dir with this version to ensure that 'dkms remove' won't delete
+# the sources during kernel updates
+marker="0.0.0"
+
+FORCE_KERNEL="1.20210303-1"
+
+uname_r=$(uname -r)
+arch_r=$(dpkg --print-architecture)
 
 # Common path
+SRC_PATH=/usr/src
 MOD_PATH=`pwd`/modules
 CFG_PATH=/boot/config.txt
 CLI_PATH=/boot/cmdline.txt
-INS_PATH=/lib/modules/`uname -r`/extra/seeed
-KBUILD=/lib/modules/`uname -r`/build
 
-# Check root
-if [[ $EUID -ne 0 ]]; then
-  echo "This script must be run as root (use sudo)" 1>&2
-  exit 1;
-fi
+_VER_RUN=
+function get_kernel_version() {
+  local ZIMAGE IMG_OFFSET
+
+  _VER_RUN=""
+  [ -z "$_VER_RUN" ] && {
+    ZIMAGE=/boot/kernel7l.img
+    [ -f /boot/firmware/vmlinuz ] && ZIMAGE=/boot/firmware/vmlinuz
+    IMG_OFFSET=$(LC_ALL=C grep -abo $'\x1f\x8b\x08\x00' $ZIMAGE | head -n 1 | cut -d ':' -f 1)
+    _VER_RUN=$(dd if=$ZIMAGE obs=64K ibs=4 skip=$(( IMG_OFFSET / 4)) 2>/dev/null | zcat | grep -a -m1 "Linux version" | strings | awk '{ print $3; }')
+  }
+  echo "$_VER_RUN"
+  
+  return 0
+}
 
 # Check headers
 function check_kernel_headers() {
-  RPI_HDR=/usr/src/linux-headers-`uname -r`
+  VER_RUN=$(get_kernel_version)
 
-  if [ -d $RPI_HDR ]; then
-    echo "Installed: $RPI_HDR"
-    return 0;
+  if [[ -e "/lib/modules/${VER_RUN}/build" ]]; then
+    echo KBUILD: "/lib/modules/${VER_RUN}/build"
+	return 0;
   fi
 
-  echo " !!! Your kernel version is `uname -r`"
+  echo " !!! Your kernel version is $VER_RUN"
   echo "     Couldn't find *** corresponding *** kernel headers with apt-get."
   echo "     This may happen if you ran 'rpi-update'."
   echo " Choose  *** y *** to install kernel-headers to version `uname -r` and continue."
@@ -37,34 +57,55 @@ function check_kernel_headers() {
   apt-get -y install raspberrypi-kernel-headers
 }
 
-# Build module
-function build_modules {
-  if [ $# -eq 0 ]; then
-    echo "No module to compile!"
-    exit 1;
+function download_install_debpkg() {
+  local prefix name r pkg status _name
+  prefix=$1
+  name=$2
+  pkg=${name%%_*}
+
+  status=$(dpkg -l $pkg | tail -1)
+  _name=$(  echo "$status" | awk '{ printf "%s_%s_%s", $2, $3, $4; }')
+  status=$(echo "$status" | awk '{ printf "%s", $1; }')
+
+  if [ "X$status" == "Xii" -a "X${name%.deb}" == "X$_name" ]; then
+    echo "debian package $name already installed."
+    return 0
   fi
 
-  for i
-  do
-    RET=1
-    make -C $KBUILD M=$MOD_PATH/$i || RET=0
-    if [ $RET -eq 0 ]; then
-      echo Build failed: $i
-      exit 1
-    fi
+  for (( i = 0; i < 3; i++ )); do
+    wget $prefix$name -O /tmp/$name && break
   done
+
+  dpkg -i /tmp/$name; r=$?
+  rm -f /tmp/$name
+
+  return $r
 }
 
-function clean_modules {
-  if [ $# -eq 0 ]; then
-    echo "No module to clean!"
-    exit 1;
-  fi
+function install_kernel() {
+  local _url _prefix
 
-  for i
-  do
-    make -C $KBUILD M=$MOD_PATH/$i clean || echo Clean failed: $i;
-  done
+  # Instead of retrieving the lastest kernel & headers
+  [ "X$FORCE_KERNEL" == "X" ] && {
+    # Raspbian kernel packages
+    apt-get -y --force-yes install raspberrypi-kernel-headers raspberrypi-kernel || {
+      # Ubuntu kernel packages
+      apt-get -y install linux-raspi linux-headers-raspi linux-image-raspi
+    }
+  } || {
+    # We would like to a fixed version
+    KERN_NAME=raspberrypi-kernel_${FORCE_KERNEL}_${arch_r}.deb
+    HDR_NAME=raspberrypi-kernel-headers_${FORCE_KERNEL}_${arch_r}.deb
+    _url=$(apt-get download --print-uris raspberrypi-kernel | sed -nre "s/'([^']+)'.*$/\1/g;p")
+    _prefix=$(echo $_url | sed -nre 's/^(.*)raspberrypi-kernel_.*$/\1/g;p')
+
+    download_install_debpkg "$_prefix" "$KERN_NAME" && {
+      download_install_debpkg "$_prefix" "$HDR_NAME"
+    } || {
+      echo "Error: Install kernel or header failed"
+      exit 2
+    }
+  }
 }
 
 # Install module
@@ -74,15 +115,25 @@ function install_modules {
     exit 1;
   fi
 
-  mkdir -p $INS_PATH;
+  # locate currently installed kernels (may be different to running kernel if
+  # it's just been updated)
+  kernel=$(get_kernel_version)
 
-  for i
+  for mod
   do
-    if [ $(echo $i | grep -c "/") -eq 0 ]; then
-      cp -fv $MOD_PATH/$i/$i.ko $INS_PATH || exit 1;
-    else
-      cp -fv $MOD_PATH/$i.ko $INS_PATH || exit 1;
-    fi
+    target=$SRC_PATH/$mod-$ver
+    mkdir -p $target
+	cp -a $MOD_PATH/$mod/* $target/
+
+	dkms build -k ${kernel} -m $mod -v $ver && {
+      dkms install --force -k ${kernel} -m $mod -v $ver
+    } || {
+      echo "Can't compile with this kernel, aborting"
+      echo "Please try to compile with the option --compat-kernel"
+      exit 1
+    }
+
+	mkdir -p /var/lib/dkms/$mod/$ver/$marker
   done
 }
 
@@ -92,10 +143,15 @@ function uninstall_modules {
     exit 1;
   fi
 
-  for i
+  for mod
   do
-    if [ -e $INS_PATH/$i.ko ]; then
-      rm -fv $INS_PATH/$i.ko
+    if [[ -d /var/lib/dkms/$mod/$ver/$marker ]]; then
+      rmdir /var/lib/dkms/$mod/$ver/$marker
+    fi
+
+    if [[ -e $SRC_PATH/$mod-$ver || -e /var/lib/dkms/$mod/$ver ]]; then
+      dkms remove --force -m $mod -v $ver --all
+      rm -rf $SRC_PATH/$mod-$ver
     fi
   done
 }
@@ -107,6 +163,20 @@ function install_overlay {
     exit 1;
   fi
 
+  # cmdline.txt
+  CMDLINE=$(cat $CLI_PATH)
+  CMDLINE=$(echo $CMDLINE | sed 's/ *\bconsole=tty0\b//g')
+  grep -q "\blogo.nologo\b" $CLI_PATH || \
+    CMDLINE="$CMDLINE logo.nologo"
+  grep -q "\bvt.global_cursor_default=0\b" $CLI_PATH || \
+    CMDLINE="$CMDLINE vt.global_cursor_default=0"
+  grep -q "\bconsole=tty3\b" $CLI_PATH || \
+    CMDLINE="$CMDLINE console=tty3"
+  grep -q "\bloglevel=0\b" $CLI_PATH || \
+    CMDLINE="$CMDLINE loglevel=0"
+  echo $CMDLINE > $CLI_PATH
+
+  # config.txt
   grep -q "^enable_uart=1$" $CFG_PATH || \
     echo "enable_uart=1" >> $CFG_PATH
   grep -q "^dtoverlay=dwc2,dr_mode=host$" $CFG_PATH || \
@@ -123,22 +193,10 @@ function install_overlay {
   do
     make overlays/rpi/$i-overlay.dtbo || exit 1;
     cp -fv overlays/rpi/$i-overlay.dtbo /boot/overlays/$i.dtbo || exit 1;
-	
+
 	grep -q "^dtoverlay=$i$" $CFG_PATH || \
 	  echo "dtoverlay=$i" >> $CFG_PATH
   done
-
-  # cmdline
-  CMDLINE=$(cat $CLI_PATH)
-  grep -q "\blogo.nologo\b" $CLI_PATH || \
-    CMDLINE="$CMDLINE logo.nologo"
-  grep -q "\bvt.global_cursor_default=0\b" $CLI_PATH || \
-    CMDLINE="$CMDLINE vt.global_cursor_default=0"
-  grep -q "\bconsole=tty3\b" $CLI_PATH || \
-    CMDLINE="$CMDLINE console=tty3"
-  grep -q "\bloglevel=0\b" $CLI_PATH || \
-    CMDLINE="$CMDLINE loglevel=0"
-  echo $CMDLINE > $CLI_PATH
 }
 
 function uninstall_overlay {
@@ -147,6 +205,15 @@ function uninstall_overlay {
     exit 1;
   fi
 
+  # cmdline.txt
+  CMDLINE=$(cat $CLI_PATH)
+  CMDLINE=$(echo $CMDLINE | sed 's/ *\blogo.nologo\b//g')
+  CMDLINE=$(echo $CMDLINE | sed 's/ *\bvt.global_cursor_default=0\b//g')
+  CMDLINE=$(echo $CMDLINE | sed 's/ *\bconsole=tty3\b//g')
+  CMDLINE=$(echo $CMDLINE | sed 's/ *\bloglevel=0\b//g')
+  echo $CMDLINE > $CLI_PATH
+
+  # config.txt
   sed -i "/^disable_splash=1$/d" ${CFG_PATH}
   sed -i "/^ignore_lcd=1$/d" ${CFG_PATH}
   sed -i "/^dtoverlay=vc4-kms-v3d-pi4$/d" ${CFG_PATH}
@@ -157,20 +224,18 @@ function uninstall_overlay {
 	sed -i "/^dtoverlay="$i"$/d" ${CFG_PATH}
   done
 
-  # cmdline
-  CMDLINE=$(cat $CLI_PATH)
-  CMDLINE=$(echo $CMDLINE | sed 's/ *\blogo.nologo\b//g')
-  CMDLINE=$(echo $CMDLINE | sed 's/ *\bvt.global_cursor_default=0\b//g')
-  CMDLINE=$(echo $CMDLINE | sed 's/ *\bconsole=tty3\b//g')
-  CMDLINE=$(echo $CMDLINE | sed 's/ *\bloglevel=0\b//g')
-  echo $CMDLINE > $CLI_PATH
+  rm -fv overlays/rpi/.*.tmp
+  rm -fv overlays/rpi/.*.cmd
+  rm -fv overlays/rpi/*.dtbo
 }
 
 function usage() {
   cat <<-__EOF__
     usage: sudo ./reTerminal.sh [ --autoremove | --install ] [ -h | --help ]
-             default action is update lan7800 module.
-             --install       used for update module
+             default action is update kernel & headers to latest version.
+             --compat-kernel uses an older kernel but ensures that the driver can work.
+             --keep-kernel   don't change/update the system kernel, maybe install
+                             coressponding kernel headers.
              --autoremove    used for automatic cleaning
              --help          show this help message
 __EOF__
@@ -178,11 +243,7 @@ __EOF__
 }
 
 function install {
-  check_kernel_headers
-  build_modules mipi_dsi ltr30x lis3lv02d
-  install_modules mipi_dsi ltr30x/als_ltr30x lis3lv02d/lis331dlh-i2c
-  depmod -a
-
+  install_modules mipi_dsi ltr30x lis3lv02d
   install_overlay reTerminal
 
   # display
@@ -197,27 +258,96 @@ function install {
 }
 
 function uninstall {
-  clean_modules mipi_dsi ltr30x lis3lv02d
-  uninstall_modules mipi_dsi als_ltr30x lis331dlh-i2c
-  rm -fv overlays/rpi/.*.tmp
-  rm -fv overlays/rpi/.*.cmd
-  rm -fv overlays/rpi/*.dtbo
-  depmod -a
-  
+  uninstall_modules mipi_dsi ltr30x lis3lv02d
   uninstall_overlay reTerminal
 }
 
-if [[ ! -z $1 ]]; then
-  if [ $1 = "--autoremove" ]; then
-    uninstall
-  elif [ $1 = "--install" ]; then
-    install
-  else
-    usage
-  fi
-else
-  install
+
+# Check root
+if [[ $EUID -ne 0 ]]; then
+  echo "This script must be run as root (use sudo)" 1>&2
+  exit 1;
 fi
+
+compat_kernel=
+keep_kernel=
+auto_remove=
+# parse commandline options
+while [ ! -z "$1" ] ; do
+  case $1 in
+  -h|--help)
+    usage
+    ;;
+  --compat-kernel)
+    compat_kernel=Y
+    ;;
+  --keep-kernel)
+    keep_kernel=Y
+    ;;
+  --autoremove)
+    auto_remove=Y
+	;;
+  esac
+  shift
+done
+
+if [ "X$auto_remove" != "X" ]; then
+  uninstall
+  echo "Auto remove: finished!"
+  exit 0
+fi
+
+# Check if enough space on /boot volume
+boot_line=$(df -BM | grep /boot | head -n 1)
+MIN_BOOT_SPC=25 # MegaBytes
+if [ "x${boot_line}" = "x" ]; then
+  echo "Warning: /boot volume not found .."
+else
+  boot_space=$(echo $boot_line | awk '{print $4;}')
+  free_space=$(echo "${boot_space%?}")
+  unit="${boot_space: -1}"
+  if [[ "$unit" != "M" ]]; then
+    echo "Warning: /boot volume not found .."
+  elif [ "$free_space" -lt "$MIN_BOOT_SPC" ]; then
+    echo "Error: Not enough space left ($boot_space) on /boot"
+    echo "       at least $MIN_BOOT_SPC MB required"
+    exit 1
+  fi
+fi
+
+# update and install required packages
+which apt &>/dev/null; r=$?
+if [[ $r -eq 0 ]]; then
+  echo -e "\n### Install required tool packages"
+  apt update -y
+  apt-get -y install dkms
+fi
+
+if [ "X$keep_kernel" != "X" ]; then
+  FORCE_KERNEL=$(dpkg -s raspberrypi-kernel | awk '/^Version:/{printf "%s\n",$2;}')
+  echo -e "\n### Keep current system kernel not to change"
+elif [ "X$compat_kernel" != "X" ]; then
+  echo -e "\n### Will compile with a compatible kernel..."
+else
+  FORCE_KERNEL=""
+  echo -e "\n### Will compile with the latest kernel..."
+fi
+[ "X$FORCE_KERNEL" != "X" ] && {
+  echo -e "The kernel & headers use package version: $FORCE_KERNEL"
+}
+
+echo -e "\n### Uninstall previous dkms module"
+uninstall
+
+if [[ $r -eq 0 ]]; then
+  echo -e "\n### Install required kernel package"
+  install_kernel
+  check_kernel_headers
+fi
+
+install
+
+
 
 
 
