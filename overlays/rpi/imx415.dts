@@ -23,7 +23,7 @@
 
 				clocks = <&imx415_clk>;
 				clock-names = "xclk";
-				clock-frequency = <37125000>;
+				clock-frequency = <24000000>;
 
 				vdda-supply = <&cam1_reg>;	/* 2.8v */
 				vdddo-supply = <&imx415_vdddo>;	/* 1.8v */
@@ -78,7 +78,7 @@
 			imx415_clk: camera-clk {
 				compatible = "fixed-clock";
 				#clock-cells = <0>;
-				clock-frequency = <37125000>;
+				clock-frequency = <24000000>;
 			};
 		};
 	};
@@ -105,7 +105,7 @@
 		__overlay__ {
 			data-lanes = <1 2>;
 			link-frequencies =
-				/bits/ 64 <445500000>;
+				/bits/ 64 <720000000>;
 		};
 	};
 
@@ -114,7 +114,7 @@
 		__dormant__ {
 			data-lanes = <1 2 3 4>;
 			link-frequencies =
-				/bits/ 64 <222750000>;
+				/bits/ 64 <720000000>;
 		};
 	};
 
