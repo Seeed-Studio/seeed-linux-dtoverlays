@@ -14,9 +14,10 @@ arch_r=$(dpkg --print-architecture)
 
 # Common path
 SRC_PATH=/usr/src
-MOD_PATH=`pwd`/modules
 CFG_PATH=/boot/config.txt
 CLI_PATH=/boot/cmdline.txt
+MOD_PATH=`pwd`/modules
+RES_PATH=`pwd`/extras/reTerminal/resources
 
 _VER_RUN=
 function get_kernel_version() {
@@ -247,9 +248,9 @@ function install {
   install_overlay reTerminal
 
   # display
-  cp -fv reTerminal/10-disp.conf /usr/share/X11/xorg.conf.d/ || exit 1;
-  cp -fv reTerminal/plymouth/plymouthd.conf /etc/plymouth/ || exit 1;
-  cp -rfv reTerminal/plymouth/seeed/ /usr/share/plymouth/themes/ || exit 1;
+  cp -rfv ${RES_PATH}/plymouth/seeed/ /usr/share/plymouth/themes/ || exit 1;
+  cp -fv ${RES_PATH}/10-disp.conf /usr/share/X11/xorg.conf.d/ || exit 1;
+  cp -fv ${RES_PATH}/plymouth/plymouthd.conf /etc/plymouth/ || exit 1;
 
   echo "------------------------------------------------------"
   echo "Please reboot your device to apply all settings"
@@ -319,7 +320,7 @@ fi
 which apt &>/dev/null; r=$?
 if [[ $r -eq 0 ]]; then
   echo -e "\n### Install required tool packages"
-  apt update -y
+  apt-get update -y
   apt-get -y install dkms
 fi
 
