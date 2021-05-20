@@ -232,7 +232,7 @@ function uninstall_overlay {
 
 function usage() {
   cat <<-__EOF__
-    usage: sudo ./reTerminal.sh [ --autoremove | --install ] [ -h | --help ]
+    usage: sudo ./scripts/reTerminal.sh [ --autoremove | --install ] [ -h | --help ]
              default action is update kernel & headers to latest version.
              --compat-kernel uses an older kernel but ensures that the driver can work.
              --keep-kernel   don't change/update the system kernel, maybe install

@@ -147,7 +147,7 @@ function remove_blacklist {
 
 function usage() {
   cat <<-__EOF__
-    usage: sudo ./cm4_lan7800.sh [ --autoremove | --install ] [ -h | --help ]
+    usage: sudo ./scripts/cm4_lan7800.sh [ --autoremove | --install ] [ -h | --help ]
              default action is update lan7800 module.
              --install       used for update module
              --autoremove    used for automatic cleaning
