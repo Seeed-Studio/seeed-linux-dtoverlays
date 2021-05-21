@@ -9,7 +9,7 @@
 /plugin/;
 
 / {
-    compatible = "brcm,bcm2835", "brcm,bcm2708", "brcm,bcm2709";
+    compatible = "brcm,bcm2835", "brcm,bcm2708", "brcm,bcm2709", "brcm,bcm2711";
 
 	fragment@0 {
 		target = <&dsi1>;
@@ -29,8 +29,14 @@
 	fragment@1 {
 		target = <&gpio>;
 		__overlay__ {
+			power_key: power_key {
+				brcm,pins = <13>;    /* gpio number */
+				brcm,function = <0>; /* 0 = input, 1 = output */
+				brcm,pull = <2>;     /* 0 = none, 1 = pull down, 2 = pull up */
+			};
+
 			mcp23008_pins: mcp23008_pins@20 {
-				brcm,pins = <12>;    /* gpio number */
+				brcm,pins = <6>;     /* gpio number */
 				brcm,function = <0>; /* 0 = input, 1 = output */
 				brcm,pull = <2>;     /* 0 = none, 1 = pull down, 2 = pull up */
 			};
@@ -38,6 +44,17 @@
 	};
 
 	fragment@2 {
+		target = <&mcp23008>;
+		mcp23008_irq: __overlay__ {
+			#interrupt-cells=<2>;
+			interrupt-parent = <&gpio>;
+			interrupts = <6 2>; /* IRQ_TYPE_EDGE_FALLING */
+			interrupt-controller;
+			microchip,irq-mirror;
+		};
+	};
+
+	fragment@3 {
 		target = <&i2c1>;
 		__overlay__ {
 			status = "okay";
@@ -87,6 +104,19 @@
 					};
 				};
 			};
+		};
+	};
+
+	fragment@4 {
+		target = <&i2c3>;
+		__overlay__ {
+			status = "okay";
+
+			/* this is the configuration part */
+			clock-frequency = <100000>;
+
+			#address-cells = <1>;
+			#size-cells = <0>;
 			
 			pcf8563@51 {
 				compatible = "nxp,pcf8563";
@@ -94,19 +124,8 @@
 			};
 		};
 	};
-	
-	fragment@3 {
-		target = <&mcp23008>;
-		mcp23008_irq: __overlay__ {
-			#interrupt-cells=<2>;
-			interrupt-parent = <&gpio>;
-			interrupts = <12 2>; /* IRQ_TYPE_EDGE_FALLING */
-			interrupt-controller;
-			microchip,irq-mirror;
-		};
-	};
 
-	fragment@4 {
+	fragment@5 {
 		target = <&leds>;
 		__overlay__ {
 			compatible = "gpio-leds";
@@ -138,20 +157,18 @@
 		};
 	};
 
-	fragment@5 {
+	fragment@6 {
 		target-path="/";
 		__overlay__ {
 			gpio_keys {
 				compatible = "gpio-keys";
 				pinctrl-names = "default";
 				pinctrl-0 = <&input_pins>;
-
-				#address-cells = <1>;
-				#size-cells = <0>;
+				status = "okay";
 
 				usr_btn0: usr_btn0 {
 					debounce-interval = <5>;
-					linux,code = <30>; /* BTN_0 */
+					linux,code = <30>; /* BTN_0, KEY_A */
 					label = "usr_btn0";
 					gpios = <&mcp23008 0 1>;
 					gpio-key,wakeup;
@@ -160,7 +177,7 @@
 
 				usr_btn1: usr_btn1 {
 					debounce-interval = <5>;
-					linux,code = <31>; /* BTN_1 */
+					linux,code = <31>; /* BTN_1, KEY_S */
 					label = "usr_btn1";
 					gpios = <&mcp23008 2 1>;
 					gpio-key,wakeup;
@@ -169,7 +186,7 @@
 
 				usr_btn2: usr_btn2 {
 					debounce-interval = <5>;
-					linux,code = <32>; /* BTN_2 */
+					linux,code = <32>; /* BTN_2, KEY_D */
 					label = "usr_btn2";
 					gpios = <&mcp23008 1 1>;
 					gpio-key,wakeup;
@@ -178,9 +195,18 @@
 
 				usr_btn3: usr_btn3 {
 					debounce-interval = <5>;
-					linux,code = <33>; /* BTN_3 */
+					linux,code = <33>; /* BTN_3, KEY_F */
 					label = "usr_btn3";
 					gpios = <&mcp23008 3 1>;
+					gpio-key,wakeup;
+					autorepeat;
+				};
+
+				pwr_btn: pwr_btn {
+					debounce-interval = <5>;
+					linux,code = <142>; /* PWR_KEY, KEY_SLEEP */
+					label = "power_key";
+					gpios = <&gpio 13 1>;
 					gpio-key,wakeup;
 					autorepeat;
 				};
@@ -189,10 +215,11 @@
 	};
 
 	__overrides__ {
-		gpiopin = <&mcp23008_pins>,"brcm,pins:0",
+		int = <&mcp23008_pins>,"brcm,pins:0",
 				<&mcp23008_irq>,"interrupts:0";
-		addr = <&mcp23008>,"reg:0", <&mcp23008_pins>,"reg:0";
-		noints = <0>,"!1!3";
+		addr = <&mcp23008>,"reg:0", 
+				<&mcp23008_pins>,"reg:0";
+		noints = <0>,"!1!2";
 
 		key0 = <&usr_btn0>,"linux,code:0";
 		key1 = <&usr_btn1>,"linux,code:0";
