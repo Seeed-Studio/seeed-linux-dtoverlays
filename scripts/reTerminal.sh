@@ -189,6 +189,10 @@ function install_overlay {
     echo "ignore_lcd=1" >> $CFG_PATH
   grep -q "^dtoverlay=vc4-kms-v3d-pi4$" $CFG_PATH || \
     echo "dtoverlay=vc4-kms-v3d-pi4" >> $CFG_PATH
+  grep -q "^gpio=4,5=a5,pu$" $CFG_PATH || \
+    echo "gpio=4,5=a5,pu" >> $CFG_PATH
+  grep -q "^gpio=13=pu$" $CFG_PATH || \
+    echo "gpio=13=pu" >> $CFG_PATH
 
   for i
   do
@@ -218,6 +222,8 @@ function uninstall_overlay {
   sed -i "/^disable_splash=1$/d" ${CFG_PATH}
   sed -i "/^ignore_lcd=1$/d" ${CFG_PATH}
   sed -i "/^dtoverlay=vc4-kms-v3d-pi4$/d" ${CFG_PATH}
+  sed -i "/^gpio=4,5=a5,pu$/d" ${CFG_PATH}
+  sed -i "/^gpio=13=pu$/d" ${CFG_PATH}
 
   for i
   do
