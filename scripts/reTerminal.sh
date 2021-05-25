@@ -14,10 +14,17 @@ arch_r=$(dpkg --print-architecture)
 
 # Common path
 SRC_PATH=/usr/src
-CFG_PATH=/boot/config.txt
-CLI_PATH=/boot/cmdline.txt
 MOD_PATH=`pwd`/modules
 RES_PATH=`pwd`/extras/reTerminal/resources
+
+# RPI
+CFG_PATH=/boot/config.txt
+CLI_PATH=/boot/cmdline.txt
+OVERLAY_DIR=/boot/overlays
+# Ubuntu
+[ -f /boot/firmware/config.txt ] && CFG_PATH=/boot/firmware/config.txt
+[ -f /boot/firmware/cmdline.txt ] && CLI_PATH=/boot/firmware/cmdline.txt
+[ -d /boot/firmware/overlays ] && OVERLAY_DIR=/boot/firmware/overlays
 
 _VER_RUN=""
 function get_kernel_version() {
@@ -199,7 +206,7 @@ function install_overlay {
   for i
   do
     make overlays/rpi/$i-overlay.dtbo || exit 1;
-    cp -fv overlays/rpi/$i-overlay.dtbo /boot/overlays/$i.dtbo || exit 1;
+    cp -fv overlays/rpi/$i-overlay.dtbo $OVERLAY_DIR/$i.dtbo || exit 1;
 
 	grep -q "^dtoverlay=$i$" $CFG_PATH || \
 	  echo "dtoverlay=$i" >> $CFG_PATH
@@ -229,7 +236,7 @@ function uninstall_overlay {
 
   for i
   do
-    rm -fv /boot/overlays/$i.dtbo || exit 1;
+    rm -fv $OVERLAY_DIR/$i.dtbo || exit 1;
 	sed -i "/^dtoverlay="$i"$/d" ${CFG_PATH}
   done
 
