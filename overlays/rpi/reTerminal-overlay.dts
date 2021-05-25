@@ -11,7 +11,14 @@
 / {
     compatible = "brcm,bcm2835", "brcm,bcm2708", "brcm,bcm2709", "brcm,bcm2711";
 
-	fragment@0 {
+    fragment@0 {
+        target-path="/";
+        __overlay__ {
+            hardware = "reTerminal V1.2";
+        };
+    };
+
+	fragment@1 {
 		target = <&dsi1>;
 		__overlay__ {
 			#address-cells = <1>;
@@ -26,7 +33,7 @@
 		};
 	};
 	
-	fragment@1 {
+	fragment@2 {
 		target = <&gpio>;
 		__overlay__ {
 			power_key: power_key {
@@ -43,7 +50,7 @@
 		};
 	};
 
-	fragment@2 {
+	fragment@3 {
 		target = <&mcp23008>;
 		mcp23008_irq: __overlay__ {
 			#interrupt-cells=<2>;
@@ -54,7 +61,7 @@
 		};
 	};
 
-	fragment@3 {
+	fragment@4 {
 		target = <&i2c1>;
 		__overlay__ {
 			status = "okay";
@@ -107,7 +114,7 @@
 		};
 	};
 
-	fragment@4 {
+	fragment@5 {
 		target = <&i2c3>;
 		__overlay__ {
 			status = "okay";
@@ -125,7 +132,7 @@
 		};
 	};
 
-	fragment@5 {
+	fragment@6 {
 		target = <&leds>;
 		__overlay__ {
 			compatible = "gpio-leds";
@@ -157,7 +164,7 @@
 		};
 	};
 
-	fragment@6 {
+	fragment@7 {
 		target-path="/";
 		__overlay__ {
 			gpio_keys {
