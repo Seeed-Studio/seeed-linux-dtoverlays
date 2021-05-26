@@ -57,7 +57,8 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
-
+#define ADC_CH_MAX		2
+extern uint16_t AdcVal[];
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/

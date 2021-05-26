@@ -34,15 +34,14 @@ typedef enum {
 	REG_TP_STATUS,
 	REG_TP_POINT,
 	REG_TP_VERSION,
+	REG_ADC1,
+	REG_ADC2,
 
 	REG_MAX
 }REG_ADDR;
 
 static int CurReg = 0;
-static uint8_t Regs[REG_MAX] = { 0xc3, 
-/*	0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
-	0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, */
-};
+static uint8_t Regs[REG_MAX] = { 0xc3, 0x00 };
 
 static uint8_t RxCnt = 0;
 static uint8_t RxBuf[2] = { 0 };
@@ -85,6 +84,17 @@ void I2C_Slave_Process(void)
 			TxCnt = 0;
 			TxTotal = 6;
 			TP_Ver(TxBuf);
+		}
+		else if (CurReg >= REG_ADC1) {
+			int idx = CurReg-REG_ADC1;
+			if (idx >= ADC_CH_MAX) {
+				idx = 0;
+			}
+			
+			TxCnt = 0;
+			TxTotal = 2;
+			TxBuf[0] = (uint8_t)((AdcVal[idx]>>8)&0xFF);
+			TxBuf[1] = (uint8_t)(AdcVal[idx]&0xFF);
 		}
 		else {
 			TxCnt = 0;
