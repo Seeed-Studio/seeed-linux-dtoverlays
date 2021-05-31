@@ -187,19 +187,23 @@ function install_overlay {
   echo $CMDLINE > $CLI_PATH
 
   # config.txt
+  sed -i "s/.*dtparam=i2c_arm=.*$/dtparam=i2c_arm=on/g" ${CFG_PATH}
+
   grep -q "^enable_uart=1$" $CFG_PATH || \
     echo "enable_uart=1" >> $CFG_PATH
   grep -q "^dtoverlay=dwc2,dr_mode=host$" $CFG_PATH || \
     echo "dtoverlay=dwc2,dr_mode=host" >> $CFG_PATH
-
+  grep -q "^dtparam=ant2$" $CFG_PATH || \
+    echo "dtparam=ant2" >> $CFG_PATH
   grep -q "^disable_splash=1$" $CFG_PATH || \
     echo "disable_splash=1" >> $CFG_PATH
+
   grep -q "^ignore_lcd=1$" $CFG_PATH || \
     echo "ignore_lcd=1" >> $CFG_PATH
   grep -q "^dtoverlay=vc4-kms-v3d-pi4$" $CFG_PATH || \
     echo "dtoverlay=vc4-kms-v3d-pi4" >> $CFG_PATH
-  grep -q "^gpio=4,5=a5,pu$" $CFG_PATH || \
-    echo "gpio=4,5=a5,pu" >> $CFG_PATH
+  grep -q "^dtoverlay=i2c3,pins_4_5$" $CFG_PATH || \
+    echo "dtoverlay=i2c3,pins_4_5" >> $CFG_PATH
   grep -q "^gpio=13=pu$" $CFG_PATH || \
     echo "gpio=13=pu" >> $CFG_PATH
 
@@ -231,7 +235,7 @@ function uninstall_overlay {
   sed -i "/^disable_splash=1$/d" ${CFG_PATH}
   sed -i "/^ignore_lcd=1$/d" ${CFG_PATH}
   sed -i "/^dtoverlay=vc4-kms-v3d-pi4$/d" ${CFG_PATH}
-  sed -i "/^gpio=4,5=a5,pu$/d" ${CFG_PATH}
+  sed -i "/^dtoverlay=i2c3,pins_4_5$/d" ${CFG_PATH}
   sed -i "/^gpio=13=pu$/d" ${CFG_PATH}
 
   for i
