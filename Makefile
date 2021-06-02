@@ -162,8 +162,12 @@ clean_%:
 
 install_%:
 	$(Q)$(MAKE) PLATFORM=$* install_arch
-	mkdir -p /lib/modules/$(uname_r)/extra/seeed || true
-	@for line in $(kmods); do echo $(MOD_PATH)/$$line/*.ko; cp $(MOD_PATH)/$$line/*.ko $(KO_DIR) || exit; done
+#	mkdir -p /lib/modules/$(uname_r)/extra/seeed || true
+	mkdir -p $(KO_DIR) || true
+	@for line in $(kmods); do \
+		echo $(MOD_PATH)/$$line/*.ko; \
+		cp $(MOD_PATH)/$$line/*.ko $(KO_DIR) || exit; \
+	done
 	@which depmod >/dev/null 2>&1 && depmod -a || true
 
 ifeq ($(PLATFORM),)
@@ -218,8 +222,9 @@ all_arch: $(PLATFORM_DTB)
 
 PHONY += install_arch
 install_arch: $(PLATFORM_DTBO)
-	mkdir -p $(DESTDIR)/lib/firmware/
-	cp -v $(obj)/*.dtbo $(DESTDIR)/lib/firmware/
+#	mkdir -p $(DESTDIR)/lib/firmware/
+#	cp -v $(obj)/*.dtbo $(DESTDIR)/lib/firmware/
+	$(Q)$(MAKE) -C overlays/$(PLATFORM)/ install
 
 RCS_FIND_IGNORE := \( -name SCCS -o -name BitKeeper -o -name .svn -o -name CVS \
                    -o -name .pc -o -name .hg -o -name .git \) -prune -o

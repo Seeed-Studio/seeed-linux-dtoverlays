@@ -1,0 +1,33 @@
+/*
+ * Copyright (C) 2018 Seeed Studio
+ * Peter Yang <turmary@126.com>
+ *
+ * MIT License
+ *
+ */
+/dts-v1/;
+/plugin/;
+
+/ {
+    compatible = "brcm,bcm2835", "brcm,bcm2708", "brcm,bcm2709";
+
+	fragment@0 {
+		target = <&i2c1>;
+		__overlay__ {
+			status = "okay";
+
+			/* this is the configuration part */
+			clock-frequency = <100000>;
+
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			lis331dlh@19 {
+				compatible = "st,lis331dlh";
+				reg = <0x19>;
+				status = "okay";
+			};
+		};
+	};
+};
+

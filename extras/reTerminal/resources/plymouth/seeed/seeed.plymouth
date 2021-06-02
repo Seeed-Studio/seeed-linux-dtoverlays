@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=seeed
+Description=Raspberry Pi Desktop Splash
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/seeed
+ScriptFile=/usr/share/plymouth/themes/seeed/seeed.script

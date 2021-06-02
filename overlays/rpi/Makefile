@@ -4,7 +4,9 @@
 # MIT License
 #
 
-DTBOS := $(patsubst %-overlay.dts, %.dtbo, $(wildcard *.dts))
+#DTBOS := $(patsubst %-overlay.dts, %.dtbo, $(wildcard *.dts))
+DTBOS := $(patsubst %.dts, %.dtbo, $(wildcard *.dts))
+DT := $(patsubst %-overlay.dtbo, %, ${DTBOS})
 # $(warning DTBOS = $(DTBOS))
 
 DEST  := /boot/overlays
@@ -27,12 +29,13 @@ define cmd_dtc
                 $(dtc-tmp) ;
 endef
 
-%.dtbo : %-overlay.dts
+#%.dtbo : %-overlay.dts
+%.dtbo : %.dts
 	$(call cmd_dtc)
-
 
 PHONY += all
 all: ${DTBOS}
+	@:
 
 PHONY += clean
 clean:
@@ -40,9 +43,9 @@ clean:
 
 PHONY += install
 install:
-	@for i in ${DTBOS}; do			\
-		cp $$i ${DEST}/;		\
-		echo install ${DEST}/$$i;	\
+	@for i in ${DT}; do									\
+		cp $$i-overlay.dtbo ${DEST}/$$i.dtbo || exit;	\
+		echo install $$i-overlay.dtbo ${DEST}/$$i.dtbo;	\
 	done
 	#
 	# What you need to do, for example:
@@ -52,9 +55,9 @@ install:
 
 PHONY += uninstall
 uninstall:
-	@for i in ${DTBOS}; do			\
-		rm ${DEST}/$$i;			\
-		echo uninstall ${DEST}/$$i;	\
+	@for i in ${DT}; do						\
+		rm ${DEST}/$$i.dtbo || exit;		\
+		echo uninstall ${DEST}/$$i.dtbo;	\
 	done
 
 PHONY += FORCE
