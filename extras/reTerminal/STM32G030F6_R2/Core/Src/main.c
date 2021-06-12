@@ -52,11 +52,13 @@ I2C_HandleTypeDef hi2c1;
 I2C_HandleTypeDef hi2c2;
 
 TIM_HandleTypeDef htim3;
+TIM_HandleTypeDef htim14;
 
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 uint16_t AdcVal[ADC_CH_MAX] = { 0 };
+uint32_t i2c_int_cnt = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -68,6 +70,7 @@ static void MX_I2C1_Init(void);
 static void MX_I2C2_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_ADC1_Init(void);
+static void MX_TIM14_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -109,7 +112,10 @@ int main(void)
   MX_I2C2_Init();
   MX_TIM3_Init();
   MX_ADC1_Init();
+  MX_TIM14_Init();
   /* USER CODE BEGIN 2 */
+  __HAL_TIM_CLEAR_FLAG(&htim14, TIM_SR_UIF);
+  HAL_TIM_Base_Start_IT(&htim14);
   DBG_PRINT("ReTerminal stm32!\n");
   I2C_Slave_Init(&hi2c1);
   TP_Init(&hi2c2);
@@ -391,6 +397,37 @@ static void MX_TIM3_Init(void)
 }
 
 /**
+  * @brief TIM14 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM14_Init(void)
+{
+
+  /* USER CODE BEGIN TIM14_Init 0 */
+
+  /* USER CODE END TIM14_Init 0 */
+
+  /* USER CODE BEGIN TIM14_Init 1 */
+
+  /* USER CODE END TIM14_Init 1 */
+  htim14.Instance = TIM14;
+  htim14.Init.Prescaler = 39999;
+  htim14.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim14.Init.Period = 29999;
+  htim14.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim14.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim14) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM14_Init 2 */
+
+  /* USER CODE END TIM14_Init 2 */
+
+}
+
+/**
   * @brief USART2 Initialization Function
   * @param None
   * @retval None
@@ -475,6 +512,20 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+	if(htim == (&htim14)) {
+		if(i2c_int_cnt > 30){
+			//DBG_PRINT("if %d %d\n", TIM14->ARR, i2c_int_cnt);
+			TIM14->ARR = 800;
+		} else {
+			//DBG_PRINT("else %d %d\n", TIM14->ARR, i2c_int_cnt);
+			TIM14->ARR = 9999;
+			NVIC_SystemReset();
+		}
+		i2c_int_cnt = 0;
+	}
+}
 /* USER CODE END 4 */
 
 /**

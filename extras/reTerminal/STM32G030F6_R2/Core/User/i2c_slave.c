@@ -49,12 +49,12 @@ static uint8_t TxCnt = 0;
 static uint8_t TxBuf[TP_BUF_SIZE] = { 0 };
 static uint8_t TxTotal = 0;
 static uint8_t HandleFlag = 0;
-
+extern uint32_t i2c_int_cnt;
 void I2C_Slave_Process(void)
 {
 	if (!HandleFlag) return;
 	HandleFlag = 0;
-	
+
 	MDBG("RxCnt=%d\n", RxCnt);
 	if (RxCnt == 1) { // set addr
 		if (RxBuf[0] >= 0x80) {
@@ -146,6 +146,8 @@ void I2C_Slave_Init(I2C_HandleTypeDef *hi2c)
 void I2C_Slave_ISR(I2C_HandleTypeDef *hi2c)
 {
 	uint32_t isr = hi2c->Instance->ISR;
+
+	i2c_int_cnt++;
 
 	MDBG("[%d]0x%x\n", cnt++, isr);
 	if (isr & I2C_FLAG_ALERT) {
