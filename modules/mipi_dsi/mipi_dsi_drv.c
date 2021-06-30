@@ -139,6 +139,10 @@ static struct mipi_dsi_device *mipi_dsi_device(struct device *dev)
 
 	of_node_put(endpoint);
 	dsi = mipi_dsi_device_register_full(host, &info);
+	if(IS_ERR(dsi)) {
+		dev_err(dev, "Can't device register_full!");
+		goto error;
+	}
 
 	return dsi;
 
