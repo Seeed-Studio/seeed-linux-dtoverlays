@@ -146,11 +146,11 @@ struct imx415_mode
 	u32 width;
 	u32 height;
 
-	u32 hts_def;
+	u32 hts_def[2];
 	u32 vts_def;
 	u32 exp_def;
 
-	const struct imx415_regval *config;
+	const struct imx415_regval *config[2];
 	const struct imx415_regval *inck;
 };
 
@@ -170,6 +170,7 @@ struct imx415
 	bool streaming;
 	u32 cfg_num;
 	u32 cur_vts;
+	u32 cur_hts;
 
 	struct regulator_bulk_data supplies[IMX415_NUM_SUPPLIES];
 	struct gpio_desc *rst_gpio;
@@ -194,8 +195,10 @@ static const struct regmap_config imx415_regmap_config = {
 };
 
 static __maybe_unused const struct imx415_regval imx415_global_init_settings[] = {
+	{0x30C1, 0x00},
 	{0x32D4, 0x21},
 	{0x32EC, 0xA1},
+	{0x3451, 0x02},
 	{0x3452, 0x7F},
 	{0x3453, 0x03},
 	{0x358A, 0x04},
@@ -214,6 +217,7 @@ static __maybe_unused const struct imx415_regval imx415_global_init_settings[] =
 	{0x36DA, 0x8C},
 	{0x36DB, 0x00},
 	{0x3701, 0x00},
+	{0x3720, 0x00},
 	{0x3724, 0x02},
 	{0x3726, 0x02},
 	{0x3732, 0x02},
@@ -224,6 +228,23 @@ static __maybe_unused const struct imx415_regval imx415_global_init_settings[] =
 	{0x38CC, 0x30},
 	{0x38CD, 0x2F},
 	{0x395C, 0x0C},
+	{0x39A4, 0x07},
+	{0x39A8, 0x32},
+	{0x39AA, 0x32},
+	{0x39AC, 0x32},
+	{0x39AE, 0x32},
+	{0x39B0, 0x32},
+	{0x39B2, 0x2F},
+	{0x39B4, 0x2D},
+	{0x39B6, 0x28},
+	{0x39B8, 0x30},
+	{0x39BA, 0x30},
+	{0x39BC, 0x30},
+	{0x39BE, 0x30},
+	{0x39C0, 0x30},
+	{0x39C2, 0x2E},
+	{0x39C4, 0x2B},
+	{0x39C6, 0x25},
 	{0x3A42, 0xD1},
 	{0x3A4C, 0x77},
 	{0x3AE0, 0x02},
@@ -343,7 +364,7 @@ static __maybe_unused const struct imx415_regval imx415_inck_74_25m_freq_891m_cl
 	{0x4074, 0x01},
 	{REG_NULL, 0x00}};
 
-static __maybe_unused const struct imx415_regval imx415_freq_720m_config[] = {
+static __maybe_unused const struct imx415_regval imx415_2lane_freq_720m_config[] = {
 	{0x3002, 0x00},
 	{0x301C, 0x00},
 	{0x3022, 0x00},
@@ -362,12 +383,50 @@ static __maybe_unused const struct imx415_regval imx415_freq_720m_config[] = {
 	{0x4028, 0x27},
 	{REG_NULL, 0x00}};
 
-static __maybe_unused const struct imx415_regval imx415_freq_891m_config[] = {
+static __maybe_unused const struct imx415_regval imx415_2lane_freq_891m_config[] = {
 	{0x3002, 0x00},
 	{0x301C, 0x00},
 	{0x3022, 0x00},
 	{0x3028, 0x98},
 	{0x3029, 0x09},
+	{0x3033, 0x05},
+	{0x4018, 0x7F},
+	{0x401A, 0x37},
+	{0x401C, 0x37},
+	{0x401E, 0xF7},
+	{0x401F, 0x00},
+	{0x4020, 0x3F},
+	{0x4022, 0x6F},
+	{0x4024, 0x3F},
+	{0x4026, 0x5F},
+	{0x4028, 0x2F},
+	{REG_NULL, 0x00}};
+
+static __maybe_unused const struct imx415_regval imx415_4lane_freq_720m_config[] = {
+	{0x3002, 0x00},
+	{0x301C, 0x00},
+	{0x3022, 0x00},
+	{0x3028, 0x2A},
+	{0x3029, 0x04},
+	{0x3033, 0x09},
+	{0x4018, 0x6F},
+	{0x401A, 0x2F},
+	{0x401C, 0x2F},
+	{0x401E, 0xBF},
+	{0x401F, 0x00},
+	{0x4020, 0x2F},
+	{0x4022, 0x57},
+	{0x4024, 0x2F},
+	{0x4026, 0x4F},
+	{0x4028, 0x27},
+	{REG_NULL, 0x00}};
+
+static __maybe_unused const struct imx415_regval imx415_4lane_freq_891m_config[] = {
+	{0x3002, 0x00},
+	{0x301C, 0x00},
+	{0x3022, 0x00},
+	{0x3028, 0x4C},
+	{0x3029, 0x04},
 	{0x3033, 0x05},
 	{0x4018, 0x7F},
 	{0x401A, 0x37},
@@ -388,22 +447,34 @@ static const struct imx415_mode supported_modes[] = {
 		.bpp = 10,
 		.width = IMX415_PIXEL_ARRAY_WIDTH,
 		.height = IMX415_PIXEL_ARRAY_HEIGHT,
-		.exp_def = 0x08fc - 0x08,
-		.hts_def = 0x07f0 * 4,
-		.vts_def = 0x08fc,
+		.exp_def = 0x00066,
+		.hts_def = {
+			0x07f0,
+			0x010, //fake : somethine wrong with libcamera
+		},
+		.vts_def = 0x08ca,
 		.inck = imx415_inck_24m_freq_720m_clock,
-		.config = imx415_freq_720m_config,
+		.config = {
+			imx415_2lane_freq_720m_config,
+			imx415_4lane_freq_720m_config,
+		}
 	},
 	{
 		.bus_fmt = MEDIA_BUS_FMT_SGBRG12_1X12,
 		.bpp = 12,
 		.width = IMX415_PIXEL_ARRAY_WIDTH,
 		.height = IMX415_PIXEL_ARRAY_HEIGHT,
-		.exp_def = 0x08fc - 0x08,
-		.hts_def = 0x07f0 * 4,
-		.vts_def = 0x08fc,
+		.exp_def = 0x00066,
+			.hts_def = {
+			0x0898,
+			0x044c,
+		},
+		.vts_def = 0x08ca,
 		.inck = imx415_inck_24m_freq_720m_clock,
-		.config = imx415_freq_720m_config,
+		.config = {
+			imx415_2lane_freq_720m_config,
+			imx415_4lane_freq_720m_config,
+		}
 	},
 };
 
@@ -570,6 +641,12 @@ static int imx415_set_fmt(struct v4l2_subdev *sd, struct v4l2_subdev_pad_config 
 		format = &imx415->current_format;
 		imx415->cur_mode = mode;
 		imx415->cur_vts = imx415->cur_mode->vts_def;
+		if(imx415->nlanes == 2){
+			imx415->cur_hts = imx415->cur_mode->hts_def[0];
+		}else{
+			imx415->cur_hts = imx415->cur_mode->hts_def[1];
+		}
+
 	}
 
 	*format = fmt->format;
@@ -762,7 +839,12 @@ static int __imx415_start_stream(struct imx415 *imx415)
 	if (ret)
 		return ret;
 
-	ret = imx415_write_array(imx415->client, imx415->cur_mode->config);
+	if(imx415->nlanes == 2){
+		ret = imx415_write_array(imx415->client, imx415->cur_mode->config[0]);
+	}else{
+		ret = imx415_write_array(imx415->client, imx415->cur_mode->config[1]);
+	}
+
 	if (ret)
 		return ret;
 
@@ -889,13 +971,13 @@ static int imx415_set_ctrl(struct v4l2_ctrl *ctrl)
 	u32 shr0 = 0;
 
 	/* Propagate change of current control to all related controls */
-	switch (ctrl->id)
+    	switch (ctrl->id)
 	{
-	case V4L2_CID_VBLANK:
+		case V4L2_CID_VBLANK:
 		/* Update max exposure while meeting expected vblanking */
 		max = imx415->cur_mode->height + ctrl->val - 4;
 		__v4l2_ctrl_modify_range(imx415->exposure, imx415->exposure->minimum, max, imx415->exposure->step, imx415->exposure->default_value);
-		break;
+  		break;
 	}
 
 	if (pm_runtime_get(&client->dev) <= 0)
@@ -908,7 +990,7 @@ static int imx415_set_ctrl(struct v4l2_ctrl *ctrl)
 		ret = imx415_write_reg(imx415->client, IMX415_LF_EXPO_REG_L, IMX415_REG_VALUE_08BIT, IMX415_FETCH_EXP_L(shr0));
 		ret |= imx415_write_reg(imx415->client, IMX415_LF_EXPO_REG_M, IMX415_REG_VALUE_08BIT, IMX415_FETCH_EXP_M(shr0));
 		ret |= imx415_write_reg(imx415->client, IMX415_LF_EXPO_REG_H, IMX415_REG_VALUE_08BIT, IMX415_FETCH_EXP_H(shr0));
-		dev_dbg(&imx415->client->dev, "set exposure(shr0) %d = cur_vts(%d) - val(%d)\n", shr0, imx415->cur_vts, ctrl->val);
+		dev_dbg(&imx415->client->dev, "set exposure(shr0)  = %d\n", shr0);
 		break;
 	case V4L2_CID_ANALOGUE_GAIN:
 		ret = imx415_write_reg(imx415->client, IMX415_LF_GAIN_REG_H, IMX415_REG_VALUE_08BIT, IMX415_FETCH_GAIN_H(ctrl->val));
@@ -922,7 +1004,7 @@ static int imx415_set_ctrl(struct v4l2_ctrl *ctrl)
 		ret = imx415_write_reg(imx415->client, IMX415_VTS_REG_L, IMX415_REG_VALUE_08BIT, IMX415_FETCH_VTS_L(vts));
 		ret |= imx415_write_reg(imx415->client, IMX415_VTS_REG_M, IMX415_REG_VALUE_08BIT, IMX415_FETCH_VTS_M(vts));
 		ret |= imx415_write_reg(imx415->client, IMX415_VTS_REG_H, IMX415_REG_VALUE_08BIT, IMX415_FETCH_VTS_H(vts));
-		dev_dbg(&client->dev, "set vblank 0x%x\n", ctrl->val);
+		dev_dbg(&imx415->client->dev, "set vblank %d = height(%d) + val(%d)\n", vts, imx415->cur_mode->height, ctrl->val);
 		break;
 	case V4L2_CID_HFLIP:
 		ret = imx415_read_reg(imx415->client, IMX415_FLIP_REG, IMX415_REG_VALUE_08BIT, &val);
@@ -1056,7 +1138,7 @@ static int imx415_probe(struct i2c_client *client)
 
 	fwnode_property_read_u32(dev_fwnode(dev), "reg", &address);
 
-	dev_dbg(dev, "imx415 address： %d\n", address);
+	dev_dbg(dev, "imx415 address锛?%d\n", address);
 
 	ret = fwnode_property_read_u32(dev_fwnode(dev), "clock-frequency", &imx415->xclk_freq);
 	if (ret)
@@ -1113,9 +1195,13 @@ static int imx415_probe(struct i2c_client *client)
 		imx415->link_freq->flags |= V4L2_CTRL_FLAG_READ_ONLY;
 
 	imx415->anal_a_gain = v4l2_ctrl_new_std(&imx415->ctrls, &imx415_ctrl_ops, V4L2_CID_ANALOGUE_GAIN, IMX415_GAIN_MIN, IMX415_GAIN_MAX, IMX415_GAIN_STEP, IMX415_GAIN_DEFAULT);
-
-	h_blank = mode->hts_def - mode->width;
-	dev_dbg(dev, "probe mode->hts_def: %u, mode->width: %u h_blank: %u\n\r", mode->hts_def, mode->width, h_blank);
+	if(imx415->nlanes == 2){
+		imx415->cur_hts = imx415->cur_mode->hts_def[0];
+	}else{
+		imx415->cur_hts = imx415->cur_mode->hts_def[1];
+	}
+	h_blank = imx415->cur_hts - mode->width;
+	dev_dbg(dev, "probe mode->hts_def: %u, mode->width: %u h_blank: %u\n\r", imx415->cur_hts, mode->width, h_blank);
 	imx415->hblank = v4l2_ctrl_new_std(&imx415->ctrls, &imx415_ctrl_ops, V4L2_CID_HBLANK, h_blank, h_blank, 1, h_blank);
 	if (imx415->hblank)
 		imx415->hblank->flags |= V4L2_CTRL_FLAG_READ_ONLY;
@@ -1240,5 +1326,4 @@ module_i2c_driver(imx415_i2c_driver);
 
 MODULE_DESCRIPTION("Sony IMX415 CMOS Image Sensor Driver");
 MODULE_AUTHOR("Hongtai.Liu lht856@foxmail.com");
-MODULE_AUTHOR("Manivannan Sadhasivam <manivannan.sadhasivam@linaro.org>");
 MODULE_LICENSE("GPL v2");
