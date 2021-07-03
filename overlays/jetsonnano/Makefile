@@ -38,16 +38,13 @@ clean:
 
 PHONY += install
 install:
-	@for i in ${DTBOS}; do			\
-		cp $$i ${DEST}/;		\
-		echo install ${DEST}/$$i;	\
+	@for i in ${DTBOS}; do				\
+		if [[ ! "$$i" == *"wm8960"* ]];then	\
+			cp $$i ${DEST}/;		\
+			echo install ${DEST}/$$i;	\
+		fi					\
 	done
-	#
-	# What you need to do, for example:
-	#   enable LIS331DLH device in system configuration
-	# echo 'uboot_overlay_addr7=/lib/firmware/BB-I2C2-LIS331DLH.dtbo' >> /boot/uEnv.txt
-	#
-
+	@echo "Kernel module is installed, proceed to the next step"
 PHONY += uninstall
 uninstall:
 	@for i in ${DTBOS}; do			\
