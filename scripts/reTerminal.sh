@@ -263,7 +263,7 @@ __EOF__
 }
 
 function install {
-  install_modules mipi_dsi ltr30x lis3lv02d
+  install_modules mipi_dsi ltr30x lis3lv02d pca9554a
   install_overlay reTerminal
 
   # display
