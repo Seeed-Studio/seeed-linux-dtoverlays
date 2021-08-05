@@ -102,9 +102,12 @@
 				status = "okay";
 			};
 			
-			mipi_dsi@45 {
+			mipi_dsi: mipi_dsi@45 {
 				compatible = "i2c_dsi,ili9881d";
 				reg = <0x45>;
+				
+				mcu_delay_ms_for_tp_chk = <0>;
+
 				port {
 					panel_dsi_port: endpoint {
 						remote-endpoint = <&dsi_out_port>;
@@ -232,6 +235,8 @@
 		key1 = <&usr_btn1>,"linux,code:0";
 		key2 = <&usr_btn2>,"linux,code:0";
 		key3 = <&usr_btn3>,"linux,code:0";
+
+		mcu_delay_ms = <&mipi_dsi>,"mcu_delay_ms_for_tp_chk:0";
 	};
 };
 
