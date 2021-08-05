@@ -171,8 +171,11 @@ static int panel_prepare(struct drm_panel *panel)
 	/* panel */
 	if (funcs && funcs->prepare) {
 		ret = funcs->prepare(panel);
-		if (ret < 0)
+		if (ret < 0){
+			i2c_md_write(md, REG_LCD_RST, 0);
+			i2c_md_write(md, REG_POWERON, 0);
 			return ret;
+		}
 	}
 
 	return ret;

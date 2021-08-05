@@ -50,11 +50,21 @@ static int ili9881d_get_modes(struct drm_panel *panel, struct drm_connector *con
 static int ili9881d_prepare(struct drm_panel *panel)
 {
 	struct mipi_dsi_device *dsi = ili9881d_dsi;
+	int ret = 0;
+	u16 addr = 0xda;
+	u32 val[4] = {0};
+
+	DBG_FUNC();
 
 	if (!dsi)
 		return -1;
+
+	ret = mipi_dsi_generic_read(dsi, &addr, sizeof(addr), &val, sizeof(val));
+	if(ret < 0){
+		DBG_FUNC("No LCD connected,pls check your hardware!\n");
+		return -ENODEV;
+	}
 	
-	DBG_FUNC();
 	ILI9881_PAGE(0x01);           
 	IILI9881_COMMAND(0x91,0x00);
 	IILI9881_COMMAND(0x92,0x00);
