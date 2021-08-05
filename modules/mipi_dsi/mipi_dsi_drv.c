@@ -380,6 +380,25 @@ static int i2c_md_remove(struct i2c_client *i2c)
 	return 0;
 }
 
+static void i2c_md_shutdown(struct i2c_client *i2c)
+{
+	struct i2c_mipi_dsi *md = i2c_get_clientdata(i2c);
+
+	DBG_FUNC();
+	tp_deinit(md);
+
+	/* Turn off power */
+	i2c_md_write(md, REG_POWERON, 0);
+	i2c_md_write(md, REG_LCD_RST, 0);
+	i2c_md_write(md, REG_PWM, 0);
+
+	mipi_dsi_detach(md->dsi);
+	drm_panel_remove(&md->panel);
+	mipi_dsi_device_unregister(md->dsi);
+	kfree(md->dsi);
+
+}
+
 extern const struct panel_data ili9881d_data;
 static const struct of_device_id i2c_md_of_ids[] = {
 	{
@@ -397,6 +416,7 @@ static struct i2c_driver i2c_md_driver = {
 	},
 	.probe = i2c_md_probe,
 	.remove = i2c_md_remove,
+	.shutdown = i2c_md_shutdown,
 };
 
 static int __init i2c_md_init(void)
