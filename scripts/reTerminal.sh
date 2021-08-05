@@ -278,7 +278,7 @@ function install {
 }
 
 function uninstall {
-  uninstall_modules mipi_dsi ltr30x lis3lv02d
+  uninstall_modules mipi_dsi ltr30x lis3lv02d pca9554a
   uninstall_overlay reTerminal
 }
 
