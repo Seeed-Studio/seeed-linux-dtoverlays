@@ -79,6 +79,10 @@ enum REG_ADDR {
 	REG_TP_RST,
 	REG_TP_STATUS,
 	REG_TP_POINT,
+	REG_TP_VERSION,
+	REG_ADC1,
+	REG_ADC2,
+	REG_MCU_AUTO_RESET,
 
 	REG_MAX
 };
@@ -114,6 +118,9 @@ struct i2c_mipi_dsi {
 
 	// backlight
 	int brightness;
+
+	// mcu auto reset enable when the tp driver is not working
+	uint32_t mcu_auto_reset;
 };
 #define panel_to_md(_p)	container_of(_p, struct i2c_mipi_dsi, panel)
 
