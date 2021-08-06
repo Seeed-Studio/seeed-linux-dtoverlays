@@ -59,6 +59,8 @@ void Error_Handler(void);
 /* USER CODE BEGIN EFP */
 #define ADC_CH_MAX		2
 extern uint16_t AdcVal[];
+
+extern TIM_HandleTypeDef htim14;
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/

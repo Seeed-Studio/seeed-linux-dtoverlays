@@ -50,3 +50,11 @@ void TP_RST_out(uint8_t level)
 	HAL_GPIO_WritePin(TP_RST_GPIO_Port, TP_RST_Pin, (level ? GPIO_PIN_SET : GPIO_PIN_RESET));
 }
 
+void MCU_AUTO_reset(uint8_t enable)
+{
+	if(enable)
+		HAL_TIM_Base_Start_IT(&htim14);
+	else
+		HAL_TIM_Base_Stop_IT(&htim14);
+}
+

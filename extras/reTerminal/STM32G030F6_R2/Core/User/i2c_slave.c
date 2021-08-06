@@ -36,6 +36,7 @@ typedef enum {
 	REG_TP_VERSION,
 	REG_ADC1,
 	REG_ADC2,
+	REG_MCU_AUTO_RESET,
 
 	REG_MAX
 }REG_ADDR;
@@ -129,6 +130,9 @@ void I2C_Slave_Process(void)
 		case REG_PWM:
 			PWM_config(Regs[CurReg]);
 			MDBG("PWM:0x%x\n", Regs[CurReg]);
+		break;
+		case REG_MCU_AUTO_RESET:
+			MCU_AUTO_reset(Regs[CurReg]);
 		break;
 		}
 	}

@@ -115,7 +115,6 @@ int main(void)
   MX_TIM14_Init();
   /* USER CODE BEGIN 2 */
   __HAL_TIM_CLEAR_FLAG(&htim14, TIM_SR_UIF);
-  HAL_TIM_Base_Start_IT(&htim14);
   DBG_PRINT("ReTerminal stm32!\n");
   I2C_Slave_Init(&hi2c1);
   TP_Init(&hi2c2);
@@ -414,7 +413,7 @@ static void MX_TIM14_Init(void)
   htim14.Instance = TIM14;
   htim14.Init.Prescaler = 39999;
   htim14.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim14.Init.Period = 29999;
+  htim14.Init.Period = 1599;
   htim14.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim14.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim14) != HAL_OK)
