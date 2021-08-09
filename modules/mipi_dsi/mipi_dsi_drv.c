@@ -359,7 +359,7 @@ static int i2c_md_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
 	tp_init(md);
 	backlight_init(md);
 
-	ret = device_property_read_u32(dev, "mcu_delay_ms_for_tp_chk", &md->mcu_auto_reset);
+	ret = device_property_read_u32(dev, "mcu_auto_reset_enable", &md->mcu_auto_reset);
 	if(ret < 0){	
 		dev_err(dev, "Can't get the data of mcu_auto_reset!\n");
 	}

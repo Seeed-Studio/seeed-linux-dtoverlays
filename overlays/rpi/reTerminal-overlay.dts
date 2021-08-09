@@ -106,7 +106,7 @@
 				compatible = "i2c_dsi,ili9881d";
 				reg = <0x45>;
 				
-				mcu_delay_ms_for_tp_chk = <0>;
+				mcu_auto_reset_enable = <0>;
 
 				port {
 					panel_dsi_port: endpoint {
@@ -236,7 +236,7 @@
 		key2 = <&usr_btn2>,"linux,code:0";
 		key3 = <&usr_btn3>,"linux,code:0";
 
-		mcu_delay_ms = <&mipi_dsi>,"mcu_delay_ms_for_tp_chk:0";
+		mcu_auto_reset = <&mipi_dsi>,"mcu_auto_reset_enable:0";
 	};
 };
 
