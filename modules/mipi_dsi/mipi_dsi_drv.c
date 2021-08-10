@@ -365,6 +365,11 @@ static int i2c_md_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
 	}
 	i2c_md_write(md, REG_MCU_AUTO_RESET, (md->mcu_auto_reset&0xff));
 
+	ret = device_property_read_u32(dev, "tp_point_rotate", &md->tp_point_rotate);
+	if(ret < 0){	
+		dev_err(dev, "Can't get the data of tp_point_rotate!\n");
+	}
+
 	DBG_FUNC("finished.");
 
 	return 0;

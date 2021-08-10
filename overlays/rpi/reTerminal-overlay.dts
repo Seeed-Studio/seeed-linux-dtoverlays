@@ -107,6 +107,7 @@
 				reg = <0x45>;
 				
 				mcu_auto_reset_enable = <0>;
+				tp_point_rotate = <0>;
 
 				port {
 					panel_dsi_port: endpoint {
@@ -237,6 +238,7 @@
 		key3 = <&usr_btn3>,"linux,code:0";
 
 		mcu_auto_reset = <&mipi_dsi>,"mcu_auto_reset_enable:0";
+		tp_rotate = <&mipi_dsi>,"tp_point_rotate:0";
 	};
 };
 
