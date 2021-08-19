@@ -72,7 +72,7 @@ static void MX_TIM3_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_TIM14_Init(void);
 /* USER CODE BEGIN PFP */
-
+static void Update_Firmware_Init(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -116,6 +116,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   __HAL_TIM_CLEAR_FLAG(&htim14, TIM_SR_UIF);
   DBG_PRINT("ReTerminal stm32!\n");
+  Update_Firmware_Init();
   I2C_Slave_Init(&hi2c1);
   TP_Init(&hi2c2);
   /* USER CODE END 2 */
@@ -524,6 +525,28 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		}
 		i2c_int_cnt = 0;
 	}
+}
+
+/**
+  * @brief  This function init the flash register to make the mcu work in system flash
+  * after the firmware update
+  * @retval None
+  */
+static void Update_Firmware_Init(void)
+{
+
+  HAL_FLASH_Unlock();
+  HAL_FLASH_OB_Unlock();
+
+  SET_BIT(FLASH->OPTR, FLASH_OPTR_nBOOT0);
+  CLEAR_BIT(FLASH->ACR, FLASH_ACR_PROGEMPTY);
+
+  SET_BIT(FLASH->CR, FLASH_CR_STRT);
+  FLASH_WaitForLastOperation((uint32_t)FLASH_TIMEOUT_VALUE);
+  CLEAR_BIT(FLASH->CR, FLASH_CR_OPTSTRT);
+
+  HAL_FLASH_OB_Lock();
+  HAL_FLASH_Lock();
 }
 /* USER CODE END 4 */
 

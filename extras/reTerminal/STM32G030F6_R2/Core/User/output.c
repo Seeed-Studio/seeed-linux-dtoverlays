@@ -58,3 +58,23 @@ void MCU_AUTO_reset(uint8_t enable)
 		HAL_TIM_Base_Stop_IT(&htim14);
 }
 
+void UPDATE_firmware(uint8_t enable)
+{
+	if(enable) {
+		HAL_FLASH_Unlock();
+		HAL_FLASH_OB_Unlock();
+
+		CLEAR_BIT(FLASH->OPTR, FLASH_OPTR_nBOOT0);
+		SET_BIT(FLASH->ACR, FLASH_ACR_PROGEMPTY);
+
+		SET_BIT(FLASH->CR, FLASH_CR_STRT);
+		FLASH_WaitForLastOperation((uint32_t)FLASH_TIMEOUT_VALUE);
+		CLEAR_BIT(FLASH->CR, FLASH_CR_OPTSTRT);
+
+		HAL_FLASH_OB_Lock();
+		HAL_FLASH_Lock();
+
+		NVIC_SystemReset();//reboot
+	}
+}
+

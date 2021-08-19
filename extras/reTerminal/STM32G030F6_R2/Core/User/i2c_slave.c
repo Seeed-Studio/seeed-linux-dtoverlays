@@ -37,6 +37,7 @@ typedef enum {
 	REG_ADC1,
 	REG_ADC2,
 	REG_MCU_AUTO_RESET,
+	REG_UPDATE_FIRMWARE,
 
 	REG_MAX
 }REG_ADDR;
@@ -133,6 +134,10 @@ void I2C_Slave_Process(void)
 		break;
 		case REG_MCU_AUTO_RESET:
 			MCU_AUTO_reset(Regs[CurReg]);
+		break;
+
+		case REG_UPDATE_FIRMWARE:
+			UPDATE_firmware(Regs[CurReg]);
 		break;
 		}
 	}

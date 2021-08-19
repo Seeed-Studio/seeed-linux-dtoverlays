@@ -52,6 +52,8 @@ void TP_RST_out(uint8_t level);
 // MCU auto reset when the kernel driver of TP is not working
 void MCU_AUTO_reset(uint8_t enable);
 
+// MCU firmware update
+void UPDATE_firmware(uint8_t enable);
 
 // Touchpanel
 /* Register defines */
