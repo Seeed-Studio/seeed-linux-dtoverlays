@@ -1,0 +1,63 @@
+
+/dts-v1/;
+/plugin/;
+
+/ {
+	compatible = "brcm,bcm2835", "brcm,bcm2836", "brcm,bcm2708", "brcm,bcm2709";
+
+	fragment@0 {
+		target = <&spi0>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+	
+	 fragment@1{
+		target = <&spidev0>;
+		__overlay__ {
+	   		 status = "disabled";
+		};
+         };
+
+	fragment@2{
+	    target = <&gpio>;
+		__overlay__{
+			cc1120_int_pins: cc1120_int_pins{
+				brcm,pins = <23>;
+				brcm,function = <0>; /*in*/
+			};
+	
+			cc1120_gpio_pins: cc1120_gpio_pins{
+				brcm,pins = <22  24 27>;
+				brcm,function = <1>; /*out*/
+			};
+		};
+	};
+
+	fragment@3 {
+		target = <&spi0>;
+		__overlay__ {
+			/* needed to avoid dtc warning */
+			#address-cells = <1>;
+			#size-cells = <0>;
+			cc1120: cc1120@0 {
+				compatible = "ti,cc1120";
+				pinctrl-names = "default";
+				pinctrl-0 = <&cc1120_int_pins>,
+							<&cc1120_gpio_pins>;
+				reg = <0>;	/* CE0 */
+				#address-cells = <1>;
+				#size-cells = <0>;
+				spi-max-frequency = <8000000>;
+				status = "okay";
+				interrupts = <23 2>; /* 1st word overwritten by cc1120-0-20-int-gpio parameter
+									 	2nd word is 2 for falling-edge triggered */
+				interrupt-parent = <&gpio>;
+				reset-gpios = <&gpio 24 1>;
+				tcxo-gpios = <&gpio 22 1>;
+				hgm-gpios = <&gpio 27 1>;
+			};
+		};
+	};
+};
+
