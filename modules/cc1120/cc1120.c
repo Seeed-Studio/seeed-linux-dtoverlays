@@ -527,6 +527,10 @@ static int cc1120_tx(struct ieee802154_hw *hw, struct sk_buff *skb)
 		goto out;
 	}
 
+	spin_lock_irqsave(&priv->lock, flags);
+	priv->is_tx = 1;
+	spin_unlock_irqrestore(&priv->lock, flags);
+
 	ret = cc1120_write_txfifo(hw->priv, tx_buff, (skb->len + 1));
 	if(ret)
 	{
@@ -541,10 +545,6 @@ static int cc1120_tx(struct ieee802154_hw *hw, struct sk_buff *skb)
 		dev_err(&priv->spi->dev,"txfifo check len err indicate %d ,actually %d \n", tx_fifo_num,(skb->len+1));
 		goto out;
 	}
-
-	spin_lock_irqsave(&priv->lock, flags);
-	priv->is_tx = 1;
-	spin_unlock_irqrestore(&priv->lock, flags);
 
 	/* Start tx */
 	ret = cc1120_cmd_strobe(hw->priv, CC112X_STX);
@@ -684,7 +684,6 @@ static int cc1120_rx(struct cc1120_private *priv)
 	if (cc1120_read_rxfifo(priv,rx_buff, rxbyte))
 	{
 		dev_err(&priv->spi->dev, "frame reception failed\n");
-		kfree_skb(skb);
 		ret = -EINVAL;
 		goto flush;
 	}
