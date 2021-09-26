@@ -60,21 +60,24 @@ void MCU_AUTO_reset(uint8_t enable)
 
 void UPDATE_firmware(uint8_t enable)
 {
-	if(enable) {
-		HAL_FLASH_Unlock();
-		HAL_FLASH_OB_Unlock();
+	HAL_FLASH_Unlock();
+	HAL_FLASH_OB_Unlock();
 
+	if(enable) {
 		CLEAR_BIT(FLASH->OPTR, FLASH_OPTR_nBOOT0);
 		SET_BIT(FLASH->ACR, FLASH_ACR_PROGEMPTY);
-
-		SET_BIT(FLASH->CR, FLASH_CR_STRT);
-		FLASH_WaitForLastOperation((uint32_t)FLASH_TIMEOUT_VALUE);
-		CLEAR_BIT(FLASH->CR, FLASH_CR_OPTSTRT);
-
-		HAL_FLASH_OB_Lock();
-		HAL_FLASH_Lock();
-
-		NVIC_SystemReset();//reboot
+	} else {
+		SET_BIT(FLASH->OPTR, FLASH_OPTR_nBOOT0);
+		CLEAR_BIT(FLASH->ACR, FLASH_ACR_PROGEMPTY);
 	}
+
+	SET_BIT(FLASH->CR, FLASH_CR_OPTSTRT);
+	FLASH_WaitForLastOperation((uint32_t)FLASH_TIMEOUT_VALUE);
+	CLEAR_BIT(FLASH->CR, FLASH_CR_OPTSTRT);
+
+	HAL_FLASH_OB_Lock();
+	HAL_FLASH_Lock();
+
+	NVIC_SystemReset();//reboot
 }
 

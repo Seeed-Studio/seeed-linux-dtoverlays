@@ -116,7 +116,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   __HAL_TIM_CLEAR_FLAG(&htim14, TIM_SR_UIF);
   DBG_PRINT("ReTerminal stm32!\n");
-  Update_Firmware_Init();
+  //Update_Firmware_Init();
   I2C_Slave_Init(&hi2c1);
   TP_Init(&hi2c2);
   /* USER CODE END 2 */
@@ -541,7 +541,7 @@ static void Update_Firmware_Init(void)
   SET_BIT(FLASH->OPTR, FLASH_OPTR_nBOOT0);
   CLEAR_BIT(FLASH->ACR, FLASH_ACR_PROGEMPTY);
 
-  SET_BIT(FLASH->CR, FLASH_CR_STRT);
+  SET_BIT(FLASH->CR, FLASH_CR_OPTSTRT);
   FLASH_WaitForLastOperation((uint32_t)FLASH_TIMEOUT_VALUE);
   CLEAR_BIT(FLASH->CR, FLASH_CR_OPTSTRT);
 
