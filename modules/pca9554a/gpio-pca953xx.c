@@ -27,8 +27,6 @@
 
 #include <asm/unaligned.h>
 
-#define CONFIG_GPIO_PCA953X_IRQ
-
 #define PCA953X_INPUT		0x00
 #define PCA953X_OUTPUT		0x01
 #define PCA953X_INVERT		0x02
@@ -121,7 +119,7 @@ MODULE_DEVICE_TABLE(i2c, pca953x_id);
 static const struct acpi_gpio_params pca953x_irq_gpios = { 0, 0, true };
 
 static const struct acpi_gpio_mapping pca953x_acpi_irq_gpios[] = {
-	//{ "irq-gpios", &pca953x_irq_gpios, 1, ACPI_GPIO_QUIRK_ABSOLUTE_NUMBER },
+	{ "irq-gpios", &pca953x_irq_gpios, 1, ACPI_GPIO_QUIRK_ABSOLUTE_NUMBER },
 	{ }
 };
 
@@ -133,7 +131,7 @@ static int pca953x_acpi_get_irq(struct device *dev)
 	if (ret)
 		dev_warn(dev, "can't add GPIO ACPI mapping\n");
 
-	//ret = acpi_dev_gpio_irq_get_by(ACPI_COMPANION(dev), "irq-gpios", 0);
+	ret = acpi_dev_gpio_irq_get_by(ACPI_COMPANION(dev), "irq-gpios", 0);
 	if (ret < 0)
 		return ret;
 
@@ -253,18 +251,18 @@ static const struct pinctrl_pin_desc pca9554_pins[] = {
 	PINCTRL_PIN(7, "gpio7"),
 };
 
-static int mcp_pinctrl_get_groups_count(struct pinctrl_dev *pctldev)
+static int pca953x_pinctrl_get_groups_count(struct pinctrl_dev *pctldev)
 {
 	return 0;
 }
 
-static const char *mcp_pinctrl_get_group_name(struct pinctrl_dev *pctldev,
+static const char *pca953x_pinctrl_get_group_name(struct pinctrl_dev *pctldev,
 						unsigned int group)
 {
 	return NULL;
 }
 
-static int mcp_pinctrl_get_group_pins(struct pinctrl_dev *pctldev,
+static int pca953x_pinctrl_get_group_pins(struct pinctrl_dev *pctldev,
 					unsigned int group,
 					const unsigned int **pins,
 					unsigned int *num_pins)
@@ -273,31 +271,24 @@ static int mcp_pinctrl_get_group_pins(struct pinctrl_dev *pctldev,
 }
 
 static const struct pinctrl_ops pca9554_pinctrl_ops = {
-	.get_groups_count = mcp_pinctrl_get_groups_count,
-	.get_group_name = mcp_pinctrl_get_group_name,
-	.get_group_pins = mcp_pinctrl_get_group_pins,
+	.get_groups_count = pca953x_pinctrl_get_groups_count,
+	.get_group_name = pca953x_pinctrl_get_group_name,
+	.get_group_pins = pca953x_pinctrl_get_group_pins,
 #ifdef CONFIG_OF
 	.dt_node_to_map = pinconf_generic_dt_node_to_map_pin,
 	.dt_free_map = pinconf_generic_dt_free_map,
 #endif
 };
 
-static int mcp_pinconf_get(struct pinctrl_dev *pctldev, unsigned int pin,
+static int pca953x_pinconf_get(struct pinctrl_dev *pctldev, unsigned int pin,
 			      unsigned long *config)
 {
-	//struct mcp23s08 *mcp = pinctrl_dev_get_drvdata(pctldev);
-	//struct pca953x_chip *mcp = pinctrl_dev_get_drvdata(pctldev);
 	enum pin_config_param param = pinconf_to_config_param(*config);
-	//unsigned int data, status;
 	unsigned int status;
 	int ret;
 
 	switch (param) {
 	case PIN_CONFIG_BIAS_PULL_UP:
-		/*ret = pca953x_read_regs(mcp, MCP_GPPU, &data);
-		if (ret < 0)
-			return ret;
-		status = (data & BIT(pin)) ? 1 : 0;*/
 		ret = 0;
 		break;
 	default:
@@ -309,11 +300,9 @@ static int mcp_pinconf_get(struct pinctrl_dev *pctldev, unsigned int pin,
 	return status ? 0 : -EINVAL;
 }
 
-static int mcp_pinconf_set(struct pinctrl_dev *pctldev, unsigned int pin,
+static int pca953x_pinconf_set(struct pinctrl_dev *pctldev, unsigned int pin,
 			      unsigned long *configs, unsigned int num_configs)
 {
-	//struct mcp23s08 *mcp = pinctrl_dev_get_drvdata(pctldev);
-	//struct pca953x_chip *mcp = pinctrl_dev_get_drvdata(pctldev);
 	enum pin_config_param param;
 	u32 arg;
 	int ret = 0;
@@ -325,11 +314,9 @@ static int mcp_pinconf_set(struct pinctrl_dev *pctldev, unsigned int pin,
 
 		switch (param) {
 		case PIN_CONFIG_BIAS_PULL_UP:
-			//ret = mcp_set_bit(mcp, MCP_GPPU, pin, arg);
 			ret = 0;
 			break;
 		default:
-			//dev_dbg(mcp->dev, "Invalid config param %04x\n", param);
 			return -ENOTSUPP;
 		}
 	}
@@ -338,8 +325,8 @@ static int mcp_pinconf_set(struct pinctrl_dev *pctldev, unsigned int pin,
 }
 
 static const struct pinconf_ops pca9554_pinconf_ops = {
-	.pin_config_get = mcp_pinconf_get,
-	.pin_config_set = mcp_pinconf_set,
+	.pin_config_get = pca953x_pinconf_get,
+	.pin_config_set = pca953x_pinconf_set,
 	.is_generic = true,
 };
 
@@ -1064,12 +1051,6 @@ static int pca953x_probe(struct i2c_client *client,
 	struct regulator *reg;
 	const struct regmap_config *regmap_config;
 
-	/*
-	 NOTICE: set the I2C slave addr static here is for compatibility
-	 if you want to transplat this driver.Pls delete this code.
-	 * */
-	client->addr = 0x38;
-
 	chip = devm_kzalloc(&client->dev, sizeof(*chip), GFP_KERNEL);
 	if (chip == NULL)
 		return -ENOMEM;
@@ -1188,8 +1169,6 @@ static int pca953x_probe(struct i2c_client *client,
 	if (ret)
 		goto err_exit;
 
-
-#if 1 
 	chip->pinctrl_desc.name = "pca9554";
 	chip->pinctrl_desc.pctlops = &pca9554_pinctrl_ops;
 	chip->pinctrl_desc.confops = &pca9554_pinconf_ops;
@@ -1202,7 +1181,6 @@ static int pca953x_probe(struct i2c_client *client,
 	if (IS_ERR(chip->pctldev))
 		return dev_err_probe(&client->dev, PTR_ERR(chip->pctldev),\
 			       	"can't register controller\n");
-#endif
 
 	if (pdata && pdata->setup) {
 		ret = pdata->setup(client, chip->gpio_chip.base,
@@ -1211,12 +1189,10 @@ static int pca953x_probe(struct i2c_client *client,
 			dev_warn(&client->dev, "setup failed, %d\n", ret);
 	}
 
-	dev_info(&client->dev, "probe_exit\n");
 	return 0;
 
 err_exit:
 	regulator_disable(chip->regulator);
-	dev_info(&client->dev, "err_exit\n");
 	return ret;
 }
 

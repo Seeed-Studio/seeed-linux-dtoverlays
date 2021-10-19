@@ -80,7 +80,7 @@
 			
 			mcp23008: mcp@20 {
 				compatible = "microchip,mcp23008","nxp,pca9554";
-				reg = <0x20>;
+				reg = <0x38>;
 				status = "okay";
 
 				gpio-controller;
