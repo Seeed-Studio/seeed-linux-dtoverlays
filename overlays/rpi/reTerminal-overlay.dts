@@ -97,7 +97,7 @@
 			};
 
 			ltr303@29 {
-				compatible = "ltr303,liteon";
+				compatible = "liteon,ltr303";
 				reg = <0x29>;
 				status = "okay";
 			};
