@@ -1,4 +1,3 @@
 mipi_dsi
 lis3lv02d
 ltr30x
-pca9554a
