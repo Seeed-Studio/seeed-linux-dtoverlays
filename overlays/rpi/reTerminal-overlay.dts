@@ -171,10 +171,9 @@
 	fragment@7 {
 		target-path="/";
 		__overlay__ {
-			gpio_keys {
+			gpio_keys:gpio_keys {
 				compatible = "gpio-keys";
 				pinctrl-names = "default";
-				pinctrl-0 = <&input_pins>;
 				status = "okay";
 
 				usr_btn0: usr_btn0 {
@@ -224,6 +223,13 @@
 			};
 		};
 	};
+	fragment@8 {
+		target = <&gpio_keys>;
+		patch:__overlay__ {
+			pinctrl-0 = <>;
+		};
+	}; 
+
 
 	__overrides__ {
 		int = <&mcp23008_pins>,"brcm,pins:0",
@@ -239,6 +245,7 @@
 
 		mcu_auto_reset = <&mipi_dsi>,"mcu_auto_reset_enable:0";
 		tp_rotate = <&mipi_dsi>,"tp_point_rotate:0";
+		mcp23008 = <&patch>,"pinctrl-0:0=",<&input_pins>;
 	};
 };
 
