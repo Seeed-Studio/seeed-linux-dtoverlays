@@ -1,0 +1,35 @@
+/*
+ * Copyright (C) 2021 Seeed Studio
+ * xiong jian <953308023@qq.com>
+ *
+ * MIT License
+ *
+ */
+/dts-v1/;
+/plugin/;
+
+/ {
+    compatible = "brcm,bcm2835", "brcm,bcm2708", "brcm,bcm2709", "brcm,bcm2711";
+
+        fragment@4 {
+                target = <&i2c1>;
+                __overlay__ {
+                        status = "okay";
+
+                        /* this is the configuration part */
+                        clock-frequency = <300000>;
+
+                        #address-cells = <1>;
+                        #size-cells = <0>;
+
+                        bq24179: bq24179@6b {
+                                compatible = "ti,bq25790";
+                                reg = <0x6b>;
+                                status = "okay";
+                        };
+
+                };
+        };
+
+};
+
