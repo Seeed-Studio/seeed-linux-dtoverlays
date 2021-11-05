@@ -11,7 +11,7 @@
 / {
     compatible = "brcm,bcm2835", "brcm,bcm2708", "brcm,bcm2709", "brcm,bcm2711";
 
-        fragment@4 {
+        fragment@0 {
                 target = <&i2c1>;
                 __overlay__ {
                         status = "okay";
@@ -30,6 +30,76 @@
 
                 };
         };
+
+        fragment@1 {
+                target = <&gpio>;
+                __overlay__ {
+                        pcf857x_pins: pcf857x_pins@20 {
+                                brcm,pins = <27>;     /* gpio number */
+                                brcm,function = <0>; /* 0 = input, 1 = output */
+                                brcm,pull = <2>;     /* 0 = none, 1 = pull down, 2 = pull up */
+                        };
+                };
+        };
+
+        fragment@2 {
+                target = <&pcf857x>;
+                pcf857x_irq: __overlay__ {
+                        #interrupt-cells=<2>;
+                        interrupt-parent = <&gpio>;
+                        interrupts = <27 2>; /* IRQ_TYPE_EDGE_FALLING */
+                        interrupt-controller;
+                        microchip,irq-mirror;
+                };
+        };
+
+        fragment@3 {
+                target = <&i2c3>;
+                __overlay__ {
+                        status = "okay";
+
+                        /* this is the configuration part */
+                        clock-frequency = <300000>;
+
+                        #address-cells = <1>;
+                        #size-cells = <0>;
+
+                        pcf857x: pcf@20 {
+                                compatible = "nxp,pcf8575";
+                                reg = <0x20>;
+                                status = "okay";
+
+                                gpio-controller;
+                                #gpio-cells = <2>;
+
+                        };
+
+                };
+        };
+
+        fragment@4 {
+                target = <&leds>;
+                __overlay__ {
+                        compatible = "gpio-leds";
+
+                        usr_led10: usr_led10 {
+                                label = "wm1302-reset";
+                                linux,default-trigger = "default-off";
+                                gpios = <&pcf857x 2 0>;
+                                default-state = "on";
+                        };
+
+                };
+        };
+
+        __overrides__ {
+                int = <&pcf857x_pins>,"brcm,pins:0",
+                                <&pcf857x_irq>,"interrupts:0";
+                addr = <&pcf857x>,"reg:0",
+                                <&pcf857x_pins>,"reg:0";
+                noints = <0>,"!1!2";
+        };
+
 
 };
 
