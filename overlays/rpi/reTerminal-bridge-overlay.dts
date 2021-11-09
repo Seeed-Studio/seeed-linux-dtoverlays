@@ -124,6 +124,50 @@
                 };
         };
 
+        fragment@5 {
+                target = <&spidev1>;
+                __overlay__ {
+                        status = "disabled";
+                };
+        };
+        fragment@6 {
+                target = <&gpio>;
+                __overlay__ {
+                        mcp251xfd_pins_1: mcp251xfd_spi0_1_pins {
+                                brcm,pins = <24>;
+                                brcm,function = <0>;//BCM2835_FSEL_GPIO_IN 
+                        };
+                };
+        };
+        fragment@7 {
+                target-path = "/clocks";
+                __overlay__ {
+                        clk_mcp251xfd_osc_1: mcp251xfd-spi0-1-osc {
+                                #clock-cells = <0>;
+                                compatible = "fixed-clock";
+                                clock-frequency = <40000000>;
+                        };
+                };
+        };
+        fragment@8 {
+                target = <&spi0>;
+                __overlay__ {
+                        status = "okay";
+                        #address-cells = <1>;
+                        #size-cells = <0>;
+                        mcp251xfd@1 {
+                                compatible = "microchip,mcp251xfd";
+                                reg = <1>;
+                                pinctrl-names = "default";
+                                pinctrl-0 = <&mcp251xfd_pins_1>;
+                                spi-max-frequency = <20000000>;
+                                interrupt-parent = <&gpio>;
+                                interrupts = <24 8>;//IRQ_TYPE_LEVEL_LOW 
+                                clocks = <&clk_mcp251xfd_osc_1>;
+                        };
+                };
+        };
+
         __overrides__ {
                 int = <&pcf857x_pins>,"brcm,pins:0",
                                 <&pcf857x_irq>,"interrupts:0";
