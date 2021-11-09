@@ -88,7 +88,39 @@
                                 gpios = <&pcf857x 2 0>;
                                 default-state = "on";
                         };
+			
+                        usr_led11: usr_led11 {
+                                label = "M.2-reset";
+                                linux,default-trigger = "default-off";
+                                gpios = <&pcf857x 14 0>;
+                                default-state = "on";
+                        };
 
+                        usr_led12: usr_led12 {
+                                label = "DPR";
+                                linux,default-trigger = "default-off";
+                                gpios = <&pcf857x 15 0>;
+                                default-state = "on";
+                        };
+
+                        usr_led13: usr_led13 {
+                                label = "MODULE_EN";
+                                linux,default-trigger = "default-off";
+                                gpios = <&pcf857x 13 0>;
+                                default-state = "on";
+                        };
+                        usr_led14: usr_led14 {
+                                label = "W_DISABLE1#";
+                                linux,default-trigger = "default-off";
+                                gpios = <&pcf857x 12 0>;
+                                default-state = "on";
+                        };
+                        usr_led15: usr_led15 {
+                                label = "W_DISABLE2#";
+                                linux,default-trigger = "default-off";
+                                gpios = <&pcf857x 11 0>;
+                                default-state = "on";
+                        };
                 };
         };
 
