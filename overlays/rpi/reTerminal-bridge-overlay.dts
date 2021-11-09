@@ -168,6 +168,27 @@
                 };
         };
 
+        fragment@9 {
+                target = <&uart1>;
+                __overlay__ {
+                        pinctrl-names = "default";
+                        pinctrl-0 = <&uart1_pins>;
+                        status = "okay";
+                };
+        };
+
+        fragment@a {
+                target = <&gpio>;
+                __overlay__ {
+                        uart1_pins: uart1_pins {
+                                brcm,pins = <14 15 16 17>;
+                                brcm,function = <2>; /* alt5 */
+                                brcm,pull = <0 2 2 0>;
+                        };
+                };
+        };
+
+
         __overrides__ {
                 int = <&pcf857x_pins>,"brcm,pins:0",
                                 <&pcf857x_irq>,"interrupts:0";
