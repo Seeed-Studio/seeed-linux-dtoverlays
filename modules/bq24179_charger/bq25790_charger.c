@@ -117,7 +117,8 @@ static struct reg_default bq25790_reg_defs[] = {
 	{BQ25790_ADC_VBAT_LSB, 0x0},
 	{BQ25790_ADC_VBUS_MSB, 0x0},
 	{BQ25790_ADC_VBUS_LSB, 0x0},
-	{BQ25790_ADC_TS, 0x0},
+	{BQ25790_ADC_TS_MSB, 0x0},
+	{BQ25790_ADC_TS_LSB, 0x0},
 	{BQ25790_ADC_TDIE, 0x0},
 	{BQ25790_ADC_DP, 0x0},
 	{BQ25790_ADC_DM, 0x0},
@@ -476,6 +477,30 @@ static int bq25790_get_input_curr_lim(struct bq25790_device *bq)
 	return ilim * BQ25790_IINDPM_STEP_uA;
 }
 
+static int bq25790_get_ts_adc(struct bq25790_device *bq)
+{
+	int ret;
+	int ts_adc_lsb, ts_adc_msb;
+	int ts_adc;
+
+	ret = regmap_update_bits(bq->regmap, BQ25790_ADC_CTRL,
+				 BQ25790_ADC_EN, BQ25790_ADC_EN);
+	if (ret)
+		return ret;
+
+	ret = regmap_read(bq->regmap, BQ25790_ADC_TS_MSB, &ts_adc_msb);
+	if (ret)
+		return ret;
+
+	ret = regmap_read(bq->regmap, BQ25790_ADC_TS_LSB, &ts_adc_lsb);
+	if (ret)
+		return ret;
+
+	ts_adc = (ts_adc_msb << 8) | ts_adc_lsb;
+
+	return ts_adc;
+}
+
 static int bq25790_get_state(struct bq25790_device *bq,
 			     struct bq25790_state *state)
 {
@@ -784,6 +809,13 @@ static int bq25790_battery_get_property(struct power_supply *psy,
 
 		val->intval = ret;
 		break;
+	case POWER_SUPPLY_PROP_TEMP:
+		ret = bq25790_get_ts_adc(bq);
+		if (ret < 0)
+			return ret;
+
+		val->intval = ret;
+		break;
 	default:
 		return -EINVAL;
 	}
@@ -858,6 +890,7 @@ static enum power_supply_property bq25790_battery_props[] = {
 	POWER_SUPPLY_PROP_CONSTANT_CHARGE_VOLTAGE_MAX,
 	POWER_SUPPLY_PROP_PRECHARGE_CURRENT,
 	POWER_SUPPLY_PROP_CHARGE_TERM_CURRENT,
+	POWER_SUPPLY_PROP_TEMP,
 };
 
 static char *bq25790_charger_supplied_to[] = {
