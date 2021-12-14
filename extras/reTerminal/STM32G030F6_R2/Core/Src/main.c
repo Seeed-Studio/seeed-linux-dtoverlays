@@ -51,6 +51,8 @@ DMA_HandleTypeDef hdma_adc1;
 I2C_HandleTypeDef hi2c1;
 I2C_HandleTypeDef hi2c2;
 
+IWDG_HandleTypeDef hiwdg;
+
 TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim14;
 
@@ -59,6 +61,8 @@ UART_HandleTypeDef huart2;
 /* USER CODE BEGIN PV */
 uint16_t AdcVal[ADC_CH_MAX] = { 0 };
 uint32_t i2c_int_cnt = 0;
+
+static uint32_t reg_rcc_csr = 0x00;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -71,12 +75,21 @@ static void MX_I2C2_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_TIM14_Init(void);
+static void MX_IWDG_Init(void);
 /* USER CODE BEGIN PFP */
 static void Update_Firmware_Init(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+/*
+ * !!! ESD Test Problem Solving Instruction !!!
+ * When we use the reterminal(stm32 firmware less than or equal to V1.8) to do the ESD test.
+ * The touch panel may be not responding to touch action.In order to fix this problem.We add
+ *  the Independent watch dog timer.And we add more code to deal with the different ESD issue.
+ * For more Details.Please refer to the follow link:
+ * https://github.com/Seeed-Studio/seeed-linux-dtoverlays/commit/34e902e37f841972757c51b80aa97059e64a4463
+ * */
 /* USER CODE END 0 */
 
 /**
@@ -101,23 +114,60 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-
+  /*
+   * In order to determine whether the CM4 is
+   * still running when the MCU resets.
+   * We use the I2C slave interrupt time for this.
+   * So the I2C slave init code move to the beginning
+   * of the system init.
+   * */
+  MX_I2C1_Init();
+  I2C_Slave_Init(&hi2c1);
+  /*
+   * Add delay here to receive the possible packets
+   * from CM4.
+   * CM4's poll interval is defined here:
+   * https://github.com/Seeed-Studio/seeed-linux-dtoverlays/blob/master/modules/mipi_dsi/touch_panel.c
+   * */
+  HAL_Delay(50);
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_DMA_Init();
   MX_USART2_UART_Init();
-  MX_I2C1_Init();
+  //MX_I2C1_Init();
   MX_I2C2_Init();
   MX_TIM3_Init();
   MX_ADC1_Init();
   MX_TIM14_Init();
+  MX_IWDG_Init();
   /* USER CODE BEGIN 2 */
+  /*
+   * After the MCU is reset by the IWDG timeout reset.
+   * This code about RCC->CSR can find out the reset reason
+   * and keep the working status of LCD backlight and clear
+   * reset flag(RCC_CSR_RMVF) of RCC->CSR.
+   */
+  if(reg_rcc_csr & RCC_CSR_IWDGRSTF_Msk) {
+	  PWM_config(255);
+  	  SET_BIT(RCC->CSR, RCC_CSR_RMVF);
+  	  DBG_PRINT("IWDG RESET!!!\n");
+  }
+  /*
+   * This code is aimed on fixing the ESD issue
+   * The MCU maybe reset when ESD happens while the CM4
+   * not reset at the same time.
+   * */
+  if((reg_rcc_csr & RCC_CSR_PINRSTF_Msk) && i2c_int_cnt >= 1) {
+	  PWM_config(255);
+  	  SET_BIT(RCC->CSR, RCC_CSR_RMVF);
+  	  DBG_PRINT("Only MCU reset without CM4 reset!\n");
+  }
+
   __HAL_TIM_CLEAR_FLAG(&htim14, TIM_SR_UIF);
   DBG_PRINT("ReTerminal stm32!\n");
   //Update_Firmware_Init();
-  I2C_Slave_Init(&hi2c1);
   TP_Init(&hi2c2);
   /* USER CODE END 2 */
 
@@ -126,6 +176,7 @@ int main(void)
   while (1)
   {
   	I2C_Slave_Process();
+  	HAL_IWDG_Refresh(&hiwdg);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -149,10 +200,11 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI|RCC_OSCILLATORTYPE_LSI;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
   RCC_OscInitStruct.HSIDiv = RCC_HSI_DIV1;
   RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
+  RCC_OscInitStruct.LSIState = RCC_LSI_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
   RCC_OscInitStruct.PLL.PLLM = RCC_PLLM_DIV1;
@@ -348,6 +400,35 @@ static void MX_I2C2_Init(void)
 }
 
 /**
+  * @brief IWDG Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_IWDG_Init(void)
+{
+
+  /* USER CODE BEGIN IWDG_Init 0 */
+
+  /* USER CODE END IWDG_Init 0 */
+
+  /* USER CODE BEGIN IWDG_Init 1 */
+
+  /* USER CODE END IWDG_Init 1 */
+  hiwdg.Instance = IWDG;
+  hiwdg.Init.Prescaler = IWDG_PRESCALER_4;
+  hiwdg.Init.Window = 4095;
+  hiwdg.Init.Reload = 4095;
+  if (HAL_IWDG_Init(&hiwdg) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN IWDG_Init 2 */
+
+  /* USER CODE END IWDG_Init 2 */
+
+}
+
+/**
   * @brief TIM3 Initialization Function
   * @param None
   * @retval None
@@ -494,6 +575,16 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, LCD_VDD_Pin|TP_INT_Pin|TP_RST_Pin|LCD_RST_Pin, GPIO_PIN_RESET);
+
+  /*
+   * After the MCU is reset by the IWDG timeout reset.
+   * This code about RCC->CSR can find out the reset reason
+   * and keep the working status of LCD and Touch panel.
+   */
+  reg_rcc_csr = RCC->CSR;
+  if((reg_rcc_csr & RCC_CSR_IWDGRSTF_Msk) || ((reg_rcc_csr & RCC_CSR_PINRSTF_Msk) \
+		  && (i2c_int_cnt >= 1)))
+  	  HAL_GPIO_WritePin(GPIOA, LCD_VDD_Pin|TP_INT_Pin|TP_RST_Pin|LCD_RST_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pins : LCD_VDD_Pin TP_RST_Pin LCD_RST_Pin */
   GPIO_InitStruct.Pin = LCD_VDD_Pin|TP_RST_Pin|LCD_RST_Pin;
