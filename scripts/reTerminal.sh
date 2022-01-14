@@ -263,7 +263,7 @@ __EOF__
 }
 
 function install {
-  install_modules mipi_dsi ltr30x lis3lv02d
+  install_modules mipi_dsi ltr30x lis3lv02d bq24179_charger
   install_overlay reTerminal
 
   # display
@@ -278,7 +278,7 @@ function install {
 }
 
 function uninstall {
-  uninstall_modules mipi_dsi ltr30x lis3lv02d
+  uninstall_modules mipi_dsi ltr30x lis3lv02d bq24179_charger
   uninstall_overlay reTerminal
 }
 

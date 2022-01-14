@@ -1,0 +1,272 @@
+/*
+ * Copyright (C) 2021 Seeed Studio
+ * xiong jian <953308023@qq.com>
+ *
+ * MIT License
+ *
+ */
+/dts-v1/;
+/plugin/;
+
+/ {
+    compatible = "brcm,bcm2835", "brcm,bcm2708", "brcm,bcm2709", "brcm,bcm2711";
+
+        fragment@0 {
+                target = <&i2c1>;
+                __overlay__ {
+                        status = "okay";
+
+                        /* this is the configuration part */
+                        clock-frequency = <300000>;
+
+                        #address-cells = <1>;
+                        #size-cells = <0>;
+
+                        bq24179: bq24179@6b {
+                                compatible = "ti,bq25790";
+                                reg = <0x6b>;
+                                status = "okay";
+                        };
+
+                };
+        };
+
+        fragment@1 {
+                target = <&gpio>;
+                __overlay__ {
+                        pcf857x_pins: pcf857x_pins@20 {
+                                brcm,pins = <27>;     /* gpio number */
+                                brcm,function = <0>; /* 0 = input, 1 = output */
+                                brcm,pull = <2>;     /* 0 = none, 1 = pull down, 2 = pull up */
+                        };
+                };
+        };
+
+        fragment@2 {
+                target = <&pcf857x>;
+                pcf857x_irq: __overlay__ {
+                        #interrupt-cells=<2>;
+                        interrupt-parent = <&gpio>;
+                        interrupts = <27 2>; /* IRQ_TYPE_EDGE_FALLING */
+                        interrupt-controller;
+                        microchip,irq-mirror;
+                };
+        };
+
+        fragment@3 {
+                target = <&i2c1>;
+                __overlay__ {
+                        status = "okay";
+
+                        /* this is the configuration part */
+                        clock-frequency = <300000>;
+
+                        #address-cells = <1>;
+                        #size-cells = <0>;
+
+                        pcf857x: pcf@20 {
+                                compatible = "nxp,pcf8575";
+                                reg = <0x21>;
+                                status = "okay";
+
+                                gpio-controller;
+                                #gpio-cells = <2>;
+
+                        };
+
+                };
+        };
+
+        fragment@4 {
+                target = <&leds>;
+                __overlay__ {
+                        compatible = "gpio-leds";
+
+                        usr_led10: usr_led10 {
+                                label = "wm1302-reset";
+                                linux,default-trigger = "default-off";
+                                gpios = <&pcf857x 2 0>;
+                                default-state = "on";
+                        };
+			
+                        usr_led11: usr_led11 {
+                                label = "M.2-reset";
+                                linux,default-trigger = "default-off";
+                                gpios = <&pcf857x 14 0>;
+                                default-state = "on";
+                        };
+
+                        usr_led12: usr_led12 {
+                                label = "DPR";
+                                linux,default-trigger = "default-off";
+                                gpios = <&pcf857x 15 0>;
+                                default-state = "on";
+                        };
+
+                        usr_led13: usr_led13 {
+                                label = "MODULE_EN";
+                                linux,default-trigger = "default-off";
+                                gpios = <&pcf857x 13 0>;
+                                default-state = "on";
+                        };
+                        usr_led14: usr_led14 {
+                                label = "W_DISABLE1#";
+                                linux,default-trigger = "default-off";
+                                gpios = <&pcf857x 12 0>;
+                                default-state = "on";
+                        };
+                        usr_led15: usr_led15 {
+                                label = "W_DISABLE2#";
+                                linux,default-trigger = "default-off";
+                                gpios = <&pcf857x 11 0>;
+                                default-state = "on";
+                        };
+                };
+        };
+
+        fragment@5 {
+                target = <&spidev1>;
+                __overlay__ {
+                        status = "disabled";
+                };
+        };
+        fragment@6 {
+                target = <&gpio>;
+                __overlay__ {
+                        mcp251xfd_pins_1: mcp251xfd_spi0_1_pins {
+                                brcm,pins = <24>;
+                                brcm,function = <0>;//BCM2835_FSEL_GPIO_IN 
+                        };
+                };
+        };
+        fragment@7 {
+                target-path = "/clocks";
+                __overlay__ {
+                        clk_mcp251xfd_osc_1: mcp251xfd-spi0-1-osc {
+                                #clock-cells = <0>;
+                                compatible = "fixed-clock";
+                                clock-frequency = <40000000>;
+                        };
+                };
+        };
+        fragment@8 {
+                target = <&spi0>;
+                __overlay__ {
+                        status = "okay";
+                        #address-cells = <1>;
+                        #size-cells = <0>;
+                        mcp251xfd@1 {
+                                compatible = "microchip,mcp251xfd";
+                                reg = <1>;
+                                pinctrl-names = "default";
+                                pinctrl-0 = <&mcp251xfd_pins_1>;
+                                spi-max-frequency = <20000000>;
+                                interrupt-parent = <&gpio>;
+                                interrupts = <24 8>;//IRQ_TYPE_LEVEL_LOW 
+                                clocks = <&clk_mcp251xfd_osc_1>;
+                        };
+                };
+        };
+
+        fragment@9 {
+                target = <&uart1>;
+                __overlay__ {
+                        pinctrl-names = "default";
+                        pinctrl-0 = <&uart1_pins>;
+                        status = "okay";
+                };
+        };
+
+        fragment@a {
+                target = <&gpio>;
+                __overlay__ {
+                        uart1_pins: uart1_pins {
+                                brcm,pins = <14 15 16 17>;
+                                brcm,function = <2>; /* alt5 */
+                                brcm,pull = <0 2 2 0>;
+                        };
+                };
+        };
+
+        fragment@b {
+                target = <&i2s>;
+                __overlay__ {
+                        status = "okay";
+                };
+        };
+
+        fragment@c {
+                target-path="/";
+                __overlay__ {
+                        wm8960_mclk: wm8960_mclk {
+                                compatible = "fixed-clock";
+                                #clock-cells = <0>;
+                                clock-frequency = <12288000>;
+                        };
+                };
+        };
+        fragment@d {
+                target = <&i2c1>;
+                __overlay__ {
+                        #address-cells = <1>;
+                        #size-cells = <0>;
+                        status = "okay";
+
+                        wm8960: wm8960 {
+                                compatible = "wlf,wm8960";
+                                reg = <0x1a>;
+                                #sound-dai-cells = <0>;
+                                AVDD-supply = <&vdd_5v0_reg>;
+                                DVDD-supply = <&vdd_3v3_reg>;
+                        };
+                };
+        };
+
+        fragment@e {
+                target = <&sound>;
+                slave_overlay: __overlay__ {
+                        compatible = "simple-audio-card";
+                        simple-audio-card,format = "i2s";
+                        simple-audio-card,name = "wm8960-soundcard";
+                        status = "okay";
+
+                        simple-audio-card,widgets =
+                                "Microphone", "Mic Jack",
+                                "Line", "Line In",
+                                "Line", "Line Out",
+                                "Speaker", "Speaker",
+                                "Headphone", "Headphone Jack";
+                        simple-audio-card,routing =
+                                "Headphone Jack", "HP_L",
+                                "Headphone Jack", "HP_R",
+                                "Speaker", "SPK_LP",
+                                "Speaker", "SPK_LN",
+                                "LINPUT1", "Mic Jack",
+                                "LINPUT3", "Mic Jack",
+                                "RINPUT1", "Mic Jack",
+                                "RINPUT2", "Mic Jack";
+
+                        simple-audio-card,cpu {
+                                sound-dai = <&i2s>;
+                        };
+                        dailink0_slave: simple-audio-card,codec {
+                                sound-dai = <&wm8960>;
+                                clocks = <&wm8960_mclk>;
+                                clock-names = "mclk";
+                        };
+                };
+        };
+
+        __overrides__ {
+                int = <&pcf857x_pins>,"brcm,pins:0",
+                                <&pcf857x_irq>,"interrupts:0";
+                addr = <&pcf857x>,"reg:0",
+                                <&pcf857x_pins>,"reg:0";
+                noints = <0>,"!1!2";
+	        alsaname = <&slave_overlay>,"simple-audio-card,name";
+                compatible = <&wm8960>,"compatible";
+        };
+
+
+};
+
