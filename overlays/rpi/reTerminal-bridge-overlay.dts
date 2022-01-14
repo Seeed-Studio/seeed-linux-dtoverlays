@@ -54,7 +54,7 @@
         };
 
         fragment@3 {
-                target = <&i2c3>;
+                target = <&i2c1>;
                 __overlay__ {
                         status = "okay";
 
@@ -66,7 +66,7 @@
 
                         pcf857x: pcf@20 {
                                 compatible = "nxp,pcf8575";
-                                reg = <0x20>;
+                                reg = <0x21>;
                                 status = "okay";
 
                                 gpio-controller;
