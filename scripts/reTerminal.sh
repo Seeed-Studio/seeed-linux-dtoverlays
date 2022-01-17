@@ -264,12 +264,23 @@ __EOF__
 
 function install {
   install_modules mipi_dsi ltr30x lis3lv02d bq24179_charger
-  install_overlay reTerminal
+  install_overlay reTerminal reTerminal-bridge
 
   # display
   cp -rfv ${RES_PATH}/plymouth/seeed/ /usr/share/plymouth/themes/ || exit 1;
   cp -fv ${RES_PATH}/10-disp.conf /usr/share/X11/xorg.conf.d/ || exit 1;
   cp -fv ${RES_PATH}/plymouth/plymouthd.conf /etc/plymouth/ || exit 1;
+
+  # audio
+  if [ -f "/var/lib/alsa/asound.state" ]; then
+    cp /var/lib/alsa/asound.state /var/lib/alsa/asound.state.bak
+  fi
+  if [ -f "/etc/asound.conf" ]; then
+    cp /etc/asound.conf /etc/asound.conf.bak
+  fi
+  cp ${MOD_PATH}/seeed-voicecard/wm8960_asound.state /var/lib/alsa/asound.state 
+  cp ${MOD_PATH}/seeed-voicecard/asound_2mic.conf /etc/asound.conf
+  alsactl -L restore
 
   echo "------------------------------------------------------"
   echo "Please reboot your device to apply all settings"
@@ -279,7 +290,7 @@ function install {
 
 function uninstall {
   uninstall_modules mipi_dsi ltr30x lis3lv02d bq24179_charger
-  uninstall_overlay reTerminal
+  uninstall_overlay reTerminal reTerminal-bridge
 }
 
 

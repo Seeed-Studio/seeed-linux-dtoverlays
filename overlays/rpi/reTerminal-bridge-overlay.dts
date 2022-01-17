@@ -227,7 +227,7 @@
                 slave_overlay: __overlay__ {
                         compatible = "simple-audio-card";
                         simple-audio-card,format = "i2s";
-                        simple-audio-card,name = "wm8960-soundcard";
+                        simple-audio-card,name = "seeed2micvoicec";
                         status = "okay";
 
                         simple-audio-card,widgets =
