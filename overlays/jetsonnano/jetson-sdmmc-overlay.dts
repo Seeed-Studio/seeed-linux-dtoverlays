@@ -11,7 +11,8 @@
 / {
 	overlay-name = "reComputer sdmmc";
 	jetson-header-name = "Jetson 40pin Header";
-	compatible = "nvidia,p3449-0000-b00+p3448-0000-b00";
+	compatible = "nvidia,p3449-0000-b00+p3448-0000-b00",
+		"nvidia,p3449-0000-b00+p3448-0002-b00";
 
 	fragment@0 {
 		target = <&sdmmc3>;
