@@ -16,6 +16,7 @@
 
 / {
 	overlay-name = "Seeed Voice Card 2MIC";
+	jetson-header-name = "Jetson 40pin Header";
 	compatible = JETSON_COMPATIBLE;
 
 	fragment@0 {
@@ -97,7 +98,7 @@
 			pinctrl-0 = <&hdr40_pinmux>;
 
 			hdr40_pinmux: header-40pin-pinmux {
-				pin12 {
+				hdr40-pin12 {
 					nvidia,pins = HDR40_PIN12;
 					nvidia,function = HDR40_I2S;
 					nvidia,pull = <TEGRA_PIN_PULL_DOWN>;
@@ -105,7 +106,7 @@
 					nvidia,enable-input = <TEGRA_PIN_ENABLE>;
 				};
 
-				pin35 {
+				hdr40-pin35 {
 					nvidia,pins = HDR40_PIN35;
 					nvidia,function = HDR40_I2S;
 					nvidia,pull = <TEGRA_PIN_PULL_DOWN>;
@@ -113,7 +114,7 @@
 					nvidia,enable-input = <TEGRA_PIN_ENABLE>;
 				};
 
-				pin38 {
+				hdr40-pin38 {
 					nvidia,pins = HDR40_PIN38;
 					nvidia,function = HDR40_I2S;
 					nvidia,pull = <TEGRA_PIN_PULL_DOWN>;
@@ -121,7 +122,7 @@
 					nvidia,enable-input = <TEGRA_PIN_ENABLE>;
 				};
 
-				pin40 {
+				hdr40-pin40 {
 					nvidia,pins = HDR40_PIN40;
 					nvidia,function = HDR40_I2S;
 					nvidia,pull = <TEGRA_PIN_PULL_DOWN>;

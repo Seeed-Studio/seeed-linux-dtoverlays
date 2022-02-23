@@ -14,21 +14,21 @@
 		target = <&pinmux>;
 		__overlay__ {
 			header-40pin-pinmux {
-				pin19 {
+				hdr40-pin19 {
 					nvidia,pins = "spi1_mosi_pc0";
 					nvidia,function = "spi1";
 					nvidia,pull = <TEGRA_PIN_PULL_DOWN>;
 					nvidia,tristate = <TEGRA_PIN_DISABLE>;
 					nvidia,enable-input = <TEGRA_PIN_ENABLE>;
 				};
-				pin21 {
+				hdr40-pin21 {
 					nvidia,pins = "spi1_miso_pc1";
 					nvidia,function = "spi1";
 					nvidia,pull = <TEGRA_PIN_PULL_DOWN>;
 					nvidia,tristate = <TEGRA_PIN_DISABLE>;
 					nvidia,enable-input = <TEGRA_PIN_ENABLE>;
 				};
-				pin23 {
+				hdr40-pin23 {
 					nvidia,pins = "spi1_sck_pc2";
 					nvidia,function = "spi1";
 					nvidia,pull = <TEGRA_PIN_PULL_DOWN>;
@@ -36,7 +36,7 @@
 					nvidia,enable-input = <TEGRA_PIN_ENABLE>;
 				};
 				/* spi0.cs0 */
-				pin24 {
+				hdr40-pin24 {
 					nvidia,pins = "spi1_cs0_pc3";
 					nvidia,function = "spi1";
 					nvidia,pull = <TEGRA_PIN_PULL_UP>;
@@ -46,7 +46,7 @@
 
 				/* spi0.cs1, uncomment to enable it */
 				/*
-				pin26 {
+				hdr40-pin26 {
 					nvidia,pins = "spi1_cs1_pc4";
 					nvidia,function = "spi1";
 					nvidia,pull = <TEGRA_PIN_PULL_UP>;
@@ -64,7 +64,7 @@
 				 *       so this pinmux not required
 				 */
 				#if 0
-				pin27 {
+				hdr40-pin27 {
 					nvidia,pins = "gen1_i2c_sda_pj0";
 					nvidia,function = "i2c1" /* "rsvd1" */;
 					nvidia,pull = <TEGRA_PIN_PULL_UP>;
@@ -72,7 +72,7 @@
 					nvidia,enable-input = <TEGRA_PIN_ENABLE>;
 					nvidia,io-high-voltage = <TEGRA_PIN_ENABLE>;
 				};
-				pin28 {
+				hdr40-pin28 {
 					nvidia,pins = "gen1_i2c_scl_pj1";
 					nvidia,function = "i2c1" /* "rsvd1" */;
 					nvidia,pull = <TEGRA_PIN_PULL_UP>;
