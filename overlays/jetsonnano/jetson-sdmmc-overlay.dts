@@ -7,12 +7,14 @@
 
 /dts-v1/;
 /plugin/;
- 
+
+#include <dt-bindings/pinctrl/tegra210-p3448-0000-p3449-0000-a02.h>
+#include <dt-bindings/pinctrl/pinctrl-tegra.h>
+
 / {
 	overlay-name = "reComputer sdmmc";
 	jetson-header-name = "Jetson 40pin Header";
-	compatible = "nvidia,p3449-0000-b00+p3448-0000-b00",
-		"nvidia,p3449-0000-b00+p3448-0002-b00";
+	compatible = JETSON_COMPATIBLE;
 
 	fragment@0 {
 		target = <&sdmmc3>;
