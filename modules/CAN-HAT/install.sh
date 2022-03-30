@@ -81,7 +81,7 @@ function install_kernel() {
     _url=$(apt-get download --print-uris raspberrypi-kernel | sed -nre "s/'([^']+)'.*$/\1/g;p")
     _prefix=$(echo $_url | sed -nre 's/^(.*)raspberrypi-kernel_.*$/\1/g;p')
 
-    download_install_debpkg "$_prefix" "$KERN_NAME"
+    #download_install_debpkg "$_prefix" "$KERN_NAME"
     download_install_debpkg "$_prefix" "$HDR_NAME"
   }
 }
@@ -93,7 +93,8 @@ if [[ $? -eq 0 ]]; then
   echo "____________________________________"
   apt-get -y install dkms git can-utils
   echo "____________________________________"
-  #install_kernel
+  FORCE_KERNEL=$(dpkg -s raspberrypi-kernel | awk '/^Version:/{printf "%s\n",$2;}')
+  install_kernel
   # rpi-update checker
   # check_kernel_headers
 fi
