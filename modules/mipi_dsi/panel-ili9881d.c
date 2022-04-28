@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
  * ILI9881D panel driver
- *
+ * 
  * Copyright (c) 2020 Seeed Studio
  * Zhangqun Ming<north_sea@qq.com>
  */
@@ -14,12 +14,12 @@ static const struct drm_display_mode ili9881d_modes = {
 	.clock		= 62712 /*73164*/ /*83616*/ /*94068*/ /*104520*/,
 
 	.hdisplay	= 720,
-	.hsync_start	= 720 + 10,
+	.hsync_start= 720 + 10,
 	.hsync_end	= 720 + 10 + 20,
 	.htotal		= 720 + 10 + 20 + 30,
 
 	.vdisplay	= 1280,
-	.vsync_start	= 1280 + 10,
+	.vsync_start= 1280 + 10,
 	.vsync_end	= 1280 + 10 + 20,
 	.vtotal		= 1280 + 10 + 20 + 30,
 
@@ -31,7 +31,7 @@ static int ili9881d_get_modes(struct drm_panel *panel, struct drm_connector *con
 {
 	struct drm_display_mode *mode;
 
-	mode = drm_mode_duplicate(connector->dev, &ili9881d_default_mode);
+	mode = drm_mode_duplicate(connector->dev, &ili9881d_modes);
 	if (!mode) {
 		dev_err(panel->dev, "failed to add mode %ux%u@%u\n",
 			mode->hdisplay, mode->vdisplay,
@@ -70,8 +70,8 @@ static int ili9881d_prepare(struct drm_panel *panel)
 		DBG_FUNC("No LCD connected,pls check your hardware!\n");
 		return -ENODEV;
 	}
-
-	ILI9881_PAGE(0x01);
+	
+	ILI9881_PAGE(0x01);           
 	IILI9881_COMMAND(0x91,0x00);
 	IILI9881_COMMAND(0x92,0x00);
 	IILI9881_COMMAND(0x93,0x72);
@@ -256,17 +256,17 @@ static int ili9881d_prepare(struct drm_panel *panel)
 
 	//===== GIP code finish =====//
 	IILI9881_COMMAND(0x4C,0xA4); // PS_EN on ,0x default :A4
-	IILI9881_COMMAND(0x18,0xF4); // SH on ,0x default E4
+	IILI9881_COMMAND(0x18,0xF4); // SH on ,0x default E4 
 
 	//=========================//
 	ILI9881_PAGE(0x04);
-	IILI9881_COMMAND(0x5D,0xAF); // VREG1 5.5V
+	IILI9881_COMMAND(0x5D,0xAF); // VREG1 5.5V 
 	IILI9881_COMMAND(0x5E,0xAF); // VREG2 5.5V
-	IILI9881_COMMAND(0x60,0x9B); // VCM1
-	IILI9881_COMMAND(0x62,0x9B); // VCM2
-	IILI9881_COMMAND(0x82,0x38); // VREF_VGH_MOD_CLPSEL 16V
-	IILI9881_COMMAND(0x84,0x38); // VREF_VGH_DC 16V
-	IILI9881_COMMAND(0x86,0x18); // VREF_VGL_CLPSEL -10V
+	IILI9881_COMMAND(0x60,0x9B); // VCM1 
+	IILI9881_COMMAND(0x62,0x9B); // VCM2 
+	IILI9881_COMMAND(0x82,0x38); // VREF_VGH_MOD_CLPSEL 16V 
+	IILI9881_COMMAND(0x84,0x38); // VREF_VGH_DC 16V     
+	IILI9881_COMMAND(0x86,0x18); // VREF_VGL_CLPSEL -10V       
 	IILI9881_COMMAND(0x66,0xC4); // VGH_AC x4 ,0xdefault :04
 	IILI9881_COMMAND(0xC1,0xF0); // VGH_DC x4 ,0xdefault :70
 	IILI9881_COMMAND(0x70,0x60);
@@ -286,8 +286,8 @@ static int ili9881d_prepare(struct drm_panel *panel)
 	ILI9881_PAGE(0x05);
 	IILI9881_COMMAND(0x22,0x3A); // RGB to BGR
 
-	ILI9881_PAGE(0x00);
-	IILI9881_COMMAND(0x35,0x00);
+	ILI9881_PAGE(0x00);     
+	IILI9881_COMMAND(0x35,0x00);           
 
 	IILI9881_COMMAND(0x11);
 	msleep(120);

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * This is a linux kernel driver for MIPI-DSI
+ * This is a linux kernel driver for MIPI-DSI 
  * panel with touch panel attached to I2C bus.
  *
  * Copyright (c) 2020 Seeed Studio
@@ -8,9 +8,7 @@
  *
  * I2C slave address: 0x45
  */
-
 #include "mipi_dsi.h"
-#include <linux/err.h>
 
 #define MIPI_DSI_DRIVER_NAME		"mipi_dsi"
 
@@ -57,7 +55,7 @@
 	mutex_unlock(&md->mutex);
 
 	if (NULL == buf) {
-		return data_buf[0];
+		return data_buf[0];	
 	}
 	else {
 		return ret;
@@ -100,7 +98,7 @@ static struct mipi_dsi_driver mipi_dsi_driver = {
 
 
 /* mipi device */
-struct mipi_dsi_device *mipi_dsi_device(struct device *dev)
+static struct mipi_dsi_device *mipi_dsi_device(struct device *dev)
 {
 	struct mipi_dsi_device *dsi = NULL;
 	struct device_node *endpoint, *dsi_host_node;
@@ -140,7 +138,6 @@ struct mipi_dsi_device *mipi_dsi_device(struct device *dev)
 	}
 
 	of_node_put(endpoint);
-
 	dsi = mipi_dsi_device_register_full(host, &info);
 	if(IS_ERR(dsi)) {
 		dev_err(dev, "Can't device register_full!");
@@ -364,13 +361,13 @@ static int i2c_md_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
 	backlight_init(md);
 
 	ret = device_property_read_u32(dev, "mcu_auto_reset_enable", &md->mcu_auto_reset);
-	if(ret < 0){
+	if(ret < 0){	
 		dev_err(dev, "Can't get the data of mcu_auto_reset!\n");
 	}
 	i2c_md_write(md, REG_MCU_AUTO_RESET, (md->mcu_auto_reset&0xff));
 
 	ret = device_property_read_u32(dev, "tp_point_rotate", &md->tp_point_rotate);
-	if(ret < 0){
+	if(ret < 0){	
 		dev_err(dev, "Can't get the data of tp_point_rotate!\n");
 	}
 
