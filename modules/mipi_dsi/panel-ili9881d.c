@@ -38,15 +38,12 @@ static int ili9881d_get_modes(struct drm_panel *panel, struct drm_connector *con
 			drm_mode_vrefresh(mode));
 		return -ENOMEM;
 	}
-
-	drm_mode_set_name(mode);
-
 	mode->type = DRM_MODE_TYPE_DRIVER | DRM_MODE_TYPE_PREFERRED;
-
-	drm_mode_probed_add(connector, mode);
+	drm_mode_set_name(mode);
 
 	connector->display_info.width_mm = mode->width_mm;
 	connector->display_info.height_mm = mode->height_mm;
+	drm_mode_probed_add(connector, mode);
 
 	return 1;
 }

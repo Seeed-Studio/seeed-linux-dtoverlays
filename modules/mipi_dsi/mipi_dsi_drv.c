@@ -128,8 +128,7 @@ static struct mipi_dsi_device *mipi_dsi_device(struct device *dev)
 	of_node_put(dsi_host_node);
 	if (!host) {
 		dev_err(dev, "Can't find mipi_dsi_host!");
-		of_node_put(endpoint);
-		return NULL;
+		goto error;
 	}
 
 	info.node = of_graph_get_remote_port(endpoint);
