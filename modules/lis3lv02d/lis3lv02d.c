@@ -196,7 +196,7 @@ static void lis3lv02d_get_xyz(struct lis3lv02d *lis3, int *x, int *y, int *z)
 	for (i = 0; i < 3; i++)
 		position[i] = (position[i] * lis3->scale) / LIS3_ACCURACY;
 
-	*x = lis3lv02d_get_axis(lis3->ac.x, position);
+	*x = lis3lv02d_get_axis(lis3->ac.x, position) * (-1);
 	*y = lis3lv02d_get_axis(lis3->ac.y, position);
 	*z = lis3lv02d_get_axis(lis3->ac.z, position);
 }
