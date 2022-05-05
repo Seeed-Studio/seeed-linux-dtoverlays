@@ -22,6 +22,9 @@ static const struct drm_display_mode ili9881d_modes = {
 	.vsync_start= 1280 + 10,
 	.vsync_end	= 1280 + 10 + 20,
 	.vtotal		= 1280 + 10 + 20 + 30,
+
+	.width_mm	= 62,
+	.height_mm	= 110,
 };
 
 static int ili9881d_get_modes(struct drm_panel *panel, struct drm_connector *connector)
