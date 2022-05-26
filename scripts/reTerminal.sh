@@ -264,7 +264,7 @@ __EOF__
 
 function install {
   install_modules mipi_dsi ltr30x lis3lv02d bq24179_charger
-  install_overlay reTerminal reTerminal-bridge
+  install_overlay reTerminal
 
   # display
   cp -rfv ${RES_PATH}/plymouth/seeed/ /usr/share/plymouth/themes/ || exit 1;
@@ -290,7 +290,7 @@ function install {
 
 function uninstall {
   uninstall_modules mipi_dsi ltr30x lis3lv02d bq24179_charger
-  uninstall_overlay reTerminal reTerminal-bridge
+  uninstall_overlay reTerminal
 }
 
 
