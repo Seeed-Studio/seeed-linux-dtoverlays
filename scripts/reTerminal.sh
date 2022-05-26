@@ -249,6 +249,16 @@ function uninstall_overlay {
   rm -fv overlays/rpi/*.dtbo
 }
 
+function setup_overlay {
+  sed -i "/^dtoverlay=$1$/s//dtoverlay=$1,$2/" ${CFG_PATH}
+}
+
+#NOTICE: this function must be used
+# before the uninstall_overlay
+function unsetup_overlay {
+  sed -i "/^dtoverlay=$1,$2$/s//dtoverlay=$1/" ${CFG_PATH}
+}
+
 function usage() {
   cat <<-__EOF__
     usage: sudo ./scripts/reTerminal.sh [ --autoremove | --install ] [ -h | --help ]
@@ -265,6 +275,7 @@ __EOF__
 function install {
   install_modules mipi_dsi ltr30x lis3lv02d bq24179_charger
   install_overlay reTerminal
+  setup_overlay reTerminal tp_rotate=1
 
   # display
   cp -rfv ${RES_PATH}/plymouth/seeed/ /usr/share/plymouth/themes/ || exit 1;
@@ -290,6 +301,7 @@ function install {
 
 function uninstall {
   uninstall_modules mipi_dsi ltr30x lis3lv02d bq24179_charger
+  unsetup_overlay reTerminal tp_rotate=1
   uninstall_overlay reTerminal
 }
 
