@@ -278,6 +278,9 @@ function install {
   setup_overlay reTerminal tp_rotate=1
 
   # display
+  mkdir -p /usr/share/plymouth/themes/ \
+    /usr/share/X11/xorg.conf.d/ \
+    /etc/plymouth/ || exit 1;
   cp -rfv ${RES_PATH}/plymouth/seeed/ /usr/share/plymouth/themes/ || exit 1;
   cp -fv ${RES_PATH}/10-disp.conf /usr/share/X11/xorg.conf.d/ || exit 1;
   cp -fv ${RES_PATH}/plymouth/plymouthd.conf /etc/plymouth/ || exit 1;
