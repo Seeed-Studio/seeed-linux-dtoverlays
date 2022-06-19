@@ -274,7 +274,7 @@ __EOF__
 
 function install {
   install_modules mipi_dsi ltr30x lis3lv02d bq24179_charger
-  install_overlay reTerminal
+  install_overlay reTerminal reTerminal-bridge
   setup_overlay reTerminal tp_rotate=1
 
   # display
@@ -302,7 +302,7 @@ function install {
 function uninstall {
   uninstall_modules mipi_dsi ltr30x lis3lv02d bq24179_charger
   unsetup_overlay reTerminal tp_rotate=1
-  uninstall_overlay reTerminal
+  uninstall_overlay reTerminal reTerminal-bridge
 }
 
 
