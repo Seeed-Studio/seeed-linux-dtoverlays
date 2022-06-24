@@ -20,6 +20,12 @@
 		target = <&sdmmc3>;
 		__overlay__ {
 			status = "okay";
+
+			/**
+			 * We provide SD card function on carrier board, which supports CLK Frequency 48MHz.
+			 * Increasing CLK by yourself might cause certificates (such as CE/FCC) failure!
+			 */
+			max-clk-limit = <48000000>;
 		};
 	};
 };
