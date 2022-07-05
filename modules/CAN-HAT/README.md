@@ -4,13 +4,57 @@
 The drivers of [Raspberry pi  CAN HAT](https://www.seeedstudio.com/2-Channel-CAN-BUS-FD-Shield-for-Raspberry-Pi-p-4072.html) for Raspberry Pi.
 
 ### Install CAN-HAT
-Get the CAN-HAT  source code. and install all linux kernel drivers
+The is no need anymore to manually install or copy the drivers of CAN-HAT to ypur RPI since the drivers are already merged in the kernel and you only need to enable the HAT, but if you wish you can get a copy of the code with the following commands
 ```bash
 git clone https://github.com/Seeed-Studio/seeed-linux-dtoverlays
 cd seeed-linux-dtoverlays//modules/CAN-HAT
-sudo ./install.sh 
+```
+
+- **Step 1: **  Open **config.txt** file
+In the console type this comand to open the config file:
+```bash
+sudo nano /boot/config.txt
+```
+
+- **Step 2: ** Enable the HAT
+There are 3 types of this HAT
+- with controller MCP2517FD, no RTC available
+- with controller MCP2518FD, no RTC available
+- with controller MCP2518FD with RTC available
+
+The last one is easily distinguishable because it has a slot for a battery in order to keep the RTC clock running, if your board has RTC you need to add the following line at the end of the config.txt file:
+```bash
+dtoverlay=seeed-can-fd-hat-v2
+```
+
+If your board does not have the RTC module you need to add the following line at the bottom of the config.text file:
+```bash
+dtoverlay=seeed-can-fd-hat-v1
+```
+
+- **Step 3: ** Save your config file
+You can save the file with any of the shortucts available, the most common is to press **Ctrl** + *X* to attemp to close the file, the console will prompt you to save before closing the file, press **Y** and then **enter**.
+
+- **Step 4: ** Reboot
+Just perform a reboot either with your mouse (If you have a screen connected) or with this command:
+```bash
 sudo reboot
 ```
+
+- **Step 5: ** Install the **can-utils** library
+First make sure your RPI is updated
+```bash
+sudo apt update
+```
+
+Then install the can library
+```bash
+sudo apt install can-utils
+```
+
+** Your Raspberry is ready!**
+
+
 
 ## Raspberry pi  CAN HAT
 
