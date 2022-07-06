@@ -4,7 +4,7 @@
 The drivers of [Raspberry pi  CAN HAT](https://www.seeedstudio.com/2-Channel-CAN-BUS-FD-Shield-for-Raspberry-Pi-p-4072.html) for Raspberry Pi.
 
 ### Install CAN-HAT
-The is no need anymore to manually install or copy the drivers of CAN-HAT to ypur RPI since the drivers are already merged in the kernel and you only need to enable the HAT, but if you wish you can get a copy of the code with the following commands
+The is no need anymore to manually install or copy the drivers of CAN-HAT to your RPI since the drivers are already merged in the kernel and you only need to enable the HAT, but if you wish you can get a copy of the code with the following commands
 ```bash
 git clone https://github.com/Seeed-Studio/seeed-linux-dtoverlays
 cd seeed-linux-dtoverlays//modules/CAN-HAT
@@ -34,7 +34,7 @@ dtoverlay=seeed-can-fd-hat-v1
 ```
 
 - **Step 3**: Save your config file
-You can save the file with any of the shortucts available, the most common is to press **Ctrl** + *X* to attemp to close the file, the console will prompt you to save before closing the file, press **Y** and then **enter**.
+You can save the file with any of the shortucts available, the most common is to press **Ctrl** + **X** to attemp to close the file, the console will prompt you to save before closing the file, press **Y** and then **enter**.
 
 - **Step 4**: Reboot
 Just perform a reboot either with your mouse (If you have a screen connected) or with this command:
@@ -416,7 +416,7 @@ For version with RTC:
 dtoverlay=seeed-can-fd-hat-v2
 ```
 
-Then press **ctrl** + **X** and the console will prompt you to save the file, press **Y** to save and close the file
+Then press **Ctrl** + **X** and the console will prompt you to save the file, press **Y** to save and close the file
 
 If you also want to remove the can-utils library, type this command
 
