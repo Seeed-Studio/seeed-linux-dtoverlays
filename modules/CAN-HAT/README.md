@@ -10,13 +10,14 @@ git clone https://github.com/Seeed-Studio/seeed-linux-dtoverlays
 cd seeed-linux-dtoverlays//modules/CAN-HAT
 ```
 
-- **Step 1: **  Open **config.txt** file
+- **Step 1**:  Open **config.txt** file
 In the console type this comand to open the config file:
 ```bash
 sudo nano /boot/config.txt
 ```
 
-- **Step 2: ** Enable the HAT
+- **Step 2**: Enable the HAT
+
 There are 3 types of this HAT
 - with controller MCP2517FD, no RTC available
 - with controller MCP2518FD, no RTC available
@@ -32,16 +33,16 @@ If your board does not have the RTC module you need to add the following line at
 dtoverlay=seeed-can-fd-hat-v1
 ```
 
-- **Step 3: ** Save your config file
+- **Step 3**: Save your config file
 You can save the file with any of the shortucts available, the most common is to press **Ctrl** + *X* to attemp to close the file, the console will prompt you to save before closing the file, press **Y** and then **enter**.
 
-- **Step 4: ** Reboot
+- **Step 4**: Reboot
 Just perform a reboot either with your mouse (If you have a screen connected) or with this command:
 ```bash
 sudo reboot
 ```
 
-- **Step 5: ** Install the **can-utils** library
+- **Step 5**: Install the **can-utils** library
 First make sure your RPI is updated
 ```bash
 sudo apt update
@@ -52,7 +53,7 @@ Then install the can library
 sudo apt install can-utils
 ```
 
-** Your Raspberry is ready!**
+**Your Raspberry is ready!**
 
 
 
@@ -60,8 +61,10 @@ sudo apt install can-utils
 
 [![](https://github.com/SeeedDocument/2-Channel-CAN-BUS-FD-Shield-for-Raspberry-Pi/raw/master/img/block.jpg)](https://www.seeedstudio.com/2-Channel-CAN-BUS-FD-Shield-for-Raspberry-Pi-p-4072.html)
 
+[![](https://files.seeedstudio.com/wiki/CAN-BUS-FD/CANBUS_REVIEW.png)](https://wiki.seeedstudio.com/2-Channel-CAN-BUS-FD-Shield-for-Raspberry-Pi/)
 
-Check the kernel log to see if MCP2517 was initialized successfully.You will also see can0 and can1 appear in the list of ifconfig results
+
+Check the kernel log to see if MCP2517/MCP2518 was initialized successfully.You will also see can0 and can1 appear in the list of ifconfig results
 
 ```bash
 pi@raspberrypi:~ $ dmesg | grep spi
@@ -130,16 +133,29 @@ The hardware is wired to can0 and can1 interface.
 
 0_H  <===> 1_H
 
-Open two terminal windows and enter the following commands in the Windows to test can fd protocol.
+Open two terminal windows and enter the following commands in the one console window to test can fd protocol, this will generate random data and will send it through CAN0.
 ```bash
 #send data
 cangen can0 -mv 
 ```
 
+Then to monitor the data in the bus, in the second console you will set CAN1 in reading/monitor mode with this command
 ```bash
 #dump data
 candump can1 
 ```
+
+To stop sending commands or monitoring, select the respective console and press **CTRL** + **C**.
+
+If you want to send a specific data, you need to specify the Arbitration ID and the data separated by a '#'
+
+```bash
+cansend can0 015#001122334455AABB
+```
+
+You should see the can message in the console where you are monitoring or any other device connected to the bus.
+
+
 #### Communicate with [CAN_BUS_Shield](https://www.seeedstudio.com/CAN-BUS-Shield-V2-p-2921.html)
 ![](https://github.com/Seeed-Studio/pi-hats/raw/master/images/can_hat_and_arduinno_hardware.jpg) 
 
@@ -383,13 +399,34 @@ producer(10)
 ```
 ### uninstall CAN-HAT
 
+If you wish to disable your CAN-HAT you need to edit again the config.txt file 
+
+In the console type this comand to open the config file:
+```bash
+sudo nano /boot/config.txt
 ```
-pi@raspberrypi:~/pi-hats/CAN-HAT $ sudo ./uninstall.sh 
-...
-------------------------------------------------------
-Please reboot your raspberry pi to apply all settings
-Thank you!
-------------------------------------------------------
+
+For versions without RTC:
+```bash
+dtoverlay=seeed-can-fd-hat-v1
+```
+
+For version with RTC:
+```bash
+dtoverlay=seeed-can-fd-hat-v2
+```
+
+Then press **ctrl** + **X** and the console will prompt you to save the file, press **Y** to save and close the file
+
+If you also want to remove the can-utils library, type this command
+
+```bash
+sudo apt-get purge --auto-remove can-utils
+```
+
+You need to reboot your RPI to apply all changes
+```
+sudo reboot
 ```
 
 
