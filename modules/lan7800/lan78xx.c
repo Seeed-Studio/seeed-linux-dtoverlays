@@ -3508,8 +3508,6 @@ static void lan78xx_skb_return(struct lan78xx_net *dev, struct sk_buff *skb)
 
 	gro_result = napi_gro_receive(&dev->napi, skb);
 
-	if (gro_result == GRO_DROP)
-		netif_dbg(dev, rx_err, dev->net, "GRO packet dropped\n");
 }
 
 static int lan78xx_rx(struct lan78xx_net *dev, struct sk_buff *skb,
