@@ -1,0 +1,148 @@
+/*
+ * Copyright (C) 2021 Seeed Studio
+ * Zhangqun Ming <north_sea@qq.com>
+ *
+ * MIT License
+ *
+ */
+/dts-v1/;
+/plugin/;
+
+/ {
+    compatible = "brcm,bcm2835", "brcm,bcm2708", "brcm,bcm2709", "brcm,bcm2711";
+
+    fragment@0 {
+        target-path="/";
+        __overlay__ {
+            hardware = "reTerminal plus V1.0";
+        };
+    };
+
+	fragment@1 {
+		target = <&i2c1>;
+		__overlay__ {
+			status = "okay";
+
+			/* this is the configuration part */
+			clock-frequency = <300000>;
+
+			#address-cells = <1>;
+			#size-cells = <0>;
+			
+			pcf857x: pcf@21 {
+				compatible = "nxp,pcf8575";
+				reg = <0x21>;
+				status = "okay";
+
+				gpio-controller;
+				#gpio-cells = <2>;
+
+			};
+
+			ltr303@29 {
+				compatible = "liteon,ltr303";
+				reg = <0x29>;
+				status = "okay";
+			};
+			
+		};
+	};
+	
+	fragment@2 {
+		target = <&gpio>;
+		__overlay__ {
+			power_key: power_key {
+				brcm,pins = <13>;    /* gpio number */
+				brcm,function = <0>; /* 0 = input, 1 = output */
+				brcm,pull = <2>;     /* 0 = none, 1 = pull down, 2 = pull up */
+			};
+
+			pcf857x_pins: pcf857x_pins@21 {
+				brcm,pins = <6>;     /* gpio number */
+				brcm,function = <0>; /* 0 = input, 1 = output */
+				brcm,pull = <2>;     /* 0 = none, 1 = pull down, 2 = pull up */
+			};
+		};
+	};
+
+	fragment@3 {
+		target = <&pcf857x>;
+		mcp23008_irq: __overlay__ {
+			#interrupt-cells=<2>;
+			interrupt-parent = <&gpio>;
+			interrupts = <6 2>; /* IRQ_TYPE_EDGE_FALLING */
+			interrupt-controller;
+			//microchip,irq-mirror;
+		};
+	};
+
+	fragment@4 {
+		target = <&dsi1>;
+		__overlay__ {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			status = "okay";
+
+			port {
+				dsi_out_port: endpoint {
+					remote-endpoint = <&panel_dsi_port>;
+				};
+			};
+			mipi_dsi: mipi_dsi@45 {
+				compatible = "nwe,nwe080";
+				reg = <0>;
+
+				//backlight=<&gpio 13 0>;
+				reset-gpios=<&pcf857x 10 0>;
+
+				port {
+					panel_dsi_port: endpoint {
+						remote-endpoint = <&dsi_out_port>;
+					};
+				};
+			};
+		};
+	};
+
+	fragment@5 {
+		target = <&i2c3>;
+		__overlay__ {
+			status = "okay";
+
+			/* this is the configuration part */
+			clock-frequency = <100000>;
+
+			#address-cells = <1>;
+			#size-cells = <0>;
+			
+			pcf8563@51 {
+				compatible = "nxp,pcf8563";
+				reg = <0x51>;
+			};
+		};
+	};
+
+	fragment@6 {
+		target = <&leds>;
+		__overlay__ {
+			compatible = "gpio-leds";
+
+                        usr_led1: usr_led1 {
+                                label = "lcd-pwr";
+                                linux,default-trigger = "default-off";
+                                gpios = <&pcf857x 8 0>;
+                                default-state = "on";
+                        };
+
+			usr_led2: usr_led2 {
+				label = "lcd-pwm";
+				linux,default-trigger = "default-off";
+				gpios = <&gpio 13 0>;				
+				default-state = "on";
+			};
+		};
+	};
+	__overrides__ {
+	};
+};
+
