@@ -51,16 +51,16 @@
 	fragment@2 {
 		target = <&gpio>;
 		__overlay__ {
-			power_key: power_key {
-				brcm,pins = <13>;    /* gpio number */
-				brcm,function = <0>; /* 0 = input, 1 = output */
-				brcm,pull = <2>;     /* 0 = none, 1 = pull down, 2 = pull up */
-			};
 
 			pcf857x_pins: pcf857x_pins@21 {
 				brcm,pins = <6>;     /* gpio number */
 				brcm,function = <0>; /* 0 = input, 1 = output */
 				brcm,pull = <2>;     /* 0 = none, 1 = pull down, 2 = pull up */
+			};
+
+			pwm_pins: pwm_pins {
+				brcm,pins = <13>;
+				brcm,function = <4>; // ALT0
 			};
 		};
 	};
@@ -92,8 +92,8 @@
 				compatible = "nwe,nwe080";
 				reg = <0>;
 
-				//backlight=<&gpio 13 0>;
-				reset-gpios=<&pcf857x 10 0>;
+				backlight = <&lcd_backlight>;
+				reset-gpios=<&pcf857x 15 1>;
 
 				port {
 					panel_dsi_port: endpoint {
@@ -127,21 +127,65 @@
 		__overlay__ {
 			compatible = "gpio-leds";
 
-                        usr_led1: usr_led1 {
-                                label = "lcd-pwr";
-                                linux,default-trigger = "default-off";
-                                gpios = <&pcf857x 8 0>;
-                                default-state = "on";
-                        };
-
-			usr_led2: usr_led2 {
-				label = "lcd-pwm";
+			lcd_pwr_en: lcd_pwr_en {
+				label = "lcd-pwr";
 				linux,default-trigger = "default-off";
-				gpios = <&gpio 13 0>;				
+				gpios = <&pcf857x 8 0>;
+				default-state = "on";
+			};
+
+			usr_led10: usr_led10 {
+				label = "usr-led";
+				linux,default-trigger = "default-off";
+				gpios = <&pcf857x 9 0>;
 				default-state = "on";
 			};
 		};
 	};
+
+	fragment@7 {
+			target = <&pwm>;
+			frag1: __overlay__ {
+					pinctrl-names = "default";
+					pinctrl-0 = <&pwm_pins>;
+					assigned-clock-rates = <1000000>;
+					status = "okay";
+			};
+	};
+
+	fragment@8 {
+			target-path = "/";
+			__overlay__ {
+					lcd_backlight: lcd_backlight {
+							compatible = "pwm-backlight";
+							brightness-levels = <0 6 8 12 16 24 32 40 48 64 96 128 160 192 224 255>;
+							default-brightness-level = <14>;
+							pwms = <&pwm 1 200000>;
+							power-supply = <&vdd_3v3_reg>;
+							status = "okay";
+					};
+			};
+	};
+
+	fragment@9 {
+		target = <&i2c0>;
+		__overlay__ {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			status = "okay";
+
+			 gt9271: gt9271@5d {
+				compatible = "goodix,gt9271";
+				reg = <0x5d>;
+				interrupt-parent = <&pcf857x>;
+				interrupts = <10 2>; // high-to-low edge triggered
+				irq-gpios = <&pcf857x 10 0>;
+				reset-gpios = <&pcf857x 7 0>;
+				touchscreen-inverted-x;
+			};
+		};
+	};
+
 	__overrides__ {
 	};
 };
