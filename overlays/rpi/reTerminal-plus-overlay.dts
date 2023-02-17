@@ -140,6 +140,13 @@
 				gpios = <&pcf857x 9 0>;
 				default-state = "off";
 			};
+
+			usr_buzzer: usr_buzzer {
+				label = "usr-buzzer";
+				linux,default-trigger = "default-off";
+				gpios = <&pcf857x 11 0>;
+				default-state = "off";
+			};
 		};
 	};
 
