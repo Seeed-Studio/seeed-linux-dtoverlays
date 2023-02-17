@@ -111,6 +111,11 @@
 				compatible = "nxp,pcf8563";
 				reg = <0x51>;
 			};
+			
+			eeprom@50 {
+				compatible = "atmel,24c32";
+				reg = <0x50>;
+			};
 		};
 	};
 
