@@ -30,7 +30,7 @@
 			#size-cells = <0>;
 			
 			pcf857x: pcf@21 {
-				compatible = "nxp,pcf8575";
+				compatible = "nxp,pca9535";
 				reg = <0x21>;
 				status = "okay";
 
@@ -139,6 +139,13 @@
 				gpios = <&pcf857x 11 0>;
 				default-state = "off";
 			};
+
+			audio_pwr_en: audio_pwr_en {
+					label = "audio-pwr";
+					linux,default-trigger = "default-off";
+					gpios = <&pcf857x 12 0>; /* Enable Audio power (AUDIO_PWR_EN ) */
+					default-state = "on";
+			};
 		};
 	};
 
@@ -231,7 +238,65 @@
 			};
 	};
 
+	fragment@e {
+		target-path="/";
+		__overlay__ {
 
+			tlv320aic3104_mclk: tlv320aic3104_mclk {
+					#clock-cells = <0>;
+					compatible = "fixed-clock";
+					clock-frequency = <24576000>;
+			};
+		};
+	};
+
+	fragment@f {
+		target = <&i2c1>;
+		__overlay__ {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			clock-frequency = <100000>;
+			status = "okay";
+
+			tlv320aic3104: tlv320aic3104@18 {
+					#sound-dai-cells = <0>;
+					compatible = "ti,tlv320aic3104";
+					reg = <0x18>;
+					//reset-gpios = <&pcf857x 13 0>;
+					ai3x-micbias-vg = <2>; // set MICBIAS to 2.5v
+			};
+		};
+	};
+
+	fragment@10 {
+		target = <&sound>;
+		slave_overlay: __overlay__ {
+			compatible = "simple-audio-card";
+			simple-audio-card,format = "dsp_b";
+			simple-audio-card,name = "seeed2micvoicec";
+			status = "okay";
+
+			simple-audio-card,widgets =
+					"Headphone", "Headphone Jack",
+					"Line", "Line In";
+			simple-audio-card,routing =
+					"Headphone Jack",       "HPLOUT",
+					"Headphone Jack",       "HPROUT",
+					"LINE1L",               "Line In",
+					"LINE1R",               "Line In";
+			simple-audio-card,bitclock-inversion;
+			
+			simple-audio-card,cpu {
+					sound-dai = <&i2s>;
+			};
+			sound_master: simple-audio-card,codec {
+							#sound-dai-cells = <0>;
+							sound-dai = <&tlv320aic3104>;
+							clocks = <&tlv320aic3104_mclk>;
+							clock-names = "mclk";
+			};
+		};
+	};
 
 	__overrides__ {
 	};
