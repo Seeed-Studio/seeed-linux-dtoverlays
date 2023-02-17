@@ -36,7 +36,10 @@
 
 				gpio-controller;
 				#gpio-cells = <2>;
-
+				#interrupt-cells=<2>;
+				interrupt-parent = <&gpio>;
+				interrupts = <6 2>; /* IRQ_TYPE_EDGE_FALLING */
+				interrupt-controller;
 			};
 
 			ltr303@29 {
@@ -62,17 +65,6 @@
 				brcm,pins = <13>;
 				brcm,function = <4>; // ALT0
 			};
-		};
-	};
-
-	fragment@3 {
-		target = <&pcf857x>;
-		mcp23008_irq: __overlay__ {
-			#interrupt-cells=<2>;
-			interrupt-parent = <&gpio>;
-			interrupts = <6 2>; /* IRQ_TYPE_EDGE_FALLING */
-			interrupt-controller;
-			//microchip,irq-mirror;
 		};
 	};
 
@@ -192,6 +184,54 @@
 			};
 		};
 	};
+
+	fragment@a {
+			target = <&spidev1>;
+			__overlay__ {
+					status = "disabled";
+			};
+	};
+
+	fragment@b {
+			target = <&gpio>;
+			__overlay__ {
+					mcp251xfd_pins_0: mcp251xfd_spi0_0_pins {
+							brcm,pins = <12>;
+							brcm,function = <0>;//BCM2835_FSEL_GPIO_IN 
+					};
+			};
+	};
+	
+	fragment@c {
+			target-path = "/clocks";
+			__overlay__ {
+					clk_mcp251xfd_osc_0: mcp251xfd-spi0-0-osc {
+							#clock-cells = <0>;
+							compatible = "fixed-clock";
+							clock-frequency = <40000000>;
+					};
+			};
+	};
+	fragment@d {
+			target = <&spi0>;
+			__overlay__ {
+					status = "okay";
+					#address-cells = <1>;
+					#size-cells = <0>;
+					mcp251xfd@0 {
+							compatible = "microchip,mcp251xfd";
+							reg = <0>;
+							pinctrl-names = "default";
+							pinctrl-0 = <&mcp251xfd_pins_0>;
+							spi-max-frequency = <20000000>;
+							interrupt-parent = <&gpio>;
+							interrupts = <12 8>;//IRQ_TYPE_LEVEL_LOW 
+							clocks = <&clk_mcp251xfd_osc_0>;
+					};
+			};
+	};
+
+
 
 	__overrides__ {
 	};
