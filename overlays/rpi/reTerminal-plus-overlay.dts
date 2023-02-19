@@ -204,6 +204,13 @@
 			};
 	};
 
+	fragment@a1 {
+			target = <&spidev0>;
+			__overlay__ {
+					status = "disabled";
+			};
+	};
+
 	fragment@b {
 			target = <&gpio>;
 			__overlay__ {
