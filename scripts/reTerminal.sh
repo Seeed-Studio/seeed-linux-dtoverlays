@@ -204,10 +204,6 @@ function install_overlay {
     echo "dtoverlay=vc4-kms-v3d-pi4" >> $CFG_PATH
   grep -q "^dtoverlay=i2c3,pins_4_5$" $CFG_PATH || \
     echo "dtoverlay=i2c3,pins_4_5" >> $CFG_PATH
-  grep -q "^dtoverlay=i2c1,pins_2_3$" $CFG_PATH || \
-    echo "dtoverlay=i2c1,pins_2_3" >> $CFG_PATH
-  grep -q "^dtoverlay=i2c0,pins_44_45$" $CFG_PATH || \
-    echo "dtoverlay=i2c0,pins_44_45" >> $CFG_PATH
   grep -q "^gpio=13=pu$" $CFG_PATH || \
     echo "gpio=13=pu" >> $CFG_PATH
 
@@ -240,8 +236,6 @@ function uninstall_overlay {
   sed -i "/^ignore_lcd=1$/d" ${CFG_PATH}
   sed -i "/^dtoverlay=vc4-kms-v3d-pi4$/d" ${CFG_PATH}
   sed -i "/^dtoverlay=i2c3,pins_4_5$/d" ${CFG_PATH}
-  sed -i "/^dtoverlay=i2c0,pins_44_45$/d" ${CFG_PATH}
-  sed -i "/^dtoverlay=i2c1,pins_2_3$/d" ${CFG_PATH}
   sed -i "/^gpio=13=pu$/d" ${CFG_PATH}
 
   for i
@@ -279,9 +273,9 @@ __EOF__
 }
 
 function install {
-  install_modules ltr30x lis3lv02d bq24179_charger
-  install_overlay reTerminal-plus
-  #setup_overlay reTerminal tp_rotate=1
+  install_modules mipi_dsi ltr30x lis3lv02d bq24179_charger
+  install_overlay reTerminal reTerminal-bridge
+  setup_overlay reTerminal tp_rotate=1
 
   # display
  if ! [[ -d "/usr/share/plymouth/themes/" && -d "/usr/share/X11/xorg.conf.d/" && -d "/etc/plymouth/" ]];
@@ -312,9 +306,9 @@ function install {
 }
 
 function uninstall {
-  uninstall_modules ltr30x lis3lv02d bq24179_charger
-  #unsetup_overlay reTerminal tp_rotate=1
-  uninstall_overlay reTerminal-plus
+  uninstall_modules mipi_dsi ltr30x lis3lv02d bq24179_charger
+  unsetup_overlay reTerminal tp_rotate=1
+  uninstall_overlay reTerminal reTerminal-bridge
 }
 
 

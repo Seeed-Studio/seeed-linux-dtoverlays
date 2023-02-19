@@ -124,12 +124,12 @@
 		__overlay__ {
 			compatible = "gpio-leds";
 
-			lcd_pwr_en: lcd_pwr_en {
-				label = "lcd-pwr";
-				linux,default-trigger = "default-off";
-				gpios = <&pcf857x 8 0>;
-				default-state = "on";
-			};
+                        lcd_pwr_en: lcd_pwr_en {
+                                label = "lcd-pwr";
+                                linux,default-trigger = "default-off";
+                                gpios = <&pcf857x 8 0>;
+                                default-state = "on";
+                        };
 
 			usr_led10: usr_led10 {
 				label = "usr-led";
