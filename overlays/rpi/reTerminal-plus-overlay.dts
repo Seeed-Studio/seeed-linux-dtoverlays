@@ -24,7 +24,7 @@
 			status = "okay";
 
 			/* this is the configuration part */
-			clock-frequency = <300000>;
+			clock-frequency = <400000>;
 
 			#address-cells = <1>;
 			#size-cells = <0>;
@@ -260,7 +260,7 @@
 		__overlay__ {
 			#address-cells = <1>;
 			#size-cells = <0>;
-			clock-frequency = <100000>;
+			clock-frequency = <400000>;
 			status = "okay";
 
 			tlv320aic3104: tlv320aic3104@18 {
