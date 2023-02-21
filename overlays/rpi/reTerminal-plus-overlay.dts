@@ -188,9 +188,9 @@
 			 gt9271: gt9271@5d {
 				compatible = "goodix,gt9271";
 				reg = <0x5d>;
-				interrupt-parent = <&pcf857x>;
-				interrupts = <10 2>; // high-to-low edge triggered
-				irq-gpios = <&pcf857x 10 0>;
+				interrupt-parent = <&gpio>;
+				interrupts = <27 2>; // high-to-low edge triggered
+				irq-gpios = <&gpio 27 0>;
 				reset-gpios = <&pcf857x 7 0>;
 				touchscreen-inverted-x;
 			};
