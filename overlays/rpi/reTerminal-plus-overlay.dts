@@ -179,7 +179,7 @@
 	};
 
 	fragment@9 {
-		target = <&i2c0>;
+		target = <&i2c_csi_dsi>; // The TP and CSI shared with the same I2C0 bus.
 		__overlay__ {
 			#address-cells = <1>;
 			#size-cells = <0>;
