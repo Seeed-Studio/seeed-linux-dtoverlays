@@ -65,6 +65,12 @@
 				brcm,pins = <13>;
 				brcm,function = <4>; // ALT0
 			};
+
+			tp_int_pin: tp_int_pin {
+				brcm,pins = <27>;     /* gpio number */
+				brcm,function = <0>; /* 0 = input, 1 = output */
+				brcm,pull = <0>;     /* 0 = none, 1 = pull down, 2 = pull up */
+			};
 		};
 	};
 
@@ -188,6 +194,8 @@
 			 gt9271: gt9271@5d {
 				compatible = "goodix,gt9271";
 				reg = <0x5d>;
+				pinctrl-names = "default";
+				pinctrl-0 = <&tp_int_pin>;
 				interrupt-parent = <&gpio>;
 				interrupts = <27 2>; // high-to-low edge triggered
 				irq-gpios = <&gpio 27 0>;
