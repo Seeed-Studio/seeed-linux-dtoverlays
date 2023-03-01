@@ -200,7 +200,8 @@
 				interrupts = <27 2>; // high-to-low edge triggered
 				irq-gpios = <&gpio 27 0>;
 				reset-gpios = <&pcf857x 7 0>;
-				touchscreen-inverted-x;
+				touchscreen-inverted-y;
+				touchscreen-swapped-x-y;
 			};
 		};
 	};
