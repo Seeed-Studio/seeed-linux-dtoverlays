@@ -87,7 +87,7 @@
 				};
 			};
 			mipi_dsi: mipi_dsi@45 {
-				compatible = "nwe,nwe080";
+				compatible = "gjx,gjx101c7";
 				reg = <0>;
 
 				backlight = <&lcd_backlight>;
