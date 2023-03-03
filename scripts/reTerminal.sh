@@ -166,6 +166,124 @@ function uninstall_modules {
   done
 }
 
+# set dtparam=$1=$2
+function set_config_dtparam {
+  if [ "`grep ".*dtparam=$1=.*$" ${CFG_PATH}`" ]; then
+    # item exist
+    sed -i "s/.*dtparam=$1=.*$/dtparam=$1=$2/g" ${CFG_PATH}
+  else
+    # not exist, apply new item
+    echo "dtparam=$1=$2" >> $CFG_PATH 
+  fi
+}
+
+# remove dtparam=$1=$2
+function remove_config_dtparam {
+  sed -i "/^dtparam=$1=$2$/d" ${CFG_PATH}
+}
+
+# set dtoverlay=$1
+function set_config_dtoverlay {
+  if [ "`grep ".*dtoverlay=$1$" ${CFG_PATH}`" ]; then
+    # item exist
+    sed -i "s/.*dtoverlay=$1$/dtoverlay=$1/g" ${CFG_PATH}
+  else
+    # not exist, apply new item
+    echo "dtoverlay=$1" >> $CFG_PATH 
+  fi
+}
+
+# remove dtoverlay=$1
+function remove_config_dtoverlay {
+  sed -i "/^dtoverlay=$1$/d" ${CFG_PATH}
+}
+
+# set $1=$2
+function set_config_value {
+  grep -q "^$1=$2$" $CFG_PATH || \
+    echo "$1=$2" >> $CFG_PATH
+}
+
+# remove $1=$2
+function remove_config_value {
+  sed -i "/^$1=$2$/d" ${CFG_PATH}
+}
+
+# apply new value on cmdline
+function set_cmdline_value {
+  grep -q "\b$1\b" $CLI_PATH || \
+    sed -i "s/$/& $1/g" $CLI_PATH
+}
+
+# remove value on cmdline
+function remove_cmdline_value {
+  sed -i "s/ *\b$1\b//g" $CLI_PATH
+}
+
+function install_overlay_DM {
+  # cmdline.txt
+  remove_cmdline_value "console=tty0"
+
+  set_cmdline_value "logo.nologo"
+  set_cmdline_value "vt.global_cursor_default=0"
+  set_cmdline_value "console=tty3"
+  set_cmdline_value "loglevel=0"
+
+  # config.txt
+  set_config_dtparam "i2c_arm" "on"
+  set_config_dtparam "i2c_vc" "on"
+  set_config_dtparam "i2s" "on"
+  set_config_dtparam "spi" "on"
+
+  set_config_value "enable_uart" "1"
+  set_config_value "dtparam" "ant2"
+  set_config_value "disable_splash" "1"
+  set_config_value "ignore_lcd" "1"
+
+  set_config_dtoverlay "dwc2,dr_mode=host"
+  set_config_dtoverlay "vc4-kms-v3d-pi4"
+  set_config_dtoverlay "i2c1,pins_2_3"
+  set_config_dtoverlay "i2c3,pins_4_5"
+  set_config_dtoverlay "imx219,cam0"
+
+  make overlays/rpi/reTerminal-plus-overlay.dtbo || exit 1;
+  cp -fv overlays/rpi/reTerminal-plus-overlay.dtbo $OVERLAY_DIR/reTerminal-plus.dtbo || exit 1;
+
+  set_config_dtoverlay "reTerminal-plus"
+}
+
+function uninstall_overlay_DM {
+  # cmdline.txt
+  remove_cmdline_value "logo.nologo"
+  remove_cmdline_value "vt.global_cursor_default=0"
+  remove_cmdline_value "console=tty3"
+  remove_cmdline_value "loglevel=0"
+
+  # config.txt
+  remove_config_dtparam "i2c_arm" "on"
+  remove_config_dtparam "i2c_vc" "on"
+  remove_config_dtparam "i2s" "on"
+  remove_config_dtparam "spi" "on"
+
+  remove_config_value "enable_uart" "1"
+  remove_config_value "dtparam" "ant2"
+  remove_config_value "disable_splash" "1"
+  remove_config_value "ignore_lcd" "1"
+  set -x
+  remove_config_dtoverlay "dwc2,dr_mode=host"
+  remove_config_dtoverlay "vc4-kms-v3d-pi4"
+  remove_config_dtoverlay "i2c1,pins_2_3"
+  remove_config_dtoverlay "i2c3,pins_4_5"
+  remove_config_dtoverlay "imx219,cam0"
+
+  rm -fv $OVERLAY_DIR/reTerminal-plus.dtbo || exit 1;
+  remove_config_dtoverlay "reTerminal-plus"
+
+  rm -fv overlays/rpi/.*.tmp
+  rm -fv overlays/rpi/.*.cmd
+  rm -fv overlays/rpi/*.dtbo
+}
+
 # Overlay
 function install_overlay {
   if [ $# -eq 0 ]; then
@@ -261,22 +379,30 @@ function unsetup_overlay {
 
 function usage() {
   cat <<-__EOF__
-    usage: sudo ./scripts/reTerminal.sh [ --autoremove | --install ] [ -h | --help ]
+    usage: sudo ./scripts/reTerminal.sh [ --autoremove | --install ] [ -h | --help ] [ --device <type>]
              default action is update kernel & headers to latest version.
              --compat-kernel uses an older kernel but ensures that the driver can work.
              --keep-kernel   don't change/update the system kernel, maybe install
                              coressponding kernel headers.
              --autoremove    used for automatic cleaning
+             --device <type>   specified device type. 
+                               if device is reTerminal-plus, type=reTerminal-plus
+                               if device is reTerminal, type=reTerminal
+                               the default device type value is reTerminal
              --help          show this help message
 __EOF__
   exit 1
 }
 
 function install {
-  install_modules mipi_dsi ltr30x lis3lv02d bq24179_charger
-  install_overlay reTerminal reTerminal-bridge
-  setup_overlay reTerminal tp_rotate=1
-
+  if [ "$device" = "reTerminal" ]; then
+    install_modules mipi_dsi ltr30x lis3lv02d bq24179_charger
+    install_overlay reTerminal reTerminal-bridge
+    setup_overlay reTerminal tp_rotate=1
+  elif [ "$device" = "reTerminal-plus" ]; then
+    install_modules ltr30x ili9881d
+    install_overlay_DM
+  fi
   # display
  if ! [[ -d "/usr/share/plymouth/themes/" && -d "/usr/share/X11/xorg.conf.d/" && -d "/etc/plymouth/" ]];
   then
@@ -289,15 +415,17 @@ function install {
   cp -fv ${RES_PATH}/plymouth/plymouthd.conf /etc/plymouth/ || exit 1;
 
   # audio
-  if [ -f "/var/lib/alsa/asound.state" ]; then
-    cp /var/lib/alsa/asound.state /var/lib/alsa/asound.state.bak
+  if [ "$device" = "reTerminal" ]; then
+    if [ -f "/var/lib/alsa/asound.state" ]; then
+      cp /var/lib/alsa/asound.state /var/lib/alsa/asound.state.bak
+    fi
+    if [ -f "/etc/asound.conf" ]; then
+      cp /etc/asound.conf /etc/asound.conf.bak
+    fi
+    cp ${MOD_PATH}/seeed-voicecard/wm8960_asound.state /var/lib/alsa/asound.state 
+    cp ${MOD_PATH}/seeed-voicecard/asound_2mic.conf /etc/asound.conf
+    alsactl -L restore
   fi
-  if [ -f "/etc/asound.conf" ]; then
-    cp /etc/asound.conf /etc/asound.conf.bak
-  fi
-  cp ${MOD_PATH}/seeed-voicecard/wm8960_asound.state /var/lib/alsa/asound.state 
-  cp ${MOD_PATH}/seeed-voicecard/asound_2mic.conf /etc/asound.conf
-  alsactl -L restore
 
   echo "------------------------------------------------------"
   echo "Please reboot your device to apply all settings"
@@ -306,9 +434,14 @@ function install {
 }
 
 function uninstall {
-  uninstall_modules mipi_dsi ltr30x lis3lv02d bq24179_charger
-  unsetup_overlay reTerminal tp_rotate=1
-  uninstall_overlay reTerminal reTerminal-bridge
+  if [ "$device" = "reTerminal" ]; then
+    uninstall_modules mipi_dsi ltr30x lis3lv02d bq24179_charger
+    unsetup_overlay reTerminal tp_rotate=1
+    uninstall_overlay reTerminal reTerminal-bridge
+  elif [ "$device" = "reTerminal-plus" ]; then
+    uninstall_modules ili9881d ltr30x
+    uninstall_overlay_DM
+  fi
 }
 
 
@@ -321,6 +454,7 @@ fi
 compat_kernel=
 keep_kernel=
 auto_remove=
+device="reTerminal"
 # parse commandline options
 while [ ! -z "$1" ] ; do
   case $1 in
@@ -335,10 +469,19 @@ while [ ! -z "$1" ] ; do
     ;;
   --autoremove)
     auto_remove=Y
+    ;;
+  --device)
+    shift
+    device=$1
 	;;
   esac
   shift
 done
+
+if [ "$device" != "reTerminal" ] && [ "$device" != "reTerminal-plus" ]; then
+  echo "Invalid device type. the type should be reTerminal or reTerminal-plus" 1>&2
+  exit 1;
+fi
 
 if [ "X$auto_remove" != "X" ]; then
   uninstall
