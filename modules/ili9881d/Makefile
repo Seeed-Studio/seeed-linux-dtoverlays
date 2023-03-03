@@ -4,6 +4,7 @@
 #
 # MIT License
 #
+KDIR ?=/lib/modules/$(shell uname -r)/build
 obj-m += ili9881d.o
 
 all:
