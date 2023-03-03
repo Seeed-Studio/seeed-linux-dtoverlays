@@ -198,6 +198,11 @@ function remove_config_dtoverlay {
   sed -i "/^dtoverlay=$1$/d" ${CFG_PATH}
 }
 
+# commit config value
+function commit_config_value {
+    sed -i "s/^$1$/#&/g" ${CFG_PATH}
+}
+
 # set $1=$2
 function set_config_value {
   grep -q "^$1=$2$" $CFG_PATH || \
@@ -250,6 +255,11 @@ function install_overlay_DM {
   cp -fv overlays/rpi/reTerminal-plus-overlay.dtbo $OVERLAY_DIR/reTerminal-plus.dtbo || exit 1;
 
   set_config_dtoverlay "reTerminal-plus"
+
+  # commit old parameters
+  commit_config_value "gpio=13=pu"
+  commit_config_value "dtoverlay=reTerminal,tp_rotate=1"
+  commit_config_value "dtoverlay=reTerminal-bridge"
 }
 
 function uninstall_overlay_DM {
