@@ -8,6 +8,8 @@
 /dts-v1/;
 /plugin/;
 
+#include <dt-bindings/pinctrl/pinctrl-tegra.h>
+
 / {
     overlay-name = "Jetson Seeed EEPROM";
 	jetson-header-name = "Jetson Orin NX EEPROM";
@@ -23,9 +25,29 @@
 			eeprom@57 {
                 compatible = "atmel,24c02";
                 reg = <0x57>;
-                pagesize = <0x10>;
+                pagesize = <0x08>;
             };
 		};
 	};
+
+	fragment@1 {
+        target = <&pinmux>;
+
+        __overlay__ {
+
+            internal_pinmux: internal_pin {
+
+                soc_gpio19_pg6 {
+                    nvidia,pins = "soc_gpio19_pg6";
+                    nvidia,function = "rsvd1";
+                    nvidia,pull = <TEGRA_PIN_PULL_DOWN>;
+                    nvidia,tristate = <TEGRA_PIN_ENABLE>;
+                    nvidia,enable-input = <TEGRA_PIN_ENABLE>;
+                    nvidia,lpdr = <TEGRA_PIN_DISABLE>;
+                };
+            };
+        };
+    };
+	
 };
 
