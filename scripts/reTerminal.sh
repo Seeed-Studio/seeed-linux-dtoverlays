@@ -48,7 +48,7 @@ function get_kernel_version() {
 function check_kernel_headers() {
   VER_RUN=$(get_kernel_version)
 
-  if [[ -e "/lib/modules/${VER_RUN}/build" ]]; then
+  if [ -d "/lib/modules/${VER_RUN}/build" ]; then
     echo KBUILD: "/lib/modules/${VER_RUN}/build"
 	return 0;
   fi
@@ -140,6 +140,7 @@ function install_modules {
     } || {
       echo "Can't compile with this kernel, aborting"
       echo "Please try to compile with the option --compat-kernel"
+      cat /var/lib/dkms/$mod/$ver/build/make.log
       exit 1
     }
 
@@ -522,7 +523,7 @@ which apt &>/dev/null; r=$?
 if [[ $r -eq 0 ]]; then
   echo -e "\n### Install required tool packages"
   apt-get update -y
-  apt-get -y install dkms
+  apt-get -y install dkms --no-install-recommends
 fi
 
 if [ "X$keep_kernel" != "X" ]; then

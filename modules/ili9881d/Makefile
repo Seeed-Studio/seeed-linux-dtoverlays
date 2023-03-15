@@ -1,17 +1,17 @@
-#
-# Zhenhua Liang <zhenhua.liang@seeed.cc>
-# Copyright (c) 2023 Seeed Studio
+# Zhangqun Ming <north_sea@qq.com>
+# Copyright (c) 2021 Seeed Studio
 #
 # MIT License
 #
-KDIR ?=/lib/modules/$(shell uname -r)/build
+KVERSION ?= $(shell uname -r)
+
 obj-m += ili9881d.o
 
 all:
-	make -C $(KDIR) M=$(PWD) modules
+	$(MAKE) -C /lib/modules/$(KVERSION)/build M=$(PWD) modules
 
 install:
-	make -C $(KDIR) M=$(PWD) modules_install
+	$(MAKE) -C /lib/modules/$(KVERSION)/build M=$(shell pwd) modules_install
 
 clean:
-	make -C $(KDIR) M=$(PWD) clean
+	$(MAKE) -C /lib/modules/$(KVERSION)/build M=$(PWD) clean
