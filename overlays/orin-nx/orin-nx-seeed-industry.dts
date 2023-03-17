@@ -1,0 +1,201 @@
+/*
+ * Copyright (C) 2022 Seeed Studio
+ *
+ * MIT License
+ *
+ */
+
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/interrupt-controller/irq.h>
+#include <dt-bindings/pinctrl/pinctrl-tegra.h>
+#include <dt-bindings/gpio/tegra234-gpio.h>
+
+/ {
+    overlay-name = "Jetson Seeed Industrial Overlay";
+	jetson-header-name = "Jetson Orin NX Industrial";
+	compatible = "nvidia,p3768-0000+p3767-0000", "nvidia,p3509-0000+p3767-0000", "nvidia,p3767-0000", "nvidia,tegra234", "nvidia,tegra23x";
+
+    fragment@0 {
+		target-path = "/i2c@c240000";
+
+		__overlay__ {
+            #address-cells = <1>;
+		    #size-cells = <0>;
+
+			gpio_xten: gpio_xten@21 {
+				compatible = "nxp,pca9535";
+				reg = <0x21>;
+                gpio-controller;
+                #gpio-cells = <2>;
+
+                interrupt-controller;
+                #interrupt-cells=<2>;
+
+                interrupt-parent = <&tegra_main_gpio>;
+                interrupts = <TEGRA234_MAIN_GPIO(N, 1) IRQ_TYPE_EDGE_FALLING>;
+
+				gpio-line-names =
+					"wl_dis"	 	,"hst_wake_wl",
+					"wl_wake_hst"	,"bt_dis",
+					"hst_wake_bt"	,"bt_wake_hst",
+					"spi0_rst_3v3"	,"gpio_pin7",
+					"can_120R_en"	,"M2B_PCIe_rst",
+					"USB_HUB_rst"	,"PCIe_ETH_rst",
+					"M2B_WOWWAN"	,"M2B_DPR_3V3",
+					"SIM_MUX_SEL"	,"gpio_pin15";
+
+				gpio-line-offsets = <0>, <1>, <2>, <3>, <4>, <5>, <6>, <7>, <8>, <9>, <10>, <11>, <12>, <13>, <14>, <15>;
+/*
+				gpio-defaults = <1 1 1 1 1 1 1 0 1 1 1 1 1 1 1 0>;
+				wl_dis {
+					gpio-hog;
+					gpios = <&gpio_xten 0 GPIO_ACTIVE_HIGH>;
+					default-state = <1>;
+				};
+
+				hst_wake_wl {
+					gpio-hog;
+					gpios = <&gpio_xten 1 GPIO_ACTIVE_HIGH>;
+					default-state = <1>;
+				};
+
+				wl_wake_hst {
+					gpio-hog;
+					gpios = <&gpio_xten 2 GPIO_ACTIVE_HIGH>;
+					default-state = <1>;
+				};
+
+				bt_dis {
+					gpio-hog;
+					gpios = <&gpio_xten 3 GPIO_ACTIVE_HIGH>;
+					default-state = <1>;
+				};
+
+				hst_wake_bt {
+					gpio-hog;
+					gpios = <&gpio_xten 4 GPIO_ACTIVE_HIGH>;
+					default-state = <1>;
+				};
+
+				bt_wake_hst {
+					gpio-hog;
+					gpios = <&gpio_xten 5 GPIO_ACTIVE_HIGH>;
+					default-state = <1>;
+				};
+
+				spi0_rst_3v3 {
+					gpio-hog;
+					gpios = <&gpio_xten 6 GPIO_ACTIVE_HIGH>;
+					default-state = <1>;
+				};
+
+				gpio_pin7 {
+					gpio-hog;
+					gpios = <&gpio_xten 7 GPIO_ACTIVE_LOW>;
+					default-state = <0>;
+				};
+*/
+			};
+		};
+	};
+
+
+	fragment@1 {
+		target = <&gen1_i2c>;
+
+		__overlay__ {
+            #address-cells = <1>;
+		    #size-cells = <0>;
+
+			eeprom@57 {
+                compatible = "atmel,24c02";
+                reg = <0x57>;
+                pagesize = <0x08>;
+            };
+		};
+	};
+
+/*
+	// There is no rfkill-wlan.c in Jetson kernel source.
+	fragment@2 {
+		target-path = "/";
+
+		__overlay__ {
+            wcn_wifi: wireless-wlan {
+				compatible = "wlan-platdata";
+				wifi_chip_type = "8723du";
+				keep_wifi_power_on;
+				WIFI,poweren_gpio = <&gpio_xten 0 GPIO_ACTIVE_HIGH>;
+				WIFI,reset_n = <&gpio_xten 1 GPIO_ACTIVE_HIGH>;
+				status = "okay";
+			};
+		};
+	};
+*/
+
+	fragment@3 {
+		target-path = "/";
+
+		__overlay__ {
+
+				wl_dis: gpio_xten_pin@0 {
+					compatible = "regulator-fixed";
+					regulator-name = "wl_dis";
+					gpios = <&gpio_xten 0 GPIO_ACTIVE_HIGH>;
+//					enable-active-high;
+				};
+
+				hst_wake_wl: gpio_xten_pin@1 {
+					compatible = "regulator-fixed";
+					regulator-name = "hst_wake_wl";
+					gpios = <&gpio_xten 1 GPIO_ACTIVE_HIGH>;
+//					enable-active-high;
+				};
+
+				wl_wake_hst: gpio_xten_pin@2 {
+					compatible = "regulator-fixed";
+					regulator-name = "wl_wake_hst";
+					gpios = <&gpio_xten 2 GPIO_ACTIVE_HIGH>;
+//					enable-active-high;
+				};
+
+				bt_dis: gpio_xten_pin@3 {
+					compatible = "regulator-fixed";
+					regulator-name = "bt_dis";
+					gpios = <&gpio_xten 3 GPIO_ACTIVE_HIGH>;
+//					enable-active-high;
+				};
+
+				hst_wake_bt: gpio_xten_pin@4 {
+					compatible = "regulator-fixed";
+					regulator-name = "hst_wake_bt";
+					gpios = <&gpio_xten 4 GPIO_ACTIVE_HIGH>;
+//					enable-active-high;
+				};
+
+				bt_wake_hst: gpio_xten_pin@5 {
+					compatible = "regulator-fixed";
+					regulator-name = "bt_wake_hst";
+					gpios = <&gpio_xten 5 GPIO_ACTIVE_HIGH>;
+//					enable-active-high;
+				};
+
+				spi0_rst_3v3: gpio_xten_pin@6 {
+					compatible = "regulator-fixed";
+					regulator-name = "spi0_rst_3v3";
+					gpios = <&gpio_xten 6 GPIO_ACTIVE_HIGH>;
+//					enable-active-high;
+				};
+
+				gpio_pin7: gpio_xten_pin@7 {
+					compatible = "regulator-fixed";
+					regulator-name = "gpio_pin7";
+					gpios = <&gpio_xten 7 GPIO_ACTIVE_LOW>;
+				};
+		};
+	};
+
+};
+
