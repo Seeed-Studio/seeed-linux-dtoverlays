@@ -47,6 +47,7 @@ function get_kernel_version() {
 # Check headers
 function check_kernel_headers() {
   VER_RUN=$(get_kernel_version)
+  return 1;
 
   if [ -d "/lib/modules/${VER_RUN}/build" ]; then
     echo KBUILD: "/lib/modules/${VER_RUN}/build"
