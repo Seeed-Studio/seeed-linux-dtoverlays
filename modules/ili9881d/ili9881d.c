@@ -499,14 +499,13 @@ static int ili9881d_dsi_probe(struct mipi_dsi_device *dsi)
 	return ret;
 }
 
-static int ili9881d_dsi_remove(struct mipi_dsi_device *dsi)
+static void ili9881d_dsi_remove(struct mipi_dsi_device *dsi)
 {
 	struct ili9881d *ctx = mipi_dsi_get_drvdata(dsi);
 
 	mipi_dsi_detach(dsi);
 	drm_panel_remove(&ctx->panel);
 
-	return 0;
 }
 
 static const struct ili9881d_desc gjx101c7_desc = {

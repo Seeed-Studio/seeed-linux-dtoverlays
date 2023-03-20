@@ -989,7 +989,7 @@ static int bq25790_hw_init(struct bq25790_device *bq)
 	int wd_reg_val = BQ25790_WATCHDOG_DIS;
 	int i;
 
-	struct power_supply_battery_info bat_info = { };
+	struct power_supply_battery_info *bat_info;
 
 	if (bq->watchdog_timer) {
 		for (i = 0; i < BQ25790_NUM_WD_VAL; i++) {
@@ -1006,16 +1006,16 @@ static int bq25790_hw_init(struct bq25790_device *bq)
 	if (ret) {
 		dev_warn(bq->dev, "battery info missing, default values will be applied\n");
 
-		bat_info.constant_charge_current_max_ua =
+		bat_info->constant_charge_current_max_ua =
 				BQ25790_ICHRG_I_DEF_uA;
 
-		bat_info.constant_charge_voltage_max_uv =
+		bat_info->constant_charge_voltage_max_uv =
 				BQ25790_VREG_V_DEF_uV;
 
-		bat_info.precharge_current_ua =
+		bat_info->precharge_current_ua =
 				BQ25790_PRECHRG_I_DEF_uA;
 
-		bat_info.charge_term_current_ua =
+		bat_info->charge_term_current_ua =
 				BQ25790_TERMCHRG_I_DEF_uA;
 
 		bq->init_data.max_ichg =
@@ -1025,26 +1025,26 @@ static int bq25790_hw_init(struct bq25790_device *bq)
 				BQ25790_VREG_V_MAX_uV;
 	} else {
 		bq->init_data.max_ichg =
-			bat_info.constant_charge_current_max_ua;
+			bat_info->constant_charge_current_max_ua;
 		bq->init_data.max_vreg =
-			bat_info.constant_charge_voltage_max_uv;
+			bat_info->constant_charge_voltage_max_uv;
 	}
 
 	ret = bq25790_set_ichrg_curr(bq, 
-				bat_info.constant_charge_current_max_ua);
+				bat_info->constant_charge_current_max_ua);
 	if (ret)
 		goto err_out;
 
-	ret = bq25790_set_prechrg_curr(bq, bat_info.precharge_current_ua);
+	ret = bq25790_set_prechrg_curr(bq, bat_info->precharge_current_ua);
 	if (ret)
 		goto err_out;
 
 	ret = bq25790_set_chrg_volt(bq,
-				bat_info.constant_charge_voltage_max_uv);
+				bat_info->constant_charge_voltage_max_uv);
 	if (ret)
 		goto err_out;
 
-	ret = bq25790_set_term_curr(bq, bat_info.charge_term_current_ua);
+	ret = bq25790_set_term_curr(bq, bat_info->charge_term_current_ua);
 	if (ret)
 		goto err_out;
 
