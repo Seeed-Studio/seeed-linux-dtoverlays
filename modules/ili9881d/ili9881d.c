@@ -529,7 +529,20 @@ static struct mipi_dsi_driver ili9881d_dsi_driver = {
 		.of_match_table	= ili9881d_of_match,
 	},
 };
-module_mipi_dsi_driver(ili9881d_dsi_driver);
+
+static int __init ili9881d_init(void)
+{
+	int ret = 0;
+	ret = mipi_dsi_driver_register(&ili9881d_dsi_driver);
+	return ret;
+}
+module_init(ili9881d_init);
+
+static void __exit ili9881d_exit(void)
+{
+	mipi_dsi_driver_unregister(&ili9881d_dsi_driver);
+}
+module_exit(ili9881d_exit);
 
 MODULE_AUTHOR("Maxime Ripard <maxime.ripard@free-electrons.com>");
 MODULE_DESCRIPTION("Ilitek ILI9881D Controller Driver");
