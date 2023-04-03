@@ -1,0 +1,42 @@
+/*
+ * Copyright (C) 2022 Seeed Studio
+ *
+ * MIT License
+ *
+ */
+
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/pinctrl/pinctrl-tegra.h>
+#include <dt-bindings/interrupt-controller/irq.h>
+#include <dt-bindings/gpio/tegra-gpio.h>
+
+/ {
+    overlay-name = "Jetson Seeed PCA9535";
+	jetson-header-name = "Jetson Xavier NX PCA9535";
+    compatible = "nvidia,p3449-0000+p3668-0001", "nvidia,p3509-0000+p3668-0001", "nvidia,tegra194";
+
+    fragment@0 {
+		target-path = "/i2c@c240000";
+
+		__overlay__ {
+            #address-cells = <1>;
+		    #size-cells = <0>;
+
+			gpio_xten: gpio_xten@21 {
+				compatible = "nxp,pca9535";
+				reg = <0x21>;
+                gpio-controller;
+                #gpio-cells = <2>;
+
+                interrupt-controller;
+                #interrupt-cells=<2>;
+
+                interrupt-parent = <&tegra_main_gpio>;
+                interrupts = <TEGRA_GPIO(CC, 4) IRQ_TYPE_EDGE_FALLING>;
+			};
+		};
+	};
+};
+

@@ -1,0 +1,102 @@
+/*
+ * Copyright (C) 2022 Seeed Studio
+ *
+ * MIT License
+ *
+ */
+
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/interrupt-controller/irq.h>
+#include <dt-bindings/pinctrl/pinctrl-tegra.h>
+#include <dt-bindings/gpio/tegra194-gpio.h>
+#include <dt-bindings/pinctrl/tegra194-p3668-all-p3509-0000.h>
+
+/ {
+    overlay-name = "Jetson Seeed SLB9670 TPM2.0";
+	jetson-header-name = "Jetson Xavier NX SLB9670 TPM2.0";
+	compatible = JETSON_COMPATIBLE;
+
+
+	fragment@0 {
+		target-path = "/spi@3210000/spi@0";
+		__overlay__ {
+			status = "disabled";
+		};
+	};
+
+	fragment@1 {
+		target-path = "/spi@3210000/spi@1";
+		__overlay__ {
+			status = "disabled";
+		};
+	};
+
+	fragment@2 {
+		target = <&spi0>;
+		__overlay__ {
+			#address-cells = <0x01>;
+			#size-cells = <0x00>;
+
+			status = "okay";
+			cs-gpios = <&tegra_main_gpio TEGRA194_MAIN_GPIO(Z, 6) GPIO_ACTIVE_HIGH>;
+			num-cs = <1>;
+
+			slb9670@0 {
+				compatible = "infineon,slb9670";
+				status = "okay";
+				reg = <0x0>;
+				spi-max-frequency = <10000000>;
+				controller-data {
+					nvidia,cs-setup-clk-count = <0x1e>;
+					nvidia,cs-hold-clk-count = <0x1e>;				
+					nvidia,rx-clk-tap-delay = <0x7>;
+					nvidia,tx-clk-tap-delay = <0x0>;
+					nvidia,cs-inactive-cycles = <0x6>;	
+				};
+			};
+		};
+	};
+
+	fragment@3 {
+		target = <&pinmux>;
+		__overlay__ {
+			pinctrl-names = "default";
+			pinctrl-0 = <&spi0_pinmux>;
+
+			spi0_pinmux: exp-header-pinmux {
+				hdr40-pin19 {
+					nvidia,pins = HDR40_PIN19;
+					nvidia,function = HDR40_SPI;
+					nvidia,pull = <TEGRA_PIN_PULL_DOWN>;
+					nvidia,tristate = <TEGRA_PIN_DISABLE>;
+					nvidia,enable-input = <TEGRA_PIN_DISABLE>;
+				};
+				hdr40-pin21 {
+					nvidia,pins = HDR40_PIN21;
+					nvidia,function = HDR40_SPI;
+					nvidia,pull = <TEGRA_PIN_PULL_DOWN>;
+					nvidia,tristate = <TEGRA_PIN_DISABLE>;
+					nvidia,enable-input = <TEGRA_PIN_ENABLE>;
+				};
+				hdr40-pin23 {
+					nvidia,pins = HDR40_PIN23;
+					nvidia,function = HDR40_SPI;
+					nvidia,pull = <TEGRA_PIN_PULL_DOWN>;
+					nvidia,tristate = <TEGRA_PIN_DISABLE>;
+					nvidia,enable-input = <TEGRA_PIN_ENABLE>;
+				};
+				hdr40-pin24 {
+					nvidia,pins = HDR40_PIN24;
+					nvidia,function = HDR40_SPI;
+					nvidia,pull = <TEGRA_PIN_PULL_UP>;
+					nvidia,tristate = <TEGRA_PIN_DISABLE>;
+					nvidia,enable-input = <TEGRA_PIN_DISABLE>;
+				};
+			};
+		};
+	};
+
+};
+
