@@ -412,7 +412,7 @@ function install {
     install_overlay reTerminal reTerminal-bridge
     setup_overlay reTerminal tp_rotate=1
   elif [ "$device" = "reTerminal-plus" ]; then
-    install_modules ltr30x ili9881d
+    install_modules ltr30x ili9881d ch34x
     install_overlay_DM
   fi
   # display
@@ -451,7 +451,7 @@ function uninstall {
     unsetup_overlay reTerminal tp_rotate=1
     uninstall_overlay reTerminal reTerminal-bridge
   elif [ "$device" = "reTerminal-plus" ]; then
-    uninstall_modules ili9881d ltr30x
+    uninstall_modules ili9881d ltr30x ch34x
     uninstall_overlay_DM
   fi
 }
