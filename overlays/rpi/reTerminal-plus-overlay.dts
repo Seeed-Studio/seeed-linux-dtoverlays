@@ -124,7 +124,7 @@
 			};
 
 			eeprom@57 {
-				compatible = "atmel,24c02";
+				compatible = "atmel,24c256";
 				reg = <0x57>;
 			};
 		};
