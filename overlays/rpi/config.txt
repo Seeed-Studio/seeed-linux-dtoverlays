@@ -1,6 +1,1 @@
-ili9881d
-mipi_dsi
-lis3lv02d
-ltr30x
-bq24179_charger
-ch34x
+rtc-pcf8563w

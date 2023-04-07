@@ -113,9 +113,15 @@
 			#address-cells = <1>;
 			#size-cells = <0>;
 			
-			pcf8563@51 {
-				compatible = "nxp,pcf8563";
+			pcf8563w@51 {
+				compatible = "nxp,pcf8563w";
 				reg = <0x51>;
+				reset-source;
+				/* 0 = 4096Hz, 1 = 64Hz, 2 = 1Hz, 3 = 1/60Hz */
+				timer-frequency = <0x02>;
+				/* Timeout count, max 255 min 2*/
+				default-timeout =  <60>;
+				min-hw-heartbeat-ms = <15000>;
 			};
 			
 			eeprom@50 {
