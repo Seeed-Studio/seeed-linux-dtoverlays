@@ -21,6 +21,7 @@ RES_PATH=`pwd`/extras/reTerminal/resources
 CFG_PATH=/boot/config.txt
 CLI_PATH=/boot/cmdline.txt
 OVERLAY_DIR=/boot/overlays
+BLACKLIST_PATH=/etc/modprobe.d/raspi-blacklist.conf
 # Ubuntu
 [ -f /boot/firmware/config.txt ] && CFG_PATH=/boot/firmware/config.txt
 [ -f /boot/firmware/cmdline.txt ] && CLI_PATH=/boot/firmware/cmdline.txt
@@ -227,6 +228,17 @@ function remove_cmdline_value {
   sed -i "s/ *\b$1\b//g" $CLI_PATH
 }
 
+# add kernel driver $1 to black list
+function blacklist_driver {
+  grep -q "^blacklist $1$" $BLACKLIST_PATH || \
+    echo "blacklist $1" >> $BLACKLIST_PATH
+}
+
+# remove kernel driver $1 from black list
+function unblacklist_driver {
+  sed -i "/^blacklist $1$/d" $BLACKLIST_PATH
+}
+
 function install_overlay_DM {
   # cmdline.txt
   remove_cmdline_value "console=tty0"
@@ -414,6 +426,9 @@ function install {
   elif [ "$device" = "reTerminal-plus" ]; then
     install_modules ltr30x ili9881d ch34x
     install_overlay_DM
+    # we blacklist this driver in DM to avoid gibberish issue with ch342f chip.
+    # and we insmod a new driver for ch342f
+    blacklist_driver cdc_acm
   fi
   # display
  if ! [[ -d "/usr/share/plymouth/themes/" && -d "/usr/share/X11/xorg.conf.d/" && -d "/etc/plymouth/" ]];
@@ -453,6 +468,7 @@ function uninstall {
   elif [ "$device" = "reTerminal-plus" ]; then
     uninstall_modules ili9881d ltr30x ch34x
     uninstall_overlay_DM
+    unblacklist_driver cdc_acm
   fi
 }
 
