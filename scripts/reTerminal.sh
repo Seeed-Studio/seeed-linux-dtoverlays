@@ -255,7 +255,7 @@ function install_overlay_DM {
   set_config_dtparam "spi" "on"
 
   set_config_value "enable_uart" "1"
-  set_config_value "dtparam" "ant2"
+  set_config_value "dtparam" "ant1"
   set_config_value "disable_splash" "1"
   set_config_value "ignore_lcd" "1"
 
@@ -290,7 +290,7 @@ function uninstall_overlay_DM {
   remove_config_dtparam "spi" "on"
 
   remove_config_value "enable_uart" "1"
-  remove_config_value "dtparam" "ant2"
+  remove_config_value "dtparam" "ant1"
   remove_config_value "disable_splash" "1"
   remove_config_value "ignore_lcd" "1"
 
