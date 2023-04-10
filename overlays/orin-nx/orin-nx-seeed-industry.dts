@@ -285,5 +285,11 @@
 		};
 	};
 
+	fragment@8 {
+		target-path = "/serial@3110000";
+		__overlay__ {
+			status = "okay";
+		};
+	};
 };
 
