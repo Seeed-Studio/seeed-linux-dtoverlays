@@ -698,9 +698,9 @@ static const struct rtc_class_ops pcf8563_rtc_ops = {
     .ioctl = pcf8563_rtc_ioctl,
     .read_time = pcf8563_rtc_read_time,
     .set_time = pcf8563_rtc_set_time,
-    .read_alarm = pcf8563_rtc_read_alarm,
-    .set_alarm = pcf8563_rtc_set_alarm,
-    .alarm_irq_enable = pcf8563_irq_enable,
+    // .read_alarm = pcf8563_rtc_read_alarm,
+    // .set_alarm = pcf8563_rtc_set_alarm,
+    // .alarm_irq_enable = pcf8563_irq_enable,
 };
 
 static int pcf8563_probe(struct i2c_client *client)
