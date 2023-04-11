@@ -536,7 +536,7 @@ static int __init ili9881d_init(void)
 	ret = mipi_dsi_driver_register(&ili9881d_dsi_driver);
 	return ret;
 }
-module_init(ili9881d_init);
+late_initcall(ili9881d_init);
 
 static void __exit ili9881d_exit(void)
 {
