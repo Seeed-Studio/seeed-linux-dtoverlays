@@ -4,14 +4,15 @@
 #
 # MIT License
 #
+KVERSION ?= $(shell uname -r)
 
 obj-m				+= rtc-pcf8563w.o
 
 all:
-	make -C $(KDIR) M=$(PWD) modules
+	make -C /lib/modules/$(KVERSION)/build M=$(PWD) modules
 
 install:
-	make -C $(KDIR) M=$(PWD) modules_install
+	make -C /lib/modules/$(KVERSION)/build M=$(PWD) modules_install
 
 clean:
-	make -C $(KDIR) M=$(PWD) clean
+	make -C /lib/modules/$(KVERSION)/build M=$(PWD) clean
