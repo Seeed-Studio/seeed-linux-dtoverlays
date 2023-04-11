@@ -378,7 +378,7 @@ static int i2c_md_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
 	return 0;
 }
 
-static int i2c_md_remove(struct i2c_client *i2c)
+static void i2c_md_remove(struct i2c_client *i2c)
 {
 	struct i2c_mipi_dsi *md = i2c_get_clientdata(i2c);
 
@@ -395,7 +395,6 @@ static int i2c_md_remove(struct i2c_client *i2c)
 	mipi_dsi_device_unregister(md->dsi);
 	kfree(md->dsi);
 
-	return 0;
 }
 
 static void i2c_md_shutdown(struct i2c_client *i2c)
