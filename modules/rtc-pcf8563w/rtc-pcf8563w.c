@@ -156,16 +156,16 @@ static int pcf8563_wdt_ping(struct watchdog_device *wdd)
     struct i2c_client *client = pcf8563->client;
     int err = 0;
     unsigned char val;
-    val = wdd->timeout;
+
     dev_dbg(wdd->parent, "%s: watchdog ping, timeout=%d", __func__,
             wdd->timeout);
 
-    /* write TI_TP again to adviod pending INT */
-    err = pcf8563_read_block_data(client, PCF8563_REG_ST2, 1, &val);
-    val |= PCF8563_BIT_TI_TP | PCF8563_BIT_TIE;
+    /* clear TI_TP and TF again to adviod pending INT */
+    val = PCF8563_BIT_TIE;
     err = pcf8563_write_block_data(client, PCF8563_REG_ST2, 1, &val);
 
     /* write TMR again to restart timer */
+    val = wdd->timeout;
     err = pcf8563_write_block_data(client, PCF8563_REG_TMR, 1, &val);
 
     return err;
@@ -291,7 +291,7 @@ static int pcf8563_watchdog_init(struct device *dev, struct pcf8563 *pcf8563)
     err = pcf8563_read_block_data(pcf8563->client, PCF8563_REG_ST2, 1, &val);
     if (err)
         return err;
-    val = (val & PCF8563_BIT_AIE) | PCF8563_BIT_TIE | PCF8563_BIT_TI_TP;
+    val = (val & PCF8563_BIT_AIE) | PCF8563_BIT_TIE;
     err = pcf8563_write_block_data(pcf8563->client, PCF8563_REG_ST2, 1, &val);
     if (err < 0)
     {
@@ -301,13 +301,12 @@ static int pcf8563_watchdog_init(struct device *dev, struct pcf8563 *pcf8563)
 
     watchdog_set_drvdata(&pcf8563->wdd, pcf8563);
 
-    /* Test if watchdog timer is started by bootloader */
-    err = pcf8563_read_block_data(pcf8563->client, PCF8563_REG_TMRC, 1, &val);
-    if (err)
-        return err;
-
-    if (val & PCF8563_TMRC_ENABLE)
-        set_bit(WDOG_HW_RUNNING, &pcf8563->wdd.status);
+    err = pcf8563_write_block_data(pcf8563->client, PCF8563_REG_TMRC, 1, &pcf8563->freq);
+    if (err < 0)
+    {
+        dev_err(dev, "%s: write error\n", __func__);
+        return -EIO;
+    }
 
     err = devm_watchdog_register_device(dev, &pcf8563->wdd);
 
@@ -723,18 +722,18 @@ static int pcf8563_probe(struct i2c_client *client)
     pcf8563->client = client;
     device_set_wakeup_capable(&client->dev, 1);
 
-    /* Set timer to lowest frequency to save power (ref Haoyu datasheet) */
-    pcf8563->freq = PCF8563_TMRC_1_60;
-    err = pcf8563_write_block_data(client, PCF8563_REG_TMRC, 1, &pcf8563->freq);
+    /* Clear flags and disable interrupts */
+    buf = 0;
+    err = pcf8563_write_block_data(client, PCF8563_REG_ST2, 1, &buf);
     if (err < 0)
     {
         dev_err(&client->dev, "%s: write error\n", __func__);
         return err;
     }
 
-    /* Clear flags and disable interrupts */
-    buf = 0;
-    err = pcf8563_write_block_data(client, PCF8563_REG_ST2, 1, &buf);
+    /* Set timer to lowest frequency to save power (ref Haoyu datasheet) */
+    pcf8563->freq = PCF8563_TMRC_1_60;
+    err = pcf8563_write_block_data(client, PCF8563_REG_TMRC, 1, &pcf8563->freq);
     if (err < 0)
     {
         dev_err(&client->dev, "%s: write error\n", __func__);
@@ -746,26 +745,10 @@ static int pcf8563_probe(struct i2c_client *client)
         return PTR_ERR(pcf8563->rtc);
 
     pcf8563->rtc->ops = &pcf8563_rtc_ops;
-    /* the pcf8563 alarm only supports a minute accuracy */
-    set_bit(RTC_FEATURE_ALARM_RES_MINUTE, pcf8563->rtc->features);
-    clear_bit(RTC_FEATURE_UPDATE_INTERRUPT, pcf8563->rtc->features);
+
     pcf8563->rtc->range_min = RTC_TIMESTAMP_BEGIN_2000;
     pcf8563->rtc->range_max = RTC_TIMESTAMP_END_2099;
     pcf8563->rtc->set_start_time = true;
-
-    if (client->irq > 0)
-    {
-        err = devm_request_threaded_irq(&client->dev, client->irq,
-                                        NULL, pcf8563_irq,
-                                        IRQF_SHARED | IRQF_ONESHOT | IRQF_TRIGGER_LOW,
-                                        pcf8563_driver.driver.name, client);
-        if (err)
-        {
-            dev_err(&client->dev, "unable to request IRQ %d\n",
-                    client->irq);
-            return err;
-        }
-    }
 
     pcf8563_watchdog_init(&client->dev, pcf8563);
 
