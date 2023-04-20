@@ -1,0 +1,32 @@
+/*
+ * Copyright (C) 2022 Seeed Studio
+ *
+ * MIT License
+ *
+ */
+
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/pinctrl/pinctrl-tegra.h>
+
+/ {
+    overlay-name = "Jetson Seeed EEPROM";
+	jetson-header-name = "Jetson Orin Nano EEPROM";
+	compatible = "nvidia,p3768-0000+p3767-0003", "nvidia,p3768-0000+p3767-0005", "nvidia,p3767-0003", "nvidia,p3767-0005","nvidia,tegra234","4nvidia,tegra23x";
+
+    fragment@0 {
+		target = <&gen1_i2c>;
+
+		__overlay__ {
+            #address-cells = <1>;
+		    #size-cells = <0>;
+
+			eeprom@57 {
+                compatible = "atmel,24c256";
+                reg = <0x57>;
+            };
+		};
+	};
+};
+
