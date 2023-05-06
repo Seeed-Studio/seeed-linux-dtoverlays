@@ -15,7 +15,7 @@
 
 / {
     overlay-name = "Jetson Seeed SLB9670 TPM2.0";
-	jetson-header-name = "Jetson Xavier NX SLB9670 TPM2.0";
+	jetson-header-name = "Jetson 40pin Header";
 	compatible = JETSON_COMPATIBLE;
 
 
