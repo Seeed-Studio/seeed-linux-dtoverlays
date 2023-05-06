@@ -10,31 +10,31 @@
 
 #include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/pinctrl/pinctrl-tegra.h>
-#include <dt-bindings/gpio/tegra-gpio.h>
+#include <dt-bindings/gpio/tegra194-gpio.h>
+#include <dt-bindings/pinctrl/tegra194-p3668-all-p3509-0000.h>
 
 / {
     overlay-name = "Jetson Seeed Industrial Overlay";
-	jetson-header-name = "Jetson Xavier NX Industrial";
-	compatible = "nvidia,p3449-0000+p3668-0001", "nvidia,p3509-0000+p3668-0001", "nvidia,tegra194";
+	jetson-header-name = "Jetson 40pin Header";
+	compatible = JETSON_COMPATIBLE;
 
-    fragment@0 {
+    fragment@10 {
 		target-path = "/i2c@c240000";
 
 		__overlay__ {
-            #address-cells = <1>;
-		    #size-cells = <0>;
-
+            		#address-cells = <1>;
+		    	#size-cells = <0>;
 			gpio_xten: gpio_xten@21 {
 				compatible = "nxp,pca9535";
 				reg = <0x21>;
-                gpio-controller;
-                #gpio-cells = <2>;
+		                gpio-controller;
+        		       	 #gpio-cells = <2>;
+	
+		                interrupt-controller;
+                		#interrupt-cells=<2>;
 
-                interrupt-controller;
-                #interrupt-cells=<2>;
-
-                interrupt-parent = <&tegra_main_gpio>;
-                interrupts = <TEGRA_GPIO(CC, 4) IRQ_TYPE_EDGE_FALLING>;
+                		interrupt-parent = <&tegra_main_gpio>;
+                		interrupts = <TEGRA194_MAIN_GPIO(N, 1) IRQ_TYPE_EDGE_FALLING>;
 
 				gpio-line-names =
 					"wl_dis"	 	,"hst_wake_wl",
@@ -52,24 +52,23 @@
 	};
 
 
-	fragment@1 {
+	fragment@0 {
 		target = <&gen1_i2c>;
 
 		__overlay__ {
-            #address-cells = <1>;
-		    #size-cells = <0>;
+            		#address-cells = <1>;
+		   	#size-cells = <0>;
 
 			eeprom@57 {
-                compatible = "atmel,24c02";
-                reg = <0x57>;
-                pagesize = <0x08>;
-            };
+                		compatible = "atmel,24c02";
+                		reg = <0x57>;
+                		pagesize = <0x08>;
+            		};
 		};
 	};
 
-/*
 	// There is no rfkill-wlan.c in Jetson kernel source.
-	fragment@2 {
+	fragment@1 {
 		target-path = "/";
 
 		__overlay__ {
@@ -83,9 +82,8 @@
 			};
 		};
 	};
-*/
 
-	fragment@3 {
+	fragment@2 {
 		target-path = "/";
 
 		__overlay__ {
@@ -94,58 +92,273 @@
 					compatible = "regulator-fixed";
 					regulator-name = "wl_dis";
 					gpios = <&gpio_xten 0 GPIO_ACTIVE_HIGH>;
-//					enable-active-high;
+					enable-active-high;
+					regulator-always-on;
 				};
 
 				hst_wake_wl: gpio_xten_pin@1 {
 					compatible = "regulator-fixed";
 					regulator-name = "hst_wake_wl";
 					gpios = <&gpio_xten 1 GPIO_ACTIVE_HIGH>;
-//					enable-active-high;
+					enable-active-high;
+					regulator-always-on;
 				};
 
 				wl_wake_hst: gpio_xten_pin@2 {
 					compatible = "regulator-fixed";
 					regulator-name = "wl_wake_hst";
-					gpios = <&gpio_xten 2 GPIO_ACTIVE_HIGH>;
-//					enable-active-high;
+					gpios = <&gpio_xten 2 GPIO_ACTIVE_LOW>;
+					gpio-open-drain;
 				};
 
 				bt_dis: gpio_xten_pin@3 {
 					compatible = "regulator-fixed";
 					regulator-name = "bt_dis";
 					gpios = <&gpio_xten 3 GPIO_ACTIVE_HIGH>;
-//					enable-active-high;
+					enable-active-high;
+					regulator-always-on;
 				};
 
 				hst_wake_bt: gpio_xten_pin@4 {
 					compatible = "regulator-fixed";
 					regulator-name = "hst_wake_bt";
 					gpios = <&gpio_xten 4 GPIO_ACTIVE_HIGH>;
-//					enable-active-high;
+					enable-active-high;
+					regulator-always-on;
 				};
 
 				bt_wake_hst: gpio_xten_pin@5 {
 					compatible = "regulator-fixed";
 					regulator-name = "bt_wake_hst";
-					gpios = <&gpio_xten 5 GPIO_ACTIVE_HIGH>;
-//					enable-active-high;
+					gpios = <&gpio_xten 5 GPIO_ACTIVE_LOW>;
+					gpio-open-drain;
 				};
 
 				spi0_rst_3v3: gpio_xten_pin@6 {
 					compatible = "regulator-fixed";
 					regulator-name = "spi0_rst_3v3";
 					gpios = <&gpio_xten 6 GPIO_ACTIVE_HIGH>;
-//					enable-active-high;
+					enable-active-low;
+					regulator-always-on;
 				};
 
 				gpio_pin7: gpio_xten_pin@7 {
 					compatible = "regulator-fixed";
 					regulator-name = "gpio_pin7";
-					gpios = <&gpio_xten 7 GPIO_ACTIVE_LOW>;
+					gpios = <&gpio_xten 7 GPIO_ACTIVE_HIGH>;
+					enable-active-low;
+					regulator-always-on;
+				};
+
+/*
+				can_120R_en: gpio_xten_pin@8 {
+					compatible = "regulator-fixed";
+					regulator-name = "can_120R_en";
+					gpios = <&gpio_xten 8 GPIO_ACTIVE_HIGH>;
+				};
+				M2B_PCIe_rst: gpio_xten_pin@9 {
+					compatible = "regulator-fixed";
+					regulator-name = "M2B_PCIe_rst";
+					gpios = <&gpio_xten 9 GPIO_ACTIVE_HIGH>;
+					enable-active-high;
+				};
+*/
+
+				USB_HUB_rst: gpio_xten_pin@10 {
+					compatible = "regulator-fixed";
+					regulator-name = "USB_HUB_rst";
+					gpios = <&gpio_xten 10 GPIO_ACTIVE_HIGH>;
+					enable-active-high;
+					regulator-always-on;
+				};
+/*
+				PCIe_ETH_rst: gpio_xten_pin@11 {
+					compatible = "regulator-fixed";
+					regulator-name = "PCIe_ETH_rst";
+					gpios = <&gpio_xten 11 GPIO_ACTIVE_HIGH>;
+					enable-active-high;
+					regulator-always-on;
+				};
+*/
+
+				M2B_WOWWAN: gpio_xten_pin@12 {
+					compatible = "regulator-fixed";
+					regulator-name = "M2B_WOWWAN";
+					gpios = <&gpio_xten 12 GPIO_ACTIVE_HIGH>;
+				};
+
+				M2B_DPR_3V3: gpio_xten_pin@13 {
+					compatible = "regulator-fixed";
+					regulator-name = "M2B_DPR_3V3";
+					gpios = <&gpio_xten 13 GPIO_ACTIVE_HIGH>;
+				};
+
+				SIM_MUX_SEL: gpio_xten_pin@14 {
+					compatible = "regulator-fixed";
+					regulator-name = "SIM_MUX_SEL";
+					gpios = <&gpio_xten 14 GPIO_ACTIVE_HIGH>;
+				};
+
+				gpio_pin15: gpio_xten_pin@15 {
+					compatible = "regulator-fixed";
+					regulator-name = "gpio_pin15";
+					gpios = <&gpio_xten 15 GPIO_ACTIVE_HIGH>;
 				};
 		};
 	};
 
+	fragment@3 {
+		target-path = "/spi@3210000/spi@0";
+		__overlay__ {
+			status = "disabled";
+		};
+	};
+
+
+	fragment@5 {
+		target = <&spi0>;
+		__overlay__ {
+			#address-cells = <0x01>;
+			#size-cells = <0x00>;
+
+			status = "okay";
+			cs-gpios = <&tegra_main_gpio TEGRA194_MAIN_GPIO(Z, 6) GPIO_ACTIVE_HIGH>,
+				   <&tegra_main_gpio TEGRA194_MAIN_GPIO(Z, 7) GPIO_ACTIVE_HIGH>;
+			num-cs = <2>;
+
+			slb9670@0 {
+				compatible = "infineon,slb9670";
+				status = "okay";
+				reg = <0x0>;
+				spi-max-frequency = <10000000>;
+				controller-data {
+					nvidia,cs-setup-clk-count = <0x1e>;
+					nvidia,cs-hold-clk-count = <0x1e>;				
+					nvidia,rx-clk-tap-delay = <0x7>;
+					nvidia,tx-clk-tap-delay = <0x0>;
+					nvidia,cs-inactive-cycles = <0x6>;	
+				};
+			};
+		};
+	};
+
+	fragment@6 {
+		target = <&pinmux>;
+		__overlay__ {
+			pinctrl-names = "default";
+			pinctrl-0 = <&spi0_pinmux>;
+
+			spi0_pinmux: exp-header-pinmux {
+				hdr40-pin19 {
+					nvidia,pins = HDR40_PIN19;
+					nvidia,function = HDR40_SPI;
+					nvidia,pull = <TEGRA_PIN_PULL_DOWN>;
+					nvidia,tristate = <TEGRA_PIN_DISABLE>;
+					nvidia,enable-input = <TEGRA_PIN_DISABLE>;
+				};
+				hdr40-pin21 {
+					nvidia,pins = HDR40_PIN21;
+					nvidia,function = HDR40_SPI;
+					nvidia,pull = <TEGRA_PIN_PULL_DOWN>;
+					nvidia,tristate = <TEGRA_PIN_DISABLE>;
+					nvidia,enable-input = <TEGRA_PIN_ENABLE>;
+				};
+				hdr40-pin23 {
+					nvidia,pins = HDR40_PIN23;
+					nvidia,function = HDR40_SPI;
+					nvidia,pull = <TEGRA_PIN_PULL_DOWN>;
+					nvidia,tristate = <TEGRA_PIN_DISABLE>;
+					nvidia,enable-input = <TEGRA_PIN_ENABLE>;
+				};
+				hdr40-pin24 {
+					nvidia,pins = HDR40_PIN24;
+					nvidia,function = HDR40_SPI;
+					nvidia,pull = <TEGRA_PIN_PULL_UP>;
+					nvidia,tristate = <TEGRA_PIN_DISABLE>;
+					nvidia,enable-input = <TEGRA_PIN_DISABLE>;
+				};
+
+                                hdr40-pin29 {
+                                        nvidia,pins = "can0_din_paa3";
+                                        nvidia,function = "can0";
+                                        nvidia,pin-label = "can0_din";
+                                        nvidia,pull = <TEGRA_PIN_PULL_DOWN>;
+                                        nvidia,tristate = <TEGRA_PIN_ENABLE>;
+                                        nvidia,enable-input = <TEGRA_PIN_ENABLE>;
+                                };
+                                hdr40-pin31 {
+                                        nvidia,pins = "can0_dout_paa2";
+                                        nvidia,function = "can0";
+                                        nvidia,pin-label = "can0_dout";
+                                        nvidia,pull = <TEGRA_PIN_PULL_NONE>;
+                                        nvidia,tristate = <TEGRA_PIN_DISABLE>;
+                                        nvidia,enable-input = <TEGRA_PIN_DISABLE>;
+                                };
+
+                                hdr40-pin13 {
+                                        nvidia,pins = "spi3_sck_py0";
+                                        nvidia,function = "spi3";
+                                        nvidia,pin-label = "spi3_sck";
+                                        nvidia,pull = <TEGRA_PIN_PULL_DOWN>;
+                                        nvidia,tristate = <TEGRA_PIN_DISABLE>;
+                                        nvidia,enable-input = <TEGRA_PIN_ENABLE>;
+                                        nvidia,io-high-voltage = <TEGRA_PIN_DISABLE>;
+                                        nvidia,lpdr = <TEGRA_PIN_DISABLE>;
+                                };
+
+                                hdr40-pin16 {
+                                        nvidia,pins = "spi3_cs1_py4";
+                                        nvidia,function = "spi3";
+                                        nvidia,pin-label = "spi3_cs1";
+                                        nvidia,pull = <TEGRA_PIN_PULL_UP>;
+                                        nvidia,tristate = <TEGRA_PIN_DISABLE>;
+                                        nvidia,enable-input = <TEGRA_PIN_ENABLE>;
+                                        nvidia,io-high-voltage = <TEGRA_PIN_DISABLE>;
+                                        nvidia,lpdr = <TEGRA_PIN_DISABLE>;
+                                };
+                                hdr40-pin18 {
+                                        nvidia,pins = "spi3_cs0_py3";
+                                        nvidia,function = "spi3";
+                                        nvidia,pin-label = "spi3_cs0";
+                                        nvidia,pull = <TEGRA_PIN_PULL_UP>;
+                                        nvidia,tristate = <TEGRA_PIN_DISABLE>;
+                                        nvidia,enable-input = <TEGRA_PIN_ENABLE>;
+                                        nvidia,io-high-voltage = <TEGRA_PIN_DISABLE>;
+                                        nvidia,lpdr = <TEGRA_PIN_DISABLE>;
+                                };
+
+                                hdr40-pin37 {
+                                        nvidia,pins = "spi3_mosi_py2";
+                                        nvidia,function = "spi3";
+                                        nvidia,pin-label = "spi3_dout";
+                                        nvidia,pull = <TEGRA_PIN_PULL_DOWN>;
+                                        nvidia,tristate = <TEGRA_PIN_DISABLE>;
+                                        nvidia,enable-input = <TEGRA_PIN_ENABLE>;
+                                        nvidia,io-high-voltage = <TEGRA_PIN_DISABLE>;
+                                        nvidia,lpdr = <TEGRA_PIN_DISABLE>;
+                                };
+
+                                hdr40-pin22 {
+                                        nvidia,pins = "spi3_miso_py1";
+                                        nvidia,function = "spi3";
+                                        nvidia,pin-label = "spi3_din";
+                                        nvidia,pull = <TEGRA_PIN_PULL_DOWN>;
+                                        nvidia,tristate = <TEGRA_PIN_DISABLE>;
+                                        nvidia,enable-input = <TEGRA_PIN_ENABLE>;
+                                        nvidia,io-high-voltage = <TEGRA_PIN_DISABLE>;
+                                        nvidia,lpdr = <TEGRA_PIN_DISABLE>;
+                                };
+
+			};
+		};
+	};
+
+	fragment@7 {
+		target-path = "/serial@3110000";
+		__overlay__ {
+			status = "okay";
+		};
+	};
 };
+
 
