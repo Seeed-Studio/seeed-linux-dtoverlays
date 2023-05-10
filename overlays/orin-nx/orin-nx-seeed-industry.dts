@@ -120,20 +120,6 @@
 					regulator-always-on;
 				};
 
-				hst_wake_bt: gpio_xten_pin@4 {
-					compatible = "regulator-fixed";
-					regulator-name = "hst_wake_bt";
-					gpios = <&gpio_xten 4 GPIO_ACTIVE_HIGH>;
-					enable-active-high;
-					regulator-always-on;
-				};
-
-				bt_wake_hst: gpio_xten_pin@5 {
-					compatible = "regulator-fixed";
-					regulator-name = "bt_wake_hst";
-					gpios = <&gpio_xten 5 GPIO_ACTIVE_LOW>;
-					gpio-open-drain;
-				};
 
 				spi0_rst_3v3: gpio_xten_pin@6 {
 					compatible = "regulator-fixed";
@@ -150,20 +136,6 @@
                                         enable-active-low;
                                         regulator-always-on;
 				};
-/*
-				can_120R_en: gpio_xten_pin@8 {
-					compatible = "regulator-fixed";
-					regulator-name = "can_120R_en";
-					gpios = <&gpio_xten 8 GPIO_ACTIVE_HIGH>;
-				};
-
-				M2B_PCIe_rst: gpio_xten_pin@9 {
-					compatible = "regulator-fixed";
-					regulator-name = "M2B_PCIe_rst";
-					gpios = <&gpio_xten 9 GPIO_ACTIVE_HIGH>;
-					enable-active-high;
-				};
-*/
 				USB_HUB_rst: gpio_xten_pin@10 {
 					compatible = "regulator-fixed";
 					regulator-name = "USB_HUB_rst";
@@ -171,39 +143,7 @@
 					enable-active-high;
 					regulator-always-on;
 				};
-				/*
-				PCIe_ETH_rst: gpio_xten_pin@11 {
-					compatible = "regulator-fixed";
-					regulator-name = "PCIe_ETH_rst";
-					gpios = <&gpio_xten 11 GPIO_ACTIVE_HIGH>;
-					enable-active-high;
-					regulator-always-on;
-				};
-				*/
 
-				M2B_WOWWAN: gpio_xten_pin@12 {
-					compatible = "regulator-fixed";
-					regulator-name = "M2B_WOWWAN";
-					gpios = <&gpio_xten 12 GPIO_ACTIVE_HIGH>;
-				};
-
-				M2B_DPR_3V3: gpio_xten_pin@13 {
-					compatible = "regulator-fixed";
-					regulator-name = "M2B_DPR_3V3";
-					gpios = <&gpio_xten 13 GPIO_ACTIVE_HIGH>;
-				};
-
-				SIM_MUX_SEL: gpio_xten_pin@14 {
-					compatible = "regulator-fixed";
-					regulator-name = "SIM_MUX_SEL";
-					gpios = <&gpio_xten 14 GPIO_ACTIVE_HIGH>;
-				};
-
-				gpio_pin15: gpio_xten_pin@15 {
-					compatible = "regulator-fixed";
-					regulator-name = "gpio_pin15";
-					gpios = <&gpio_xten 15 GPIO_ACTIVE_HIGH>;
-				};
 		};
 	};
 
