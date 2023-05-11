@@ -185,9 +185,9 @@
 		target = <&pinmux>;
 		__overlay__ {
 			pinctrl-names = "default";
-			pinctrl-0 = <&spi0_pinmux>;
+			pinctrl-0 = <&jetson_io_pinmux>;
 
-			spi0_pinmux: exp-header-pinmux {
+			jetson_io_pinmux: exp-header-pinmux {
 				hdr40-pin19 {
 					nvidia,pins = HDR40_PIN19;
 					nvidia,function = HDR40_SPI;
@@ -216,6 +216,15 @@
 					nvidia,tristate = <TEGRA_PIN_DISABLE>;
 					nvidia,enable-input = <TEGRA_PIN_DISABLE>;
 				};
+
+                                hdr40-pin26 {
+                                        nvidia,pins = HDR40_PIN26;
+                                        nvidia,function = "gp";
+                                        nvidia,pull = <TEGRA_PIN_PULL_UP>;
+                                        nvidia,tristate = <TEGRA_PIN_DISABLE>;
+                                        nvidia,enable-input = <TEGRA_PIN_DISABLE>;
+                                };
+
                                 hdr40-pin29 {
                                         nvidia,pins = "can0_din_paa1";
                                         nvidia,function = "can0";

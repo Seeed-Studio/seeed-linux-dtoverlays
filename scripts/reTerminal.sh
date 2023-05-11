@@ -420,7 +420,7 @@ __EOF__
 function install {
   if [ "$device" = "reTerminal" ]; then
     install_modules mipi_dsi ltr30x lis3lv02d bq24179_charger
-    install_overlay reTerminal reTerminal-bridge
+    install_overlay reTerminal
     setup_overlay reTerminal tp_rotate=1
   elif [ "$device" = "reTerminal-plus" ]; then
     install_modules ltr30x ili9881d ch34x
@@ -463,7 +463,7 @@ function uninstall {
   if [ "$device" = "reTerminal" ]; then
     uninstall_modules mipi_dsi ltr30x lis3lv02d bq24179_charger
     unsetup_overlay reTerminal tp_rotate=1
-    uninstall_overlay reTerminal reTerminal-bridge
+    uninstall_overlay reTerminal
   elif [ "$device" = "reTerminal-plus" ]; then
     uninstall_modules ili9881d ltr30x ch34x
     uninstall_overlay_DM
