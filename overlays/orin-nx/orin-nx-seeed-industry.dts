@@ -162,9 +162,8 @@
 			#size-cells = <0x00>;
 
 			status = "okay";
-			cs-gpios = <&tegra_main_gpio TEGRA234_MAIN_GPIO(Z, 6) GPIO_ACTIVE_HIGH>,
-				  <&tegra_main_gpio TEGRA234_MAIN_GPIO(Z, 7) GPIO_ACTIVE_HIGH>;
-			num-cs = <2>;
+			cs-gpios = <&tegra_main_gpio TEGRA234_MAIN_GPIO(Z, 6) GPIO_ACTIVE_HIGH>;
+			num-cs = <1>;
 
 			slb9670@0 {
 				compatible = "infineon,slb9670";
