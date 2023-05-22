@@ -1002,7 +1002,7 @@ static int bq25790_hw_init(struct bq25790_device *bq)
 	ret = regmap_update_bits(bq->regmap, BQ25790_CHRG_CTRL_1,
 				 BQ25790_WATCHDOG_MASK, wd_reg_val);
 
-	ret = power_supply_get_battery_info(bq->charger, &bat_info);
+	ret = power_supply_get_battery_info(bq->charger, bat_info);
 	if (ret) {
 		dev_warn(bq->dev, "battery info missing, default values will be applied\n");
 
