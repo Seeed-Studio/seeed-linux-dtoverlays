@@ -22,6 +22,7 @@
 #include <linux/iio/trigger_consumer.h>
 #include <linux/iio/buffer.h>
 #include <linux/iio/triggered_buffer.h>
+#include <linux/version.h>
 
 #define LTR501_DRV_NAME "ltr501"
 
@@ -1549,7 +1550,11 @@ powerdown_on_error:
 	return ret;
 }
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
+static int ltr501_remove(struct i2c_client *client)
+#else
 static void ltr501_remove(struct i2c_client *client)
+#endif
 {
 	struct iio_dev *indio_dev = i2c_get_clientdata(client);
 
@@ -1557,6 +1562,9 @@ static void ltr501_remove(struct i2c_client *client)
 	iio_triggered_buffer_cleanup(indio_dev);
 	ltr501_powerdown(iio_priv(indio_dev));
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
+	return 0;
+#endif
 }
 
 #ifdef CONFIG_PM_SLEEP

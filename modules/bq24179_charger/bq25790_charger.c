@@ -13,6 +13,7 @@
 #include <linux/usb/phy.h>
 
 #include <linux/acpi.h>
+#include <linux/version.h>
 
 #include "bq25790_charger.h"
 
@@ -1002,7 +1003,11 @@ static int bq25790_hw_init(struct bq25790_device *bq)
 	ret = regmap_update_bits(bq->regmap, BQ25790_CHRG_CTRL_1,
 				 BQ25790_WATCHDOG_MASK, wd_reg_val);
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
+	ret = power_supply_get_battery_info(bq->charger, bat_info);
+#else
 	ret = power_supply_get_battery_info(bq->charger, &bat_info);
+#endif
 	if (ret) {
 		dev_warn(bq->dev, "battery info missing, default values will be applied\n");
 

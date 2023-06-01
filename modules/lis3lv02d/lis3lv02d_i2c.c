@@ -20,6 +20,7 @@
 #include <linux/of.h>
 #include <linux/of_platform.h>
 #include <linux/of_device.h>
+#include <linux/version.h>
 
 #include "lis3lv02d.h"
 
@@ -177,7 +178,11 @@ fail:
 	return ret;
 }
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
+static int lis3lv02d_i2c_remove(struct i2c_client *client)
+#else
 static void lis3lv02d_i2c_remove(struct i2c_client *client)
+#endif
 {
 	struct lis3lv02d *lis3 = i2c_get_clientdata(client);
 	struct lis3lv02d_platform_data *pdata = client->dev.platform_data;
@@ -190,6 +195,10 @@ static void lis3lv02d_i2c_remove(struct i2c_client *client)
 
 	regulator_bulk_free(ARRAY_SIZE(lis3->regulators),
 			    lis3_dev.regulators);
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
+	return 0;
+#endif
 }
 
 #ifdef CONFIG_PM_SLEEP
