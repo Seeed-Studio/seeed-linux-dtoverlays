@@ -423,7 +423,7 @@ function install {
     install_overlay reTerminal reTerminal-bridge
     setup_overlay reTerminal tp_rotate=1
   elif [ "$device" = "reTerminal-plus" ]; then
-    install_modules ltr30x ili9881d ch34x
+    install_modules ltr30x ili9881d ch34x rtc-pcf8563w
     install_overlay_DM
     # we blacklist this driver in DM to avoid gibberish issue with ch342f chip.
     # and we insmod a new driver for ch342f
@@ -465,7 +465,7 @@ function uninstall {
     unsetup_overlay reTerminal tp_rotate=1
     uninstall_overlay reTerminal reTerminal-bridge
   elif [ "$device" = "reTerminal-plus" ]; then
-    uninstall_modules ili9881d ltr30x ch34x
+    uninstall_modules ili9881d ltr30x ch34x rtc-pcf8563w
     uninstall_overlay_DM
     unblacklist_driver cdc_acm
   fi

@@ -113,9 +113,15 @@
 			#address-cells = <1>;
 			#size-cells = <0>;
 			
-			pcf8563@51 {
-				compatible = "nxp,pcf8563";
+			pcf8563w@51 {
+				compatible = "nxp,pcf8563w";
 				reg = <0x51>;
+				reset-source;
+				/* 0 = 4096Hz, 1 = 64Hz, 2 = 1Hz, 3 = 1/60Hz */
+				timer-frequency = <0x02>;
+				/* Timeout count, max 255 min 2*/
+				default-timeout =  <120>;
+				min-hw-heartbeat-ms = <2000>;
 			};
 			
 			eeprom@50 {
@@ -180,8 +186,8 @@
 			__overlay__ {
 					lcd_backlight: lcd_backlight {
 							compatible = "pwm-backlight";
-							brightness-levels = <0 6 8 12 16 24 32 40 48 64 96 128 160 192 224 255>;
-							default-brightness-level = <14>;
+							brightness-levels = <96 128 160 192 224 255>;
+							default-brightness-level = <4>;
 							pwms = <&pwm 1 200000>;
 							power-supply = <&vdd_3v3_reg>;
 							status = "okay";

@@ -4,3 +4,4 @@ lis3lv02d
 ltr30x
 bq24179_charger
 ch34x
+rtc-pcf8563w

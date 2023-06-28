@@ -25,6 +25,27 @@
 #include <video/mipi_display.h>
 #include <linux/version.h>
 
+static int dsi_status = 0; //0:dsi is ok, not 0:something wrong with dsi
+static ssize_t dsi_state_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	if (!dsi_status)
+		return scnprintf(buf, PAGE_SIZE, "ok\r\n");
+	else
+		return scnprintf(buf, PAGE_SIZE, "error\r\n");
+}
+
+static DEVICE_ATTR(dsi_state, 0444, dsi_state_show, NULL);
+
+static struct attribute *dsi_state_attrs[] = {
+	&dev_attr_dsi_state.attr,
+	NULL
+};
+
+static const struct attribute_group dsi_attr_group = {
+	.attrs = dsi_state_attrs,
+};
+
 enum ili9881d_op {
 	ILI9881C_SWITCH_PAGE,
 	ILI9881C_COMMAND,
@@ -356,21 +377,31 @@ static int ili9881d_prepare(struct drm_panel *panel)
 			ret = ili9881d_send_cmd_data(ctx, instr->arg.cmd.cmd,
 						      instr->arg.cmd.data);
 
-		if (ret)
+		if (ret) {
+			dsi_status = 1;
 			return ret;
+		}
 	}
 
 	ret = ili9881d_switch_page(ctx, 0);
-	if (ret)
+	if (ret) {
+		dsi_status = 1;
 		return ret;
+	}
 
 	ret = mipi_dsi_dcs_set_tear_on(ctx->dsi, MIPI_DSI_DCS_TEAR_MODE_VBLANK);
-	if (ret)
+	if (ret) {
+		dsi_status = 1;
 		return ret;
+	}
 
 	ret = mipi_dsi_dcs_exit_sleep_mode(ctx->dsi);
-	if (ret)
+	if (ret) {
+		dsi_status = 1;
 		return ret;
+	}
+
+	dsi_status = 0;
 
 	return 0;
 }
@@ -497,6 +528,8 @@ static int ili9881d_dsi_probe(struct mipi_dsi_device *dsi)
 	if (ret)
 		drm_panel_remove(&ctx->panel);
 
+	ret = sysfs_create_group(&dsi->dev.kobj, &dsi_attr_group);
+
 	return ret;
 }
 
@@ -510,6 +543,7 @@ static void ili9881d_dsi_remove(struct mipi_dsi_device *dsi)
 
 	mipi_dsi_detach(dsi);
 	drm_panel_remove(&ctx->panel);
+	sysfs_remove_group(&dsi->dev.kobj, &dsi_attr_group);
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
 	return 0;
@@ -544,7 +578,7 @@ static int __init ili9881d_init(void)
 	ret = mipi_dsi_driver_register(&ili9881d_dsi_driver);
 	return ret;
 }
-module_init(ili9881d_init);
+late_initcall(ili9881d_init);
 
 static void __exit ili9881d_exit(void)
 {
