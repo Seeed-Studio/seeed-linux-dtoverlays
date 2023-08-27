@@ -2424,7 +2424,7 @@ static int lan78xx_phy_init(struct lan78xx_net *dev)
 			lan78xx_write_reg(dev, HW_CFG, reg);
 		}
 	}
-
+	lan78xx_write_reg(dev, HW_CFG,HW_CFG_LED0_EN_|HW_CFG_LED1_EN_|HW_CFG_LED2_EN_|HW_CFG_LED3_EN_);
 	genphy_config_aneg(phydev);
 
 	dev->fc_autoneg = phydev->autoneg;
