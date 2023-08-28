@@ -4314,7 +4314,7 @@ static int lan78xx_probe(struct usb_interface *intf,
 	netif_napi_add(netdev, &dev->napi, lan78xx_poll, LAN78XX_NAPI_WEIGHT);
 #else
 	netif_set_tso_max_size(netdev, LAN78XX_TSO_SIZE(dev));
-	netif_napi_add(netdev, &dev->napi, lan78xx_poll)
+	netif_napi_add(netdev, &dev->napi, lan78xx_poll);
 #endif
 
 	INIT_DELAYED_WORK(&dev->wq, lan78xx_delayedwork);
@@ -4365,7 +4365,7 @@ static int lan78xx_probe(struct usb_interface *intf,
 #if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
 	maxp = usb_maxpacket(dev->udev, dev->pipe_intr, 0);
 #else
-	maxp = usb_endpoint_maxp(ep_intr);
+	maxp = usb_maxpacket(dev->udev, dev->pipe_intr);
 #endif
 	buf = kmalloc(maxp, GFP_KERNEL);
 	if (!buf)
