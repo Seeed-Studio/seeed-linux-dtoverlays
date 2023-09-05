@@ -990,7 +990,8 @@ static int bq25790_hw_init(struct bq25790_device *bq)
 	int wd_reg_val = BQ25790_WATCHDOG_DIS;
 	int i;
 
-	struct power_supply_battery_info *bat_info;
+	struct power_supply_battery_info battery_info;
+	struct power_supply_battery_info *bat_info = &battery_info;
 
 	if (bq->watchdog_timer) {
 		for (i = 0; i < BQ25790_NUM_WD_VAL; i++) {
