@@ -16,8 +16,6 @@
  * 3. controller software chip selects, without nvidia,always-hw-cs
  *
  */
-#define MCP_USING_CS_GPIOS    0
-
 /dts-v1/;
 /plugin/;
 
@@ -28,7 +26,7 @@
 #include <dt-bindings/gpio/tegra-gpio.h>
 
 / {
-	overlay-name = "mcp251x-spi2";
+	overlay-name = "mcp251x-spi0";
 	jetson-header-name = "Jetson 40pin Header";
 	compatible = JETSON_COMPATIBLE;
 
@@ -45,7 +43,7 @@
 	};
 
 	fragment@2 {
-		target = <&spi2>;
+		target = <&spi0>;
 		__overlay__ {
 			#address-cells = <1>;
 			#size-cells = <0>;
@@ -70,53 +68,44 @@
 
 		__overlay__ {
 			spi0_pinmux: spi0-pinmux {
-				hdr40-pin13 {
-					nvidia,pins = "spi3_sck_py0";
-					nvidia,function = "spi3";
+				hdr40-pin19 {
+					nvidia,pins = "spi1_mosi_pz5";
+					nvidia,function = "spi1";
 					nvidia,pull = <TEGRA_PIN_PULL_DOWN>;
 					nvidia,tristate = <TEGRA_PIN_DISABLE>;
 					nvidia,enable-input = <TEGRA_PIN_DISABLE>;
-					nvidia,io-high-voltage = <TEGRA_PIN_DISABLE>;
 					nvidia,lpdr = <TEGRA_PIN_DISABLE>;
 				};
-
-				hdr40-pin22 {
-					nvidia,pins = "spi3_miso_py1";
-					nvidia,function = "spi3";
+				hdr40-pin21 {
+					nvidia,pins = "spi1_miso_pz4";
+					nvidia,function = "spi1";
 					nvidia,pull = <TEGRA_PIN_PULL_DOWN>;
 					nvidia,tristate = <TEGRA_PIN_ENABLE>;
 					nvidia,enable-input = <TEGRA_PIN_ENABLE>;
-					nvidia,io-high-voltage = <TEGRA_PIN_DISABLE>;
 					nvidia,lpdr = <TEGRA_PIN_DISABLE>;
 				};
-
-				hdr40-pin37 {
-					nvidia,pins = "spi3_mosi_py2";
-					nvidia,function = "spi3";
+				hdr40-pin23 {
+					nvidia,pins = "spi1_sck_pz3";
+					nvidia,function = "spi1";
 					nvidia,pull = <TEGRA_PIN_PULL_DOWN>;
 					nvidia,tristate = <TEGRA_PIN_DISABLE>;
 					nvidia,enable-input = <TEGRA_PIN_DISABLE>;
-					nvidia,io-high-voltage = <TEGRA_PIN_DISABLE>;
 					nvidia,lpdr = <TEGRA_PIN_DISABLE>;
 				};
-
-				hdr40-pin18 {
-					nvidia,pins = "spi3_cs0_py3";
-					nvidia,function = "spi3";
-					nvidia,pull = <TEGRA_PIN_PULL_DOWN>;
+				hdr40-pin24 {
+					nvidia,pins = "spi1_cs0_pz6";
+					nvidia,function = "spi1";
+					nvidia,pull = <TEGRA_PIN_PULL_UP>;
 					nvidia,tristate = <TEGRA_PIN_DISABLE>;
 					nvidia,enable-input = <TEGRA_PIN_DISABLE>;
-					nvidia,io-high-voltage = <TEGRA_PIN_DISABLE>;
 					nvidia,lpdr = <TEGRA_PIN_DISABLE>;
 				};
-
-				hdr40-pin16 {
-					nvidia,pins = "spi3_cs1_py4";
+				hdr40-pin26 {
+					nvidia,pins = "spi1_cs1_pz7";
 					nvidia,function = "rsvd1";
 					nvidia,pull = <TEGRA_PIN_PULL_UP>;
 					nvidia,tristate = <TEGRA_PIN_ENABLE>;
 					nvidia,enable-input = <TEGRA_PIN_ENABLE>;
-					nvidia,io-high-voltage = <TEGRA_PIN_DISABLE>;
 					nvidia,lpdr = <TEGRA_PIN_DISABLE>;
 				};
 			};
