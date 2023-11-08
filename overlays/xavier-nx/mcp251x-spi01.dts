@@ -36,7 +36,7 @@
 			can_clock: can_clock {
 				compatible = "fixed-clock";
 				#clock-cells = <0>;
-				clock-frequency = <8000000>;
+				clock-frequency = <20000000>;
 				clock-accuracy = <100>;
 			};
 		};
@@ -54,7 +54,7 @@
 				status = "okay";
 				compatible = "microchip,mcp2515";
 				reg = <0x0>;
-				spi-max-frequency = <1000000>;
+				spi-max-frequency = <10000000>;
 				nvidia,enable-hw-based-cs;
 				clocks = <&can_clock>;
 				interrupt-parent = <&tegra_main_gpio>;
@@ -75,7 +75,7 @@
 				status = "okay";
 				compatible = "microchip,mcp2515";
 				reg = <0x0>;
-				spi-max-frequency = <1000000>;
+				spi-max-frequency = <10000000>;
 				nvidia,enable-hw-based-cs;
 				clocks = <&can_clock>;
 				interrupt-parent = <&tegra_main_gpio>;
