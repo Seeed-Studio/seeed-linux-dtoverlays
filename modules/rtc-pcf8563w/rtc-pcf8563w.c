@@ -24,6 +24,7 @@
 #include <linux/of.h>
 #include <linux/err.h>
 #include <linux/watchdog.h>
+#include <linux/version.h>
 
 #define PCF8563_REG_ST1 0x00 /* status */
 #define PCF8563_REG_ST2 0x01
@@ -752,7 +753,11 @@ static int pcf8563_probe(struct i2c_client *client)
 
     pcf8563_watchdog_init(&client->dev, pcf8563);
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
+    err = rtc_register_device(pcf8563->rtc);
+#else
     err = devm_rtc_register_device(pcf8563->rtc);
+#endif
     if (err)
         return err;
 
