@@ -49,7 +49,7 @@
 			#size-cells = <0>;
 			pinctrl-names = "default";
 			pinctrl-0 = <&spi0_pinmux>;
-			
+
 			spi@0 {
 				status = "okay";
 				compatible = "microchip,mcp2515";
@@ -58,7 +58,7 @@
 				nvidia,enable-hw-based-cs;
 				clocks = <&can_clock>;
 				interrupt-parent = <&tegra_main_gpio>;
-				interrupts = <TEGRA194_MAIN_GPIO(Y, 4) 1>;
+				interrupts = <TEGRA194_MAIN_GPIO(R, 0) 1>;
 			};
 		};
 	};
@@ -100,12 +100,13 @@
 					nvidia,enable-input = <TEGRA_PIN_DISABLE>;
 					nvidia,lpdr = <TEGRA_PIN_DISABLE>;
 				};
-				hdr40-pin26 {
-					nvidia,pins = "spi1_cs1_pz7";
-					nvidia,function = "rsvd1";
+				hdr40-pin32 { /* INT */
+					nvidia,pins = "soc_gpio44_pr0";
+					nvidia,function = "rsvd2";
 					nvidia,pull = <TEGRA_PIN_PULL_UP>;
-					nvidia,tristate = <TEGRA_PIN_ENABLE>;
+					nvidia,tristate = <TEGRA_PIN_DISABLE>;
 					nvidia,enable-input = <TEGRA_PIN_ENABLE>;
+					nvidia,io-high-voltage = <TEGRA_PIN_DISABLE>;
 					nvidia,lpdr = <TEGRA_PIN_DISABLE>;
 				};
 			};
