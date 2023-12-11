@@ -1,0 +1,134 @@
+// SPDX-License-Identifier: GPL-2.0-only
+/*
+ * Jetson Device-tree overlay for
+ *   2 Channel CAN BUS FD Shield, MCP2518FD (RPi Compatible).
+ *
+ * Copyright (c) 2020 Seeed Technology Co,Ltd - https://www.seeed.cc.
+ * All rights reserved.
+ *
+ */
+
+/*
+ * All three configurations work.
+ *
+ * 1. cs_gpios as chip selects, set MCP_USING_CS_GPIOS to 1
+ * 2. controller hardware chip selects, with nvidia,always-hw-cs
+ * 3. controller software chip selects, without nvidia,always-hw-cs
+ *
+ */
+/dts-v1/;
+/plugin/;
+
+//#include <dt-bindings/pinctrl/tegra210-p3448-0000-p3449-0000-a02.h>
+#include <dt-bindings/pinctrl/tegra194-p3668-all-p3509-0000.h>
+#include <dt-bindings/interrupt-controller/irq.h>
+#include <dt-bindings/pinctrl/pinctrl-tegra.h>
+#include <dt-bindings/gpio/tegra-gpio.h>
+
+/ {
+	overlay-name = "mcp251x-spi0-waveshare1ch";
+	jetson-header-name = "Jetson 40pin Header";
+	compatible = JETSON_COMPATIBLE;
+
+	fragment@1 {
+		target-path = "/";
+		__overlay__ {
+			can_clock: can_clock {
+				compatible = "fixed-clock";
+				#clock-cells = <0>;
+				clock-frequency = <12000000>;
+				clock-accuracy = <100>;
+			};
+		};
+	};
+
+	fragment@2 {
+		target = <&spi0>;
+		__overlay__ {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&spi0_pinmux>;
+			
+			spi@0 {
+				status = "okay";
+				compatible = "microchip,mcp2515";
+				reg = <0x0>;
+				spi-max-frequency = <10000000>;
+				nvidia,enable-hw-based-cs;
+				clocks = <&can_clock>;
+				interrupt-parent = <&tegra_main_gpio>;
+				interrupts = <TEGRA194_MAIN_GPIO(Y, 1) 1>;
+			};
+		};
+	};
+
+	fragment@3 {
+		target = <&pinmux>;
+
+		__overlay__ {
+			spi0_pinmux: spi0-pinmux {
+				hdr40-pin19 {
+					nvidia,pins = "spi1_mosi_pz5";
+					nvidia,function = "spi1";
+					nvidia,pull = <TEGRA_PIN_PULL_DOWN>;
+					nvidia,tristate = <TEGRA_PIN_DISABLE>;
+					nvidia,enable-input = <TEGRA_PIN_DISABLE>;
+					nvidia,lpdr = <TEGRA_PIN_DISABLE>;
+				};
+				hdr40-pin21 {
+					nvidia,pins = "spi1_miso_pz4";
+					nvidia,function = "spi1";
+					nvidia,pull = <TEGRA_PIN_PULL_DOWN>;
+					nvidia,tristate = <TEGRA_PIN_ENABLE>;
+					nvidia,enable-input = <TEGRA_PIN_ENABLE>;
+					nvidia,lpdr = <TEGRA_PIN_DISABLE>;
+				};
+				hdr40-pin23 {
+					nvidia,pins = "spi1_sck_pz3";
+					nvidia,function = "spi1";
+					nvidia,pull = <TEGRA_PIN_PULL_DOWN>;
+					nvidia,tristate = <TEGRA_PIN_DISABLE>;
+					nvidia,enable-input = <TEGRA_PIN_DISABLE>;
+					nvidia,lpdr = <TEGRA_PIN_DISABLE>;
+				};
+				hdr40-pin24 {
+					nvidia,pins = "spi1_cs0_pz6";
+					nvidia,function = "spi1";
+					nvidia,pull = <TEGRA_PIN_PULL_UP>;
+					nvidia,tristate = <TEGRA_PIN_DISABLE>;
+					nvidia,enable-input = <TEGRA_PIN_DISABLE>;
+					nvidia,lpdr = <TEGRA_PIN_DISABLE>;
+				};
+				hdr40-pin26 {
+					nvidia,pins = "spi1_cs1_pz7";
+					nvidia,function = "spi1";
+					nvidia,pull = <TEGRA_PIN_PULL_UP>;
+					nvidia,tristate = <TEGRA_PIN_DISABLE>;
+					nvidia,enable-input = <TEGRA_PIN_DISABLE>;
+					nvidia,lpdr = <TEGRA_PIN_DISABLE>;
+				};
+
+				hdr40-pin16 {
+					nvidia,pins = "spi3_cs1_py4";
+					nvidia,function = "rsvd1";
+					nvidia,pull = <TEGRA_PIN_PULL_UP>;
+					nvidia,tristate = <TEGRA_PIN_ENABLE>;
+					nvidia,enable-input = <TEGRA_PIN_ENABLE>;
+					nvidia,io-high-voltage = <TEGRA_PIN_DISABLE>;
+					nvidia,lpdr = <TEGRA_PIN_DISABLE>;
+				};
+
+				hdr40-pin22 {
+					nvidia,pins = "spi3_miso_py1";
+					nvidia,function = "rsvd1";
+					nvidia,pull = <TEGRA_PIN_PULL_UP>;
+					nvidia,tristate = <TEGRA_PIN_ENABLE>;
+					nvidia,enable-input = <TEGRA_PIN_ENABLE>;
+					nvidia,io-high-voltage = <TEGRA_PIN_DISABLE>;
+					nvidia,lpdr = <TEGRA_PIN_DISABLE>;
+				};
+			};
+		};
+	};
+};
