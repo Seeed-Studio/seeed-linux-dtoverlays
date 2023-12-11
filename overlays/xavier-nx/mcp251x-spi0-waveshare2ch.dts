@@ -36,7 +36,7 @@
 			can_clock: can_clock {
 				compatible = "fixed-clock";
 				#clock-cells = <0>;
-				clock-frequency = <20000000>;
+				clock-frequency = <16000000>;
 				clock-accuracy = <100>;
 			};
 		};
