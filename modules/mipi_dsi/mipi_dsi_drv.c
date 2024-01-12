@@ -11,9 +11,6 @@
 #include "mipi_dsi.h"
 #include <linux/version.h>
 
-////////////////////////////////////////////////////////////////////////////////
-// I2C read/write functions
-
 /*static */int i2c_md_read(struct i2c_mipi_dsi *md, u8 reg, u8 *buf, int len)
 {
 	struct i2c_client *client = md->i2c;
@@ -78,7 +75,7 @@
 	mutex_unlock(&md->mutex);
 }
 
-////////////////////////////////////////////////////////////////////////////////
+
 // MIPI-DSI driver
 
 static int mipi_dsi_probe(struct mipi_dsi_device *dsi)
@@ -100,7 +97,7 @@ static struct mipi_dsi_driver mipi_dsi_driver = {
 	.probe = mipi_dsi_probe,
 };
 
-////////////////////////////////////////////////////////////////////////////////
+
 // MIPI-DSI device
 
 static struct mipi_dsi_device *mipi_dsi_device(struct device *dev)
@@ -156,7 +153,7 @@ error:
 	return NULL;
 }
 
-////////////////////////////////////////////////////////////////////////////////
+
 // Panel
 
 static int panel_prepare(struct drm_panel *panel)
@@ -254,8 +251,6 @@ static int panel_get_modes(struct drm_panel *panel, struct drm_connector *connec
 	struct i2c_mipi_dsi *md = panel_to_md(panel);
 	const struct drm_panel_funcs *funcs = md->panel_data->funcs;
 
-	// DBG_PRINT("Get panel mode");
-
 	if (funcs && funcs->get_modes) {
 		ret = funcs->get_modes(panel, connector);
 		if (ret < 0)
@@ -273,15 +268,13 @@ static const struct drm_panel_funcs panel_funcs = {
 	.get_modes = panel_get_modes,
 };
 
-////////////////////////////////////////////////////////////////////////////////
+
 // Backlight device
 
 static int backlight_update(struct backlight_device *bd)
 {
 	struct i2c_mipi_dsi *md = bl_get_data(bd);
 	int brightness = bd->props.brightness;
-
-	// DBG_PRINT("Update backlight status");
 
 	if (bd->props.power != FB_BLANK_UNBLANK ||
 		bd->props.fb_blank != FB_BLANK_UNBLANK ||
@@ -325,7 +318,7 @@ static int backlight_init(struct i2c_mipi_dsi *md)
 	return 0;
 }
 
-////////////////////////////////////////////////////////////////////////////////
+
 // I2C driver
 
 static int i2c_md_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
@@ -461,7 +454,7 @@ static struct i2c_driver i2c_md_driver = {
 	.shutdown = i2c_md_shutdown,
 };
 
-////////////////////////////////////////////////////////////////////////////////
+
 // Kernel module
 
 static int __init i2c_md_init(void)
@@ -500,5 +493,3 @@ MODULE_AUTHOR("Zhangqun Ming <north_sea@qq.com>");
 MODULE_AUTHOR("Seeed, Inc.");
 MODULE_DESCRIPTION("MIPI-DSI driver");
 MODULE_LICENSE("GPL v2");
-
-////////////////////////////////////////////////////////////////////////////////
