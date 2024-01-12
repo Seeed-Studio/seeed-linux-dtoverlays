@@ -31,6 +31,8 @@ static int ili9881d_get_modes(struct drm_panel *panel, struct drm_connector *con
 {
 	struct drm_display_mode *mode;
 
+	// DBG_PRINT("Get ILI9881D mode");
+
 	mode = drm_mode_duplicate(connector->dev, &ili9881d_modes);
 	if (!mode) {
 		dev_err(panel->dev, "failed to add mode %ux%u@%u\n",
@@ -57,14 +59,14 @@ static int ili9881d_prepare(struct drm_panel *panel)
 	u16 addr = 0xda;
 	u32 val[4] = {0};
 
-	DBG_FUNC();
+	DBG_PRINT("Prepare ILI9881D");
 
 	if (!dsi)
 		return -1;
 
 	ret = mipi_dsi_generic_read(dsi, &addr, sizeof(addr), &val, sizeof(val));
 	if(ret < 0){
-		DBG_FUNC("No LCD connected,pls check your hardware!\n");
+		DBG_FUNC("No LCD connected,pls check your hardware!");
 		return -ENODEV;
 	}
 	

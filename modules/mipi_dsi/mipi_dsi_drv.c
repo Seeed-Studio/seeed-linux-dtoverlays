@@ -11,7 +11,8 @@
 #include "mipi_dsi.h"
 #include <linux/version.h>
 
-#define MIPI_DSI_DRIVER_NAME		"mipi_dsi"
+////////////////////////////////////////////////////////////////////////////////
+// I2C read/write functions
 
 /*static */int i2c_md_read(struct i2c_mipi_dsi *md, u8 reg, u8 *buf, int len)
 {
@@ -77,13 +78,15 @@
 	mutex_unlock(&md->mutex);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// MIPI-DSI driver
 
-/* mipi driver */
 static int mipi_dsi_probe(struct mipi_dsi_device *dsi)
 {
 	int ret;
 
-	DBG_FUNC();
+	DBG_PRINT("Probe MIPI-DSI driver");
+
 	ret = mipi_dsi_attach(dsi);
 	if (ret) {
 		dev_err(&dsi->dev, "failed to attach dsi to host: %d\n", ret);
@@ -97,8 +100,9 @@ static struct mipi_dsi_driver mipi_dsi_driver = {
 	.probe = mipi_dsi_probe,
 };
 
+////////////////////////////////////////////////////////////////////////////////
+// MIPI-DSI device
 
-/* mipi device */
 static struct mipi_dsi_device *mipi_dsi_device(struct device *dev)
 {
 	struct mipi_dsi_device *dsi = NULL;
@@ -110,7 +114,8 @@ static struct mipi_dsi_device *mipi_dsi_device(struct device *dev)
 		.node = NULL,
 	};
 
-	DBG_FUNC();
+	DBG_PRINT("Add MIPI-DSI device to device tree");
+
 	/* Look up the DSI host.  It needs to probe before we do. */
 	endpoint = of_graph_get_next_endpoint(dev->of_node, NULL);
 	if (!endpoint) {
@@ -151,15 +156,16 @@ error:
 	return NULL;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Panel
 
-/* panel_funcs */
 static int panel_prepare(struct drm_panel *panel)
 {
 	int ret = 0;
 	struct i2c_mipi_dsi *md = panel_to_md(panel);
 	const struct drm_panel_funcs *funcs = md->panel_data->funcs;
 
-	DBG_FUNC("");
+	DBG_PRINT("Prepare panel");
 
 	/* i2c */
 	/* reset pin */
@@ -188,7 +194,8 @@ static int panel_unprepare(struct drm_panel *panel)
 	struct i2c_mipi_dsi *md = panel_to_md(panel);
 	const struct drm_panel_funcs *funcs = md->panel_data->funcs;
 
-	DBG_FUNC("");
+	DBG_PRINT("Unprepare panel");
+
 	if (funcs && funcs->unprepare) {
 		ret = funcs->unprepare(panel);
 		if (ret < 0)
@@ -204,7 +211,8 @@ static int panel_enable(struct drm_panel * panel)
 	struct i2c_mipi_dsi *md = panel_to_md(panel);
 	const struct drm_panel_funcs *funcs = md->panel_data->funcs;
 
-	DBG_FUNC("");
+	DBG_PRINT("Enable panel");
+
 	/* panel */
 	if (funcs && funcs->enable) {
 		ret = funcs->enable(panel);
@@ -224,7 +232,8 @@ static int panel_disable(struct drm_panel * panel)
 	struct i2c_mipi_dsi *md = panel_to_md(panel);
 	const struct drm_panel_funcs *funcs = md->panel_data->funcs;
 
-	DBG_FUNC("");
+	DBG_PRINT("Disable panel");
+
 	/* i2c */
 	i2c_md_write(md, REG_PWM, 0);
 	i2c_md_write(md, REG_LCD_RST, 0);
@@ -245,7 +254,8 @@ static int panel_get_modes(struct drm_panel *panel, struct drm_connector *connec
 	struct i2c_mipi_dsi *md = panel_to_md(panel);
 	const struct drm_panel_funcs *funcs = md->panel_data->funcs;
 
-//	DBG_FUNC("");
+	// DBG_PRINT("Get panel mode");
+
 	if (funcs && funcs->get_modes) {
 		ret = funcs->get_modes(panel, connector);
 		if (ret < 0)
@@ -263,12 +273,15 @@ static const struct drm_panel_funcs panel_funcs = {
 	.get_modes = panel_get_modes,
 };
 
+////////////////////////////////////////////////////////////////////////////////
+// Backlight device
 
-/* backlight */
 static int backlight_update(struct backlight_device *bd)
 {
 	struct i2c_mipi_dsi *md = bl_get_data(bd);
 	int brightness = bd->props.brightness;
+
+	// DBG_PRINT("Update backlight status");
 
 	if (bd->props.power != FB_BLANK_UNBLANK ||
 		bd->props.fb_blank != FB_BLANK_UNBLANK ||
@@ -276,6 +289,7 @@ static int backlight_update(struct backlight_device *bd)
 			brightness = 0;
 		}
 
+	DBG_FUNC("brightness=%d", brightness);
 	md->brightness = brightness;
 	i2c_md_write(md, REG_PWM, brightness);
 
@@ -293,6 +307,7 @@ static int backlight_init(struct i2c_mipi_dsi *md)
 	struct backlight_properties props;
 	struct backlight_device *bd;
 
+	DBG_FUNC("Register backlight device");
 	memset(&props, 0, sizeof(props));
 	props.type = BACKLIGHT_RAW;
 	props.max_brightness = 255;
@@ -310,15 +325,18 @@ static int backlight_init(struct i2c_mipi_dsi *md)
 	return 0;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// I2C driver
 
-/* i2c */
 static int i2c_md_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
 {
 	struct device *dev = &i2c->dev;
 	struct i2c_mipi_dsi *md;
 	int ret = 0;
 
-	DBG_FUNC("start");
+	DBG_PRINT("Probe I2C driver");
+	DBG_FUNC("Start");
+
 	md = devm_kzalloc(dev, sizeof(*md), GFP_KERNEL);
 	if (!md)
 		return -ENOMEM;
@@ -337,13 +355,11 @@ static int i2c_md_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
 		dev_err(dev, "I2C read id failed: %d\n", ret);
 		return -ENODEV;
 	}
-	dev_info(dev, "I2C read id: 0x%x\n", ret);
 	if (ret != 0xC3) {
 		dev_err(dev, "Unknown chip id: 0x%02x\n", ret);
 		return -ENODEV;
 	}
 
-	/* Turn off */
 	i2c_md_write(md, REG_POWERON, 1);
 
 	md->dsi = mipi_dsi_device(dev);
@@ -352,6 +368,7 @@ static int i2c_md_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
 		return -ENODEV;
 	}
 
+	DBG_FUNC("Add panel");
 	md->panel_data->set_dsi(md->dsi);
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
 	md->panel.prepare_upstream_first = true;
@@ -373,8 +390,7 @@ static int i2c_md_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
 		dev_err(dev, "Can't get the data of tp_point_rotate!\n");
 	}
 
-	DBG_FUNC("finished.");
-
+	DBG_FUNC("Finish");
 	return 0;
 }
 
@@ -386,7 +402,8 @@ static void i2c_md_remove(struct i2c_client *i2c)
 {
 	struct i2c_mipi_dsi *md = i2c_get_clientdata(i2c);
 
-	DBG_FUNC();
+	DBG_PRINT("Remove I2C driver");
+
 	tp_deinit(md);
 
 	/* Turn off power */
@@ -408,7 +425,8 @@ static void i2c_md_shutdown(struct i2c_client *i2c)
 {
 	struct i2c_mipi_dsi *md = i2c_get_clientdata(i2c);
 
-	DBG_FUNC();
+	DBG_PRINT("Shutdown I2C driver");
+
 	tp_deinit(md);
 
 	/* Turn off power */
@@ -435,7 +453,7 @@ MODULE_DEVICE_TABLE(of, i2c_md_of_ids);
 
 static struct i2c_driver i2c_md_driver = {
 	.driver = {
-		.name = "i2c_mipi_dsi",
+		.name = "mipi_dsi",
 		.of_match_table = i2c_md_of_ids,
 	},
 	.probe = i2c_md_probe,
@@ -443,15 +461,21 @@ static struct i2c_driver i2c_md_driver = {
 	.shutdown = i2c_md_shutdown,
 };
 
+////////////////////////////////////////////////////////////////////////////////
+// Kernel module
+
 static int __init i2c_md_init(void)
 {
 	int ret;
 
-	DBG_FUNC();
+	DBG_PRINT("Initialize kernel module");
+
+	DBG_FUNC("Add I2C driver");
 	ret = i2c_add_driver(&i2c_md_driver);
 	if (ret < 0)
 		return ret;
 
+	DBG_FUNC("Register MIPI-DSI driver");
 	ret = mipi_dsi_driver_register(&mipi_dsi_driver);
 	if (ret < 0)
 		return ret;
@@ -462,8 +486,12 @@ module_init(i2c_md_init);
 
 static void __exit i2c_md_exit(void)
 {
-	DBG_FUNC();
+	DBG_PRINT("Exit kernel module");
+
+	DBG_FUNC("Unregister MIPI-DSI driver");
 	mipi_dsi_driver_unregister(&mipi_dsi_driver);
+
+	DBG_FUNC("Delete I2C driver");
 	i2c_del_driver(&i2c_md_driver);
 }
 module_exit(i2c_md_exit);
@@ -472,3 +500,5 @@ MODULE_AUTHOR("Zhangqun Ming <north_sea@qq.com>");
 MODULE_AUTHOR("Seeed, Inc.");
 MODULE_DESCRIPTION("MIPI-DSI driver");
 MODULE_LICENSE("GPL v2");
+
+////////////////////////////////////////////////////////////////////////////////
