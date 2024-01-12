@@ -41,17 +41,16 @@
 #include <linux/input/mt.h>
 #include <linux/input/touchscreen.h>
 
+#define MIPI_DSI_DRIVER_NAME        "mipi_dsi"
 
 #define I2C_DSI_DBG
 #ifdef I2C_DSI_DBG
-#define DBG_FUNC(format, x...)		printk(KERN_INFO "[DSI]%s:" format"\n", __func__, ##x)
-#define DBG_PRINT(format, x...)		printk(KERN_INFO "[DSI]" format"\n", ##x)
+#define DBG_FUNC(format, x...)      printk(KERN_INFO MIPI_DSI_DRIVER_NAME ": (%s) " format "\n", __func__, ##x)
+#define DBG_PRINT(format, x...)     printk(KERN_INFO MIPI_DSI_DRIVER_NAME ": " format "\n", ##x)
 #else
 #define DBG_FUNC(format, x...)
 #define DBG_PRINT(format, x...)
 #endif
-
-#define DSI_DRIVER_NAME		        "i2c_mipi_dsi"
 
 /* i2c: commands */
 enum REG_ADDR {
