@@ -303,9 +303,6 @@ static const struct drm_panel_funcs ili9881d_funcs = {
 static void ili9881d_set_dsi(struct mipi_dsi_device *dsi)
 {
 	ili9881d_dsi = dsi;
-	dsi->mode_flags = (MIPI_DSI_MODE_VIDEO /*| MIPI_DSI_MODE_VIDEO_SYNC_PULSE*/);
-	dsi->format = MIPI_DSI_FMT_RGB888;
-	dsi->lanes = 4;
 }
 
 const struct panel_data ili9881d_data = {

@@ -84,6 +84,10 @@ static int mipi_dsi_probe(struct mipi_dsi_device *dsi)
 
 	DBG_PRINT("Probe MIPI-DSI driver");
 
+	dsi->mode_flags = MIPI_DSI_MODE_VIDEO;
+	dsi->format = MIPI_DSI_FMT_RGB888;
+	dsi->lanes = 4;
+
 	ret = mipi_dsi_attach(dsi);
 	if (ret) {
 		dev_err(&dsi->dev, "failed to attach dsi to host: %d\n", ret);
@@ -117,7 +121,7 @@ static struct mipi_dsi_device *mipi_dsi_device(struct device *dev)
 	endpoint = of_graph_get_next_endpoint(dev->of_node, NULL);
 	if (!endpoint) {
 		dev_err(dev, "No endpoint node!");
-		return NULL;
+		return ERR_PTR(-ENODEV);
 	}
 
 	dsi_host_node = of_graph_get_remote_port_parent(endpoint);
@@ -130,7 +134,8 @@ static struct mipi_dsi_device *mipi_dsi_device(struct device *dev)
 	of_node_put(dsi_host_node);
 	if (!host) {
 		dev_err(dev, "Can't find mipi_dsi_host!");
-		goto error;
+		of_node_put(endpoint);
+		return ERR_PTR(-EPROBE_DEFER);
 	}
 
 	info.node = of_graph_get_remote_port(endpoint);
@@ -143,14 +148,14 @@ static struct mipi_dsi_device *mipi_dsi_device(struct device *dev)
 	dsi = mipi_dsi_device_register_full(host, &info);
 	if(IS_ERR(dsi)) {
 		dev_err(dev, "Can't device register_full!");
-		goto error;
+		return dsi;
 	}
 
 	return dsi;
 
 error:
 	of_node_put(endpoint);
-	return NULL;
+	return ERR_PTR(-ENODEV);
 }
 
 
@@ -364,9 +369,9 @@ static int i2c_md_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
 	i2c_md_write(md, REG_POWERON, 1);
 
 	md->dsi = mipi_dsi_device(dev);
-	if (NULL == md->dsi) {
+	if (IS_ERR(md->dsi)) {
 		dev_err(dev, "DSI device registration failed!\n");
-		return -ENODEV;
+		return PTR_ERR(md->dsi);
 	}
 
 	DBG_FUNC("Add panel");
@@ -471,13 +476,13 @@ static int __init i2c_md_init(void)
 
 	DBG_PRINT("Initialize kernel module");
 
-	DBG_FUNC("Add I2C driver");
-	ret = i2c_add_driver(&i2c_md_driver);
+	DBG_FUNC("Register MIPI-DSI driver");
+	ret = mipi_dsi_driver_register(&mipi_dsi_driver);
 	if (ret < 0)
 		return ret;
 
-	DBG_FUNC("Register MIPI-DSI driver");
-	ret = mipi_dsi_driver_register(&mipi_dsi_driver);
+	DBG_FUNC("Add I2C driver");
+	ret = i2c_add_driver(&i2c_md_driver);
 	if (ret < 0)
 		return ret;
 
@@ -489,11 +494,11 @@ static void __exit i2c_md_exit(void)
 {
 	DBG_PRINT("Exit kernel module");
 
-	DBG_FUNC("Unregister MIPI-DSI driver");
-	mipi_dsi_driver_unregister(&mipi_dsi_driver);
-
 	DBG_FUNC("Delete I2C driver");
 	i2c_del_driver(&i2c_md_driver);
+
+	DBG_FUNC("Unregister MIPI-DSI driver");
+	mipi_dsi_driver_unregister(&mipi_dsi_driver);
 }
 module_exit(i2c_md_exit);
 
