@@ -355,7 +355,7 @@ static int i2c_md_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
 	}
 
 	ret = i2c_md_read(md, REG_TP_VERSION, mcu_img_ver, ARRAY_SIZE(mcu_img_ver));
-	if (ret != 1) {
+	if (ret < 0) {
 		dev_err(dev, "I2C read STM32 firmware version failed: %d\n", ret);
 		return -ENODEV;
 	}
