@@ -326,6 +326,7 @@ static int i2c_md_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
 	struct device *dev = &i2c->dev;
 	struct i2c_mipi_dsi *md;
 	int ret = 0;
+	u8 mcu_img_ver[2];
 
 	DBG_PRINT("Probe I2C driver");
 	DBG_FUNC("Start");
@@ -352,6 +353,13 @@ static int i2c_md_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
 		dev_err(dev, "Unknown chip id: 0x%02x\n", ret);
 		return -ENODEV;
 	}
+
+	ret = i2c_md_read(md, REG_TP_VERSION, mcu_img_ver, ARRAY_SIZE(mcu_img_ver));
+	if (ret < 0) {
+		dev_err(dev, "I2C read STM32 firmware version failed: %d\n", ret);
+		return -ENODEV;
+	}
+	DBG_FUNC("STM32 firmware version %u.%u", mcu_img_ver[0], mcu_img_ver[1]);
 
 	i2c_md_write(md, REG_POWERON, 1);
 
