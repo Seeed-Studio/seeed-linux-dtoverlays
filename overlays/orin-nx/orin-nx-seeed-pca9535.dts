@@ -14,28 +14,37 @@
 
 / {
     overlay-name = "Jetson Seeed PCA9535";
-	jetson-header-name = "Jetson Orin NX PCA9535";
-	compatible = "nvidia,p3768-0000+p3767-0000", "nvidia,p3509-0000+p3767-0000", "nvidia,p3767-0000", "nvidia,tegra234", "nvidia,tegra23x";
+    jetson-header-name = "Jetson 40pin Header";
+    compatible = "nvidia,p3768-0000+p3767-0000", "nvidia,p3509-0000+p3767-0000", "nvidia,p3767-0000", "nvidia,tegra234", "nvidia,tegra23x";
+ 
 
     fragment@0 {
-		target-path = "/i2c@c240000";
-
+		target-path = "/bus@0/i2c@c240000";
 		__overlay__ {
-            #address-cells = <1>;
-		    #size-cells = <0>;
+					gpio_xten: gpio_xten@21 {
+						compatible = "nxp,pca9535";
+						reg = <0x21>;
+								gpio-controller;
+								#gpio-cells = <2>;
 
-			gpio_xten: gpio_xten@21 {
-				compatible = "nxp,pca9535";
-				reg = <0x21>;
-                gpio-controller;
-                #gpio-cells = <2>;
+						interrupt-controller;
+								#interrupt-cells=<2>;
 
-                interrupt-controller;
-                #interrupt-cells=<2>;
+								interrupt-parent = <&gpio>;
+								interrupts = <TEGRA234_MAIN_GPIO(N, 1) IRQ_TYPE_EDGE_FALLING>;
 
-                interrupt-parent = <&tegra_main_gpio>;
-                interrupts = <TEGRA234_MAIN_GPIO(N, 1) IRQ_TYPE_EDGE_FALLING>;
-			};
+						gpio-line-names =
+							"wl_dis"	 	,"hst_wake_wl",
+							"wl_wake_hst"	,"bt_dis",
+							"hst_wake_bt"	,"bt_wake_hst",
+							"spi0_rst_3v3"	,"gpio_pin7",
+							"can_120R_en"	,"M2B_PCIe_rst",
+							"USB_HUB_rst"	,"PCIe_ETH_rst",
+							"M2B_WOWWAN"	,"M2B_DPR_3V3",
+							"SIM_MUX_SEL"	,"gpio_pin15";
+
+						gpio-line-offsets = <0>, <1>, <2>, <3>, <4>, <5>, <6>, <7>, <8>, <9>, <10>, <11>, <12>, <13>, <14>, <15>;
+					};
 		};
 	};
 };
