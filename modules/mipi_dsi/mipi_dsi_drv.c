@@ -417,9 +417,13 @@ static void i2c_md_remove(struct i2c_client *i2c)
 	i2c_md_write(md, REG_LCD_RST, 0);
 	i2c_md_write(md, REG_PWM, 0);
 
-	mipi_dsi_detach(md->dsi);
-	drm_panel_remove(&md->panel);
-	mipi_dsi_device_unregister(md->dsi);
+	if (md->dsi) {
+		mipi_dsi_detach(md->dsi);
+		drm_panel_remove(&md->panel);
+		mipi_dsi_device_unregister(md->dsi);
+		kfree(md->dsi);
+		md->dsi = NULL;
+	}
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
 	return 0;
@@ -439,9 +443,13 @@ static void i2c_md_shutdown(struct i2c_client *i2c)
 	i2c_md_write(md, REG_LCD_RST, 0);
 	i2c_md_write(md, REG_PWM, 0);
 
-	mipi_dsi_detach(md->dsi);
-	drm_panel_remove(&md->panel);
-	mipi_dsi_device_unregister(md->dsi);
+	if (md->dsi) {
+		mipi_dsi_detach(md->dsi);
+		drm_panel_remove(&md->panel);
+		mipi_dsi_device_unregister(md->dsi);
+		kfree(md->dsi);
+		md->dsi = NULL;
+	}
 }
 
 extern const struct panel_data ili9881d_data;
