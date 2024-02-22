@@ -473,13 +473,13 @@ static int __init i2c_md_init(void)
 
 	DBG_PRINT("Initialize kernel module");
 
-	DBG_FUNC("Register MIPI-DSI driver");
-	ret = mipi_dsi_driver_register(&mipi_dsi_driver);
+	DBG_FUNC("Add I2C driver");
+	ret = i2c_add_driver(&i2c_md_driver);
 	if (ret < 0)
 		return ret;
 
-	DBG_FUNC("Add I2C driver");
-	ret = i2c_add_driver(&i2c_md_driver);
+	DBG_FUNC("Register MIPI-DSI driver");
+	ret = mipi_dsi_driver_register(&mipi_dsi_driver);
 	if (ret < 0)
 		return ret;
 
@@ -491,11 +491,11 @@ static void __exit i2c_md_exit(void)
 {
 	DBG_PRINT("Exit kernel module");
 
-	DBG_FUNC("Delete I2C driver");
-	i2c_del_driver(&i2c_md_driver);
-
 	DBG_FUNC("Unregister MIPI-DSI driver");
 	mipi_dsi_driver_unregister(&mipi_dsi_driver);
+
+	DBG_FUNC("Delete I2C driver");
+	i2c_del_driver(&i2c_md_driver);
 }
 module_exit(i2c_md_exit);
 
