@@ -1,0 +1,5 @@
+
+[output:DSI-1]
+mode = 720x1280@60000
+position = 0,0
+transform = 270

@@ -22,26 +22,42 @@ CFG_PATH=/boot/config.txt
 CLI_PATH=/boot/cmdline.txt
 OVERLAY_DIR=/boot/overlays
 BLACKLIST_PATH=/etc/modprobe.d/raspi-blacklist.conf
-# Ubuntu
+# Ubuntu or Raspbian bookworm and later
 [ -f /boot/firmware/config.txt ] && CFG_PATH=/boot/firmware/config.txt
 [ -f /boot/firmware/cmdline.txt ] && CLI_PATH=/boot/firmware/cmdline.txt
 [ -d /boot/firmware/overlays ] && OVERLAY_DIR=/boot/firmware/overlays
+
+# DISTRO INFO
+DISTRO_ID=$(lsb_release -is)
+DISTRO_CODE=$(lsb_release -cs)
+BOOKWORM_NUM=12
+DEBIAN_VER=`cat /etc/debian_version`
+DEBIAN_NUM=$(echo "$DEBIAN_VER" | awk -F'.' '{print $1}')
 
 _VER_RUN=""
 function get_kernel_version() {
   local ZIMAGE IMG_OFFSET
 
-  [ -z "$_VER_RUN" ] && {
-    ZIMAGE=/boot/kernel7l.img
-    if [ $arch_r == "arm64" ]; then
-      ZIMAGE=/boot/kernel8.img
+  if [ -z "$_VER_RUN" ]; then
+    if [ $DEBIAN_NUM -lt $BOOKWORM_NUM ]; then
+      ZIMAGE=/boot/kernel7l.img
+      if [ $arch_r == "arm64" ]; then
+        ZIMAGE=/boot/kernel8.img
+      fi
+    else
+      ZIMAGE=/boot/firmware/kernel_2712.img
+      if [ $arch_r == "arm64" ]; then
+        ZIMAGE=/boot/firmware/kernel8.img
+      fi
     fi
-    [ -f /boot/firmware/vmlinuz ] && ZIMAGE=/boot/firmware/vmlinuz
-    [ -f /boot/vmlinuz ] && ZIMAGE=/boot/vmlinuz
-    [ -f /vmlinuz ] && ZIMAGE=/vmlinuz
-    IMG_OFFSET=$(LC_ALL=C grep -abo $'\x1f\x8b\x08\x00' $ZIMAGE | head -n 1 | cut -d ':' -f 1)
-    _VER_RUN=$(dd if=$ZIMAGE obs=64K ibs=4 skip=$(( IMG_OFFSET / 4)) 2>/dev/null | zcat | grep -a -m1 "Linux version" | strings | awk '{ print $3; }' | grep "[0-9]")
-  }
+  fi
+
+  [ -f /boot/firmware/vmlinuz ] && ZIMAGE=/boot/firmware/vmlinuz
+  [ -f /boot/vmlinuz ] && ZIMAGE=/boot/vmlinuz
+  [ -f /vmlinuz ] && ZIMAGE=/vmlinuz
+  IMG_OFFSET=$(LC_ALL=C grep -abo $'\x1f\x8b\x08\x00' $ZIMAGE | head -n 1 | cut -d ':' -f 1)
+  _VER_RUN=$(dd if=$ZIMAGE obs=64K ibs=4 skip=$(( IMG_OFFSET / 4)) 2>/dev/null | zcat | grep -a -m1 "Linux version" | strings | awk '{ print $3; }' | grep "[0-9]")
+
   echo "$_VER_RUN"
   
   return 0
@@ -67,7 +83,21 @@ function check_kernel_headers() {
     exit 1;
   fi
 
-  apt-get -y install raspberrypi-kernel-headers
+  case $DISTRO_ID in
+    Raspbian|Debian)
+      case $DISTRO_CODE in
+        buster|bullseye)
+          apt-get -y --force-yes install raspberrypi-kernel-headers
+          ;;
+        bookworm)
+          apt-get -y --force-yes linux-headers-rpi-${uname_r##*-}
+          ;;
+      esac
+      ;;
+    Ubuntu)
+      apt-get -y install linux-headers-raspi
+      ;;
+  esac
 }
 
 function download_install_debpkg() {
@@ -100,11 +130,21 @@ function install_kernel() {
 
   # Instead of retrieving the lastest kernel & headers
   [ "X$FORCE_KERNEL" == "X" ] && {
-    # Raspbian kernel packages
-    apt-get -y --force-yes install raspberrypi-kernel-headers raspberrypi-kernel || {
-      # Ubuntu kernel packages
-      apt-get -y install linux-raspi linux-headers-raspi linux-image-raspi
-    }
+    case $DISTRO_ID in
+      Raspbian|Debian)
+        case $DISTRO_CODE in
+          buster|bullseye)
+            apt-get -y --force-yes install raspberrypi-kernel-headers raspberrypi-kernel
+            ;;
+          bookworm)
+            apt-get -y --force-yes install linux-image-rpi-${uname_r##*-} linux-headers-rpi-${uname_r##*-}
+            ;;
+        esac
+        ;;
+      Ubuntu)
+        apt-get -y install linux-raspi linux-headers-raspi linux-image-raspi
+        ;;
+    esac
   } || {
     # We would like to a fixed version
     KERN_NAME=raspberrypi-kernel_${FORCE_KERNEL}_${arch_r}.deb
@@ -419,11 +459,53 @@ __EOF__
   exit 1
 }
 
+function setup_display {
+  case $DISTRO_ID in
+    Raspbian|Debian)
+      case $DISTRO_CODE in
+        buster)
+          if ! [[ -d "/usr/share/plymouth/themes/" && -d "/usr/share/X11/xorg.conf.d/" && -d "/etc/plymouth/" ]];
+           then
+             mkdir -p /usr/share/plymouth/themes/ \
+             /usr/share/X11/xorg.conf.d/ \
+             /etc/plymouth/
+          fi
+          cp -rfv ${RES_PATH}/plymouth/seeed/ /usr/share/plymouth/themes/ || exit 1;
+          cp -fv ${RES_PATH}/10-disp.conf /usr/share/X11/xorg.conf.d/ || exit 1;
+          cp -fv ${RES_PATH}/plymouth/plymouthd.conf /etc/plymouth/ || exit 1;
+          ;;
+        bullseye)
+          for file in /home/*
+          do
+            cp -v "$RES_PATH/monitors.xml" "$file/.config/monitors.xml"
+          done
+          ;;
+        bookworm)
+          for file in /home/*
+          do
+            [ -e "$file/.config/wayfire.ini" ] &&
+            {
+              grep -q '^\[output\:DSI-1\]$' "$file/.config/wayfire.ini" ||
+              {
+                cat "$RESOURCE_PATH/wayfire.ini.diff" >> "$file/.config/wayfire.ini"
+              }
+            }
+          done
+          ;;
+      esac
+      ;;
+  esac
+}
+
 function install {
   if [ "$device" = "reTerminal" ]; then
     install_modules mipi_dsi ltr30x lis3lv02d bq24179_charger
     install_overlay reTerminal
-    setup_overlay reTerminal tp_rotate=1
+    if [ DEBIAN_NUM -lt BOOKWORM_NUM]; then
+      setup_overlay reTerminal tp_rotate=1
+    else
+      setup_overlay reTerminal tp_rotate=0
+    fi
   elif [ "$device" = "reTerminal-plus" ]; then
     install_modules ltr30x ili9881d ch34x rtc-pcf8563w
     install_overlay_DM
@@ -431,16 +513,9 @@ function install {
     # and we insmod a new driver for ch342f
     blacklist_driver cdc_acm
   fi
+
   # display
- if ! [[ -d "/usr/share/plymouth/themes/" && -d "/usr/share/X11/xorg.conf.d/" && -d "/etc/plymouth/" ]];
-  then
-    mkdir -p /usr/share/plymouth/themes/ \
-    /usr/share/X11/xorg.conf.d/ \
-    /etc/plymouth/
-  fi
-  cp -rfv ${RES_PATH}/plymouth/seeed/ /usr/share/plymouth/themes/ || exit 1;
-  cp -fv ${RES_PATH}/10-disp.conf /usr/share/X11/xorg.conf.d/ || exit 1;
-  cp -fv ${RES_PATH}/plymouth/plymouthd.conf /etc/plymouth/ || exit 1;
+  setup_display
 
   # audio
   if [ "$device" = "reTerminal" ]; then
@@ -478,6 +553,13 @@ function uninstall {
 if [[ $EUID -ne 0 ]]; then
   echo "This script must be run as root (use sudo)" 1>&2
   exit 1;
+fi
+
+# Check Debian version
+if [ $DEBIAN_NUM -lt $BOOKWORM_NUM ]; then
+    echo -e "\n### Current Debian version is bullseye or earlier"
+else
+    echo -e "\n### Current Debian version is bookworm or later"
 fi
 
 compat_kernel=
