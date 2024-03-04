@@ -632,10 +632,22 @@ if [[ $r -eq 0 ]]; then
 fi
 
 if [ "X$keep_kernel" != "X" ]; then
-  FORCE_KERNEL=$(dpkg -s raspberrypi-kernel | awk '/^Version:/{printf "%s\n",$2;}')
-  echo -e "\n### Keep current system kernel not to change"
+  if [ $DEBIAN_NUM -lt $BOOKWORM_NUM ]; then
+    FORCE_KERNEL=$(dpkg -s raspberrypi-kernel | awk '/^Version:/{printf "%s\n",$2;}')
+    echo -e "\n### Keep current system kernel not to change"
+  else
+    echo -e "\n### Don't support option --keep-kernel currently."
+    echo -e "\n### Pls remove --keep-kernel in your command."
+    exit 1
+  fi  
 elif [ "X$compat_kernel" != "X" ]; then
-  echo -e "\n### Will compile with a compatible kernel..."
+  if [ $DEBIAN_NUM -lt $BOOKWORM_NUM ]; then
+    echo -e "\n### Will compile with a compatible kernel..."
+  else
+    echo -e "\n### Don't support option --compat-kernel currently."
+    echo -e "\n### Pls remove --compat-kernel in your command."
+    exit 1
+  fi
 else
   FORCE_KERNEL=""
   echo -e "\n### Will compile with the latest kernel..."
