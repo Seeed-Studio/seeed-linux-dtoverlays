@@ -90,7 +90,7 @@ function check_kernel_headers() {
           apt-get -y --force-yes install raspberrypi-kernel-headers
           ;;
         bookworm)
-          apt-get -y --force-yes linux-headers-rpi-${uname_r##*-}
+          apt-get -y --force-yes linux-headers-rpi-${VER_RUN##*-}
           ;;
       esac
       ;;
@@ -127,6 +127,7 @@ function download_install_debpkg() {
 
 function install_kernel() {
   local _url _prefix
+  local ker_ver=$(get_kernel_version)
 
   # Instead of retrieving the lastest kernel & headers
   [ "X$FORCE_KERNEL" == "X" ] && {
@@ -137,7 +138,7 @@ function install_kernel() {
             apt-get -y --force-yes install raspberrypi-kernel-headers raspberrypi-kernel
             ;;
           bookworm)
-            apt-get -y --force-yes install linux-image-rpi-${uname_r##*-} linux-headers-rpi-${uname_r##*-}
+            apt-get -y --force-yes install linux-image-rpi-${ker_ver##*-} linux-headers-rpi-${ker_ver##*-}
             ;;
         esac
         ;;
