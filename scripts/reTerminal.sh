@@ -484,13 +484,14 @@ function setup_display {
         bookworm)
           for file in /home/*
           do
-            [ -e "$file/.config/wayfire.ini" ] &&
-            {
+            if [ -e "$file/.config/wayfire.ini" ]; then 
               grep -q '^\[output\:DSI-1\]$' "$file/.config/wayfire.ini" ||
               {
                 cat "$RES_PATH/wayfire.ini.diff" >> "$file/.config/wayfire.ini"
               }
-            }
+            else
+              cp -v $RES_PATH/wayfire.ini $file/.config/
+            fi 
           done
           ;;
       esac
