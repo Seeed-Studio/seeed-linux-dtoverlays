@@ -487,7 +487,7 @@ function setup_display {
             {
               grep -q '^\[output\:DSI-1\]$' "$file/.config/wayfire.ini" ||
               {
-                cat "$RESOURCE_PATH/wayfire.ini.diff" >> "$file/.config/wayfire.ini"
+                cat "$RES_PATH/wayfire.ini.diff" >> "$file/.config/wayfire.ini"
               }
             }
           done
