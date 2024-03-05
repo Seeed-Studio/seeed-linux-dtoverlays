@@ -45,7 +45,7 @@ function get_kernel_version() {
         ZIMAGE=/boot/kernel8.img
       fi
     else
-      ZIMAGE=/boot/firmware/kernel_2712.img
+      ZIMAGE=/boot/firmware/kernel7l.img
       if [ $arch_r == "arm64" ]; then
         ZIMAGE=/boot/firmware/kernel8.img
       fi
