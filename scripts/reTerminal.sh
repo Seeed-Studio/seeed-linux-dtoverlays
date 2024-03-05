@@ -506,7 +506,7 @@ function install {
   if [ "$device" = "reTerminal" ]; then
     install_modules mipi_dsi ltr30x lis3lv02d bq24179_charger
     install_overlay reTerminal
-    if [ DEBIAN_NUM -lt BOOKWORM_NUM]; then
+    if [ $DEBIAN_NUM -lt $BOOKWORM_NUM ]; then
       setup_overlay reTerminal tp_rotate=1
     else
       setup_overlay reTerminal tp_rotate=0
