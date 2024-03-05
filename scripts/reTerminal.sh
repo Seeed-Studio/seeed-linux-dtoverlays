@@ -656,6 +656,17 @@ fi
   echo -e "The kernel & headers use package version: $FORCE_KERNEL"
 }
 
+# Since raspbian OS bullseye(debian 11). In the 32bit raspbian OS,
+# the default kernel is 64bit while the userland is 32bit.
+# This make it hard to compile the dtoverlays for seeed.
+# So when the userland is 32bit, we force the kernel to 32bit too.
+echo -e "\n### Sync kernel and userland"
+if [ $arch_r != "arm64" ]; then
+  grep -q "^arm_64bit" ${CFG_PATH} && \
+  sed -i 's/arm_64bit=.*/arm_64bit=0/' ${CFG_PATH} || \
+  echo "arm_64bit=0" >> ${CFG_PATH} 
+fi
+
 echo -e "\n### Uninstall previous dkms module"
 uninstall
 
