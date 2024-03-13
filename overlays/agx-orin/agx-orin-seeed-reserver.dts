@@ -1,0 +1,138 @@
+/*
+ * Copyright (C) 2022 Seeed Studio
+ *
+ * MIT License
+ *
+ */
+
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/interrupt-controller/irq.h>
+#include <dt-bindings/pinctrl/pinctrl-tegra.h>
+#include <dt-bindings/gpio/tegra234-gpio.h>
+#include <dt-bindings/clock/tegra234-clock.h>
+#include <dt-bindings/net/ti-dp83867.h>
+
+/ {
+	overlay-name = "Jetson Seeed AGX Orin reServer Overlay";
+	jetson-header-name = "Jetson 40pin Header";
+	compatible = "nvidia,p3737-0000+p3701-0000", "nvidia,p3737-0000+p3701-0004", "nvidia,p3737-0000+p3701-0005", "nvidia,p3737-0000+p3701-0008";
+
+	fragment@0 {
+		target-path = "/ethernet@2310000";
+
+		__overlay__ {
+			status = "okay";
+			nvidia,mac-addr-idx = <0>;
+			nvidia,max-platform-mtu = <8000>;
+			nvidia,pause_frames = <0>;
+			nvidia,ether-mac = "48:B0:2D:68:C9:1C";
+			nvidia,phy-reset-gpio = <&tegra_main_gpio TEGRA234_MAIN_GPIO(G, 5) 0>;
+			phy-handle = <&phy>;
+			phy-mode = "rgmii-id";		
+		
+			mdio {
+				compatible = "nvidia,eqos-mdio";
+				#address-cells = <1>;
+				#size-cells = <0>;
+				phy: phy@0 {
+					reg = <0>;
+					compatible = "ethernet-phy-ieee802.3-c22";
+					tx-fifo-depth = <DP83867_PHYCR_FIFO_DEPTH_4_B_NIB>;
+					rx-fifo-depth = <DP83867_PHYCR_FIFO_DEPTH_4_B_NIB>;
+					ti,max-output-impedance;
+				//	ti,clk-output-sel = <DP83867_CLK_O_SEL_CHN_A_RCLK>;
+					ti,rx-internal-delay = <DP83867_RGMIIDCTL_2_25_NS>;
+					ti,tx-internal-delay = <DP83867_RGMIIDCTL_2_75_NS>;
+					interrupt-parent = <&tegra_main_gpio>;
+					interrupts = <TEGRA234_MAIN_GPIO(G, 4) IRQ_TYPE_LEVEL_LOW>; //<TODO> Need to check
+				};			
+			};
+		};
+	};
+	
+	//refer to https://forums.developer.nvidia.com/t/tlv320aic3204-driver-will-support-for-agx-orin-64gb-som/239023/40
+	//playback
+	// amixer -c APE cset name="I2S1 Mux" ADMAIF1
+	// aplay -D hw:APE,0 file_example_WAV_10MG.wav
+	// amixer -c APE cset name="tlv HP DAC Playback Volume" 118
+	// amixer -c APE cset name="tlv PCM Playback Volume" 1
+	// amixer -c APE cset name="tlv PGA Level Volume" 95
+
+
+	// //record
+	// amixer -c APE cset name="ADMAIF1 Mux" I2S1
+	// arecord -D hw:APE,0 -c 2 -r 48000 -f S16_LE -d 15 my.wav
+	fragment@1 {
+		target-path = "/i2c@31e0000";
+		__overlay__ {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			
+			/delete-node/ rt5640.8-0018@18;
+
+			aic32x4: tlv320aic3104.1-001b@18 {
+				compatible = "ti,tlv320aic3104";
+				status = "okay";
+				reg = <0x18>;
+				clocks = <&bpmp TEGRA234_CLK_AUD_MCLK>;
+				//clocks = <&tegra_car TEGRA186_CLK_AUD_MCLK>; 
+				clock-names = "mclk";
+				sound-name-prefix = "tlv";
+				#sound-dai-cells = <1>;
+				dv-supply = <&battery_reg>;
+				av-supply = <&battery_reg>;
+				iov-supply = <&battery_reg>;
+			};
+		};
+	};
+
+	fragment@2 {
+		target-path="/";
+		__overlay__ {
+			clocks {
+				aic32x4_mclk: aic32x4_mclk {
+					compatible = "fixed-clock";
+					#clock-cells = <0>;
+					clock-frequency = <12288000>;
+					clock-output-names = "aic32x4-mclk";
+					status = "okay";
+				};
+			};
+		};
+	};
+
+	fragment@3 {
+		target = <&tegra_sound>;
+
+		__overlay__ {
+			status = "okay";
+			nvidia-audio-card,widgets =
+					"Headphone", "tlv Headphone Jack",
+					"Line", "tlv Line In";
+			nvidia-audio-card,routing =
+					"tlv Headphone Jack",       "tlv HPLOUT",
+					"tlv Headphone Jack",       "tlv HPROUT",
+					"tlv LINE1L",               "tlv Line In",
+					"tlv LINE1R",               "tlv Line In";
+			nvidia-audio-card,mclk-fs = <256>;
+		};
+	};
+
+	fragment@4 {
+		target = <&i2s1_to_codec>;
+		bitclock-master;
+		frame-master;
+		__overlay__ {
+			link-name = "ti-capture";
+			format = "i2s";
+			codec {
+					sound-dai = <&aic32x4 0>;
+					prefix = "tlv";
+			};
+		};
+	};
+};
+	
+
