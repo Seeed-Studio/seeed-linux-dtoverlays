@@ -53,8 +53,6 @@ function get_kernel_version() {
   fi
 
   [ -f /boot/firmware/vmlinuz ] && ZIMAGE=/boot/firmware/vmlinuz
-  [ -f /boot/vmlinuz ] && ZIMAGE=/boot/vmlinuz
-  [ -f /vmlinuz ] && ZIMAGE=/vmlinuz
   IMG_OFFSET=$(LC_ALL=C grep -abo $'\x1f\x8b\x08\x00' $ZIMAGE | head -n 1 | cut -d ':' -f 1)
   _VER_RUN=$(dd if=$ZIMAGE obs=64K ibs=4 skip=$(( IMG_OFFSET / 4)) 2>/dev/null | zcat | grep -a -m1 "Linux version" | strings | awk '{ print $3; }' | grep "[0-9]")
 
