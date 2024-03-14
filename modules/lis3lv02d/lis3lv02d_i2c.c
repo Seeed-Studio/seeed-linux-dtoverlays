@@ -101,8 +101,12 @@ static const struct of_device_id lis3lv02d_i2c_dt_ids[] = {
 MODULE_DEVICE_TABLE(of, lis3lv02d_i2c_dt_ids);
 #endif
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 6, 20)
+static int lis3lv02d_i2c_probe(struct i2c_client *client)
+#else
 static int lis3lv02d_i2c_probe(struct i2c_client *client,
-					const struct i2c_device_id *id)
+                                       const struct i2c_device_id *id)
+#endif
 {
 	int ret = 0;
 	struct lis3lv02d_platform_data *pdata = client->dev.platform_data;
