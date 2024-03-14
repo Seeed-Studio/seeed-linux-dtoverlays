@@ -490,6 +490,7 @@ function setup_display {
                 cat "$RES_PATH/wayfire.ini.diff" >> "$file/.config/wayfire.ini"
               }
             else
+              mkdir -p $file/.config/
               cp -v $RES_PATH/wayfire.ini $file/.config/
             fi 
           done
