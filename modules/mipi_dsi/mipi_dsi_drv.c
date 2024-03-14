@@ -325,8 +325,11 @@ static int backlight_init(struct i2c_mipi_dsi *md)
 
 
 // I2C driver
-
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 6, 20)
+static int i2c_md_probe(struct i2c_client *i2c)
+#else
 static int i2c_md_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
+#endif
 {
 	struct device *dev = &i2c->dev;
 	struct i2c_mipi_dsi *md;
@@ -376,7 +379,9 @@ static int i2c_md_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
 
 	DBG_FUNC("Add panel");
 	md->panel_data->set_dsi(md->dsi);
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 6, 20)
+	md->panel.prepare_prev_first = true;
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
 	md->panel.prepare_upstream_first = true;
 #endif
 	drm_panel_init(&md->panel, dev, &panel_funcs, DRM_MODE_CONNECTOR_DSI);
