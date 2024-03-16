@@ -172,6 +172,41 @@
 				};
 		};
 	};
+
+	//PCA9535RGER: IIC to gpio
+	//eg: set  M2B_DPR_3V3  to low: sudo gpioset  gpiochip2 0=0 
+	fragment@8{
+		target-path = "/i2c@3180000";
+		__overlay__ {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			gpio_xten: gpio_xten@21 {
+				compatible = "nxp,pca9535";
+				reg = <0x21>;
+				gpio-controller;
+				#gpio-cells = <2>;
+
+				interrupt-controller;
+				#interrupt-cells=<2>;
+
+				interrupt-parent = <&tegra_main_gpio>;
+				interrupts = <TEGRA234_MAIN_GPIO(AC, 5) IRQ_TYPE_EDGE_FALLING>;
+
+				gpio-line-names =
+						"M2B_DPR_3V3"			,"M2B_P_OFF_N_3V3",
+						"M2B_W_DIS2_N_3V3"		,"PCIe_WAKE_3V3",
+						"SIM_MUC_SEL_3V3"		,"PCIe_SX1261_RST_N_3V3",
+						"M2B_W_DIS1_N_3V3"		,"M2B_PCIe_RST_N_3V3",
+						"CAN1_120R_EN_3V3"		,"CAN0_120R_EN_3V3",
+						"TPM_RST_3V3"			,"TPM_CS_3V3",
+						"CODEC_RST_N_3V3"		,"USB_HUB_RST_N_3V3",
+						"CAM_VDD_SYS_EN_3V3"		,"UART2_EN_3V3";
+
+				gpio-line-offsets = <0>, <1>, <2>, <3>, <4>, <5>, <6>, <7>, <8>, <9>, <10>, <11>, <12>, <13>, <14>, <15>;
+			};
+		};
+	};
 };
 	
 
