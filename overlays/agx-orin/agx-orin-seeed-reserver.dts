@@ -207,6 +207,33 @@
 			};
 		};
 	};
+
+	fragment@9 {
+		target = <&spi2>;
+		__overlay__ {
+			#address-cells = <0x01>;
+			#size-cells = <0x00>;
+
+			status = "okay";
+			cs-gpios = <&gpio_xten 12 GPIO_ACTIVE_HIGH>;
+			num-cs = <1>;
+
+			spi@0 {
+				compatible = "infineon,slb9670";
+				status = "okay";
+				reg = <0x0>;
+				spi-max-frequency = <10000000>;
+				controller-data {
+					nvidia,cs-setup-clk-count = <0x1e>;
+					nvidia,cs-hold-clk-count = <0x1e>;				
+					nvidia,rx-clk-tap-delay = <0x7>;
+					nvidia,tx-clk-tap-delay = <0x0>;
+					nvidia,cs-inactive-cycles = <0x6>;	
+				};
+			};
+			
+		};
+	};
 };
 	
 
