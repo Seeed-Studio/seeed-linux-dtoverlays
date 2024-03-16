@@ -19,15 +19,15 @@
 	jetson-header-name = "Jetson 40pin Header";
 	compatible = "nvidia,p3737-0000+p3701-0000", "nvidia,p3737-0000+p3701-0004", "nvidia,p3737-0000+p3701-0005", "nvidia,p3737-0000+p3701-0008";
 
+	//Gigabit Ethernet
 	fragment@0 {
 		target-path = "/ethernet@2310000";
 
 		__overlay__ {
 			status = "okay";
-			nvidia,mac-addr-idx = <0>;
+			nvidia,mac-addr-idx = <1>;
 			nvidia,max-platform-mtu = <8000>;
 			nvidia,pause_frames = <0>;
-			nvidia,ether-mac = "48:B0:2D:68:C9:1C";
 			nvidia,phy-reset-gpio = <&tegra_main_gpio TEGRA234_MAIN_GPIO(G, 5) 0>;
 			phy-handle = <&phy>;
 			phy-mode = "rgmii-id";		
@@ -153,6 +153,7 @@
 	};
 
 	//set typc-c to gpio-usb-b-connector
+	//refer to https://docs.nvidia.com/jetson/archives/r35.5.0/DeveloperGuide/HR/JetsonModuleAdaptationAndBringUp/JetsonAgxOrinSeries.html#Under%20the%20Connector%20Node%20(Not%20Used%20on%20the%20P3737%20Carrier%20Board)
 	fragment@7{
 		//path xusb_padctl@3520000
 		target = <&xusb_padctl>;
