@@ -1104,8 +1104,12 @@ static int bq25790_parse_dt(struct bq25790_device *bq)
 	return 0;
 }
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 6, 20)
+static int bq25790_probe(struct i2c_client *client)
+#else
 static int bq25790_probe(struct i2c_client *client,
-			 const struct i2c_device_id *id)
+                        const struct i2c_device_id *id)
+#endif
 {
 	struct device *dev = &client->dev;
 	struct bq25790_device *bq;
@@ -1119,8 +1123,6 @@ static int bq25790_probe(struct i2c_client *client,
 	bq->dev = dev;
 
 	mutex_init(&bq->lock);
-
-	strncpy(bq->model_name, id->name, I2C_NAME_SIZE);
 
 	bq->regmap = devm_regmap_init_i2c(client, &bq25790_regmap_config);
 	if (IS_ERR(bq->regmap)) {
