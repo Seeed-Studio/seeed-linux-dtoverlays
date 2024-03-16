@@ -165,8 +165,8 @@
 							compatible = "usb-b-connector", "gpio-usb-b-connector";
 							label = "micro-USB";
 							type = "micro";
-							vbus-gpio = <&tegra_main_gpio TEGRA234_MAIN_GPIO(C, 7) GPIO_ACTIVE_LOW>;
-							id-gpio = <&tegra_main_gpio TEGRA234_MAIN_GPIO(Q, 1) GPIO_ACTIVE_HIGH>;
+							vbus-gpio = <&tegra_main_gpio TEGRA234_MAIN_GPIO(AF, 3) GPIO_ACTIVE_HIGH>;
+							id-gpio = <&tegra_main_gpio TEGRA234_MAIN_GPIO(AF, 2) GPIO_ACTIVE_HIGH>;
 						};
 					};
 				};
@@ -206,6 +206,53 @@
 				gpio-line-offsets = <0>, <1>, <2>, <3>, <4>, <5>, <6>, <7>, <8>, <9>, <10>, <11>, <12>, <13>, <14>, <15>;
 			};
 		};
+	};
+
+	fragment@9 {
+			target-path = "/spi@3230000/spi@0";
+			__overlay__ {
+					status = "disabled";
+			};
+	};
+
+	fragment@10 {
+			target-path = "/spi@3230000/spi@1";
+			__overlay__ {
+					status = "disabled";
+			};
+	};
+
+	fragment@11 {
+		target = <&spi2>;
+		__overlay__ {
+			#address-cells = <0x01>;
+			#size-cells = <0x00>;
+
+			status = "okay";
+			cs-gpios = <&tegra_main_gpio TEGRA234_MAIN_GPIO(M, 3) GPIO_ACTIVE_HIGH>;
+			num-cs = <1>;
+
+			slb9670@0 {
+				compatible = "infineon,slb9670";
+				status = "okay";
+				reg = <0x0>;
+				spi-max-frequency = <10000000>;
+				controller-data {
+					nvidia,cs-setup-clk-count = <0x1e>;
+					nvidia,cs-hold-clk-count = <0x1e>;				
+					nvidia,rx-clk-tap-delay = <0x7>;
+					nvidia,tx-clk-tap-delay = <0x0>;
+					nvidia,cs-inactive-cycles = <0x6>;	
+				};
+			};
+			
+		};
+	};
+	fragment@12{
+			target = <&dsi_vdd_1v8_bl_en>;
+			__overlay__ {
+				status = "disabled";
+			};
 	};
 };
 	
