@@ -223,6 +223,7 @@
 	};
 
 	fragment@11 {
+
 		target = <&spi2>;
 		__overlay__ {
 			#address-cells = <0x01>;
@@ -233,6 +234,7 @@
 			num-cs = <1>;
 
 			slb9670@0 {
+
 				compatible = "infineon,slb9670";
 				status = "okay";
 				reg = <0x0>;
