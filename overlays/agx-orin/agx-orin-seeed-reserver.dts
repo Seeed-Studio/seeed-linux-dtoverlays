@@ -165,8 +165,8 @@
 							compatible = "usb-b-connector", "gpio-usb-b-connector";
 							label = "micro-USB";
 							type = "micro";
-							vbus-gpio = <&tegra_main_gpio TEGRA234_MAIN_GPIO(C, 7) GPIO_ACTIVE_LOW>;
-							id-gpio = <&tegra_main_gpio TEGRA234_MAIN_GPIO(Q, 1) GPIO_ACTIVE_HIGH>;
+							vbus-gpio = <&tegra_main_gpio TEGRA234_MAIN_GPIO(AF, 3) GPIO_ACTIVE_HIGH>;
+							id-gpio = <&tegra_main_gpio TEGRA234_MAIN_GPIO(AF, 2) GPIO_ACTIVE_HIGH>;
 						};
 					};
 				};
@@ -209,16 +209,16 @@
 	};
 
 	fragment@9 {
-		target = <&spi2>;
+		target-path = "/spi@c260000";
 		__overlay__ {
 			#address-cells = <0x01>;
 			#size-cells = <0x00>;
 
 			status = "okay";
-			cs-gpios = <&gpio_xten 12 GPIO_ACTIVE_HIGH>;
+			cs-gpios = <&tegra_main_gpio TEGRA234_MAIN_GPIO(M, 3) GPIO_ACTIVE_HIGH>;
 			num-cs = <1>;
 
-			spi@0 {
+			slb9670@0 {
 				compatible = "infineon,slb9670";
 				status = "okay";
 				reg = <0x0>;
@@ -234,6 +234,13 @@
 			
 		};
 	};
+	fragment@10{
+			target = <&dsi_vdd_1v8_bl_en>;
+			__overlay__ {
+				status = "disabled";
+			};
+	};
+
 };
 	
 
