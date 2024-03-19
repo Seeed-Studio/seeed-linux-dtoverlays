@@ -476,7 +476,11 @@ function setup_display {
         bullseye)
           for file in /home/*
           do
-            cp -v "$RES_PATH/monitors.xml" "$file/.config/monitors.xml"
+            if [ "$device" = "reTerminal" ]; then
+              cp -v "$RES_PATH/monitors.xml" "$file/.config/monitors.xml"
+            elif [ "$device" = "reTerminal-plus" ]; then
+              cp -v "$RES_PATH/monitors-plus.xml" "$file/.config/monitors.xml"
+            fi
           done
           ;;
         bookworm)
@@ -494,9 +498,6 @@ function setup_display {
           done
           ;;
       esac
-      if [ "$device" = "reTerminal-plus" ]; then
-          cp -v $RES_PATH/98-touchscreen-cal.rules /etc/udev/rules.d/ 
-      fi
       ;;
   esac
 }
