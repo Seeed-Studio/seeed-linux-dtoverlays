@@ -212,11 +212,12 @@
 		target-path = "/spi@c260000";
 		__overlay__ {
 			#address-cells = <0x01>;
-			#size-cells = <0x00>;
+			#size-cells = <0x0>;
 
 			status = "okay";
-			cs-gpios = <&tegra_main_gpio TEGRA234_MAIN_GPIO(M, 3) GPIO_ACTIVE_HIGH>;
-			num-cs = <1>;
+			cs-gpios = <&tegra_main_gpio TEGRA234_MAIN_GPIO(M, 3) GPIO_ACTIVE_HIGH>,
+						<&tegra_aon_gpio TEGRA234_AON_GPIO(CC, 3) GPIO_ACTIVE_HIGH>;
+			num-cs = <2>;
 
 			slb9670@0 {
 				compatible = "infineon,slb9670";
@@ -225,20 +226,34 @@
 				spi-max-frequency = <10000000>;
 				controller-data {
 					nvidia,cs-setup-clk-count = <0x1e>;
-					nvidia,cs-hold-clk-count = <0x1e>;				
+					nvidia,cs-hold-clk-count = <0x1e>;
 					nvidia,rx-clk-tap-delay = <0x7>;
 					nvidia,tx-clk-tap-delay = <0x0>;
-					nvidia,cs-inactive-cycles = <0x6>;	
+					nvidia,cs-inactive-cycles = <0x6>;
 				};
 			};
-			
+			spi@1 { /* chips select 1 */
+				compatible = "tegra-spidev";
+				reg = <0x1>;
+				status = "okay";
+				spi-max-frequency = <10000000>;
+			};
 		};
 	};
+
 	fragment@10{
 			target = <&dsi_vdd_1v8_bl_en>;
 			__overlay__ {
 				status = "disabled";
 			};
+	};
+
+	fragment@11{
+		target-path = "/display@13800000";
+		__overlay__ {
+			status = "okay";
+			os_gpio_hotplug_a = <&tegra_main_gpio TEGRA234_MAIN_GPIO(M, 0) GPIO_ACTIVE_HIGH>;
+		};
 	};
 
 };
