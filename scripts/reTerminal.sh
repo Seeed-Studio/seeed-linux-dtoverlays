@@ -238,6 +238,56 @@ function unblacklist_driver {
   sed -i "/^blacklist $1$/d" $BLACKLIST_PATH
 }
 
+function install_overlay_reComputer {
+  # cmdline.txt
+  set_cmdline_value "logo.nologo"
+  set_cmdline_value "vt.global_cursor_default=0"
+  set_cmdline_value "loglevel=0"
+
+  # config.txt
+  set_config_dtparam "i2c_arm" "on"
+  set_config_dtparam "spi" "on"
+
+  set_config_value "enable_uart" "1"
+
+  set_config_dtoverlay "dwc2,dr_mode=host"
+  set_config_dtoverlay "vc4-kms-v3d-pi4"
+  set_config_dtoverlay "i2c1,pins_44_45"
+  set_config_dtoverlay "i2c3,pins_2_3"
+  set_config_dtoverlay "i2c6,pins_22_23"
+
+  make overlays/rpi/reComputer-overlay.dtbo || exit 1;
+  cp -fv overlays/rpi/reComputer-overlay.dtbo $OVERLAY_DIR/reComputer.dtbo || exit 1;
+
+  set_config_dtoverlay "reComputer"
+}
+
+function uninstall_overlay_reComputer {
+  # cmdline.txt
+  remove_cmdline_value "logo.nologo"
+  remove_cmdline_value "vt.global_cursor_default=0"
+  remove_cmdline_value "loglevel=0"
+
+  # config.txt
+  remove_config_dtparam "i2c_arm" "on"
+  remove_config_dtparam "spi" "on"
+
+  remove_config_value "enable_uart" "1"
+
+  remove_config_dtoverlay "dwc2,dr_mode=host"
+  remove_config_dtoverlay "vc4-kms-v3d-pi4"
+  remove_config_dtoverlay "i2c1,pins_44_45"
+  remove_config_dtoverlay "i2c3,pins_2_3"
+  remove_config_dtoverlay "i2c6,pins_22_23"
+
+  rm -fv $OVERLAY_DIR/reComputer.dtbo || exit 1;
+  remove_config_dtoverlay "reComputer"
+
+  rm -fv overlays/rpi/.*.tmp
+  rm -fv overlays/rpi/.*.cmd
+  rm -fv overlays/rpi/*.dtbo
+}
+
 function install_overlay_DM {
   # cmdline.txt
   remove_cmdline_value "console=tty0"
@@ -428,6 +478,8 @@ function install {
     # we blacklist this driver in DM to avoid gibberish issue with ch342f chip.
     # and we insmod a new driver for ch342f
     blacklist_driver cdc_acm
+  elif [ "$device" = "reComputer" ]; then
+    install_overlay_reComputer
   fi
   # display
  if ! [[ -d "/usr/share/plymouth/themes/" && -d "/usr/share/X11/xorg.conf.d/" && -d "/etc/plymouth/" ]];
@@ -468,6 +520,8 @@ function uninstall {
     uninstall_modules ili9881d ltr30x ch34x rtc-pcf8563w
     uninstall_overlay_DM
     unblacklist_driver cdc_acm
+  elif [ "$device" = "reComputer" ]; then
+    uninstall_overlay_reComputer
   fi
 }
 
@@ -505,8 +559,8 @@ while [ ! -z "$1" ] ; do
   shift
 done
 
-if [ "$device" != "reTerminal" ] && [ "$device" != "reTerminal-plus" ]; then
-  echo "Invalid device type. the type should be reTerminal or reTerminal-plus" 1>&2
+if [ "$device" != "reTerminal" ] && [ "$device" != "reTerminal-plus" ] && [ "$device" != "reComputer" ]; then
+  echo "Invalid device type. the type should be reTerminal or reTerminal-plus reComputer" 1>&2
   exit 1;
 fi
 

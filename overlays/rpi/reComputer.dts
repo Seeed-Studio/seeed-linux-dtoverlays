@@ -1,0 +1,255 @@
+/*
+ * Copyright (C) 2021 Seeed Studio
+ * ruiqian <ruiqian.tang@seeed.cc>
+ *
+ * MIT License
+ *
+ */
+ /dts-v1/;
+ /plugin/;
+
+ / {
+	compatible = "brcm,bcm2835", "brcm,bcm2708", "brcm,bcm2709", "brcm,bcm2711";
+
+	fragment@0 {
+        target-path="/";
+        __overlay__ {
+            hardware = "reTerminal plus V1.0";
+        };
+    };
+
+	fragment@1 {
+		target = <&i2c0>;
+		__overlay__ {
+			status = "okay";
+			clock-frequency = <400000>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
+	};
+
+	fragment@2 {
+		target = <&i2c1>;
+		__overlay__ {
+			status = "okay";
+			clock-frequency = <400000>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+		};
+	};
+		
+	fragment@3 {
+		target = <&i2c3>;
+		__overlay__ {
+			status = "okay";
+			clock-frequency = <400000>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			pcf857x: pcf@21 {
+				compatible = "nxp,pca9535";
+				reg = <0x21>;
+				status = "okay";
+
+				gpio-controller;
+				#gpio-cells = <2>;
+			};
+		};
+	};
+
+	fragment@4 {
+		target = <&i2c6>;
+		__overlay__ {
+			status = "okay";
+			clock-frequency = <100000>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			
+			pcf8563w@51 {
+				compatible = "nxp,pcf85063";
+				reg = <0x51>;
+				reset-source;
+				/* 0 = 4096Hz, 1 = 64Hz, 2 = 1Hz, 3 = 1/60Hz */
+				timer-frequency = <0x02>;
+				/* Timeout count, max 255 min 2*/
+				default-timeout =  <120>;
+				min-hw-heartbeat-ms = <2000>;
+			};
+
+			eeprom@50 {
+				compatible = "atmel,24c32";
+				reg = <0x50>;
+				// wp-gpios = <&pcf857x 10 1>;
+			};
+
+		};
+	};
+
+	fragment@5 {
+		target = <&uart2>;
+		__overlay__ {
+				label = "RS485_2";
+				pinctrl-names = "default";
+				pinctrl-0 = <&uart2_pins>;
+				rts-gpios = <&gpio 17 1>;
+				status = "okay";
+		};
+	};
+
+	fragment@6 {
+		target = <&uart3>;
+		__overlay__ {
+				label = "RS485_3";
+				pinctrl-names = "default";
+				pinctrl-0 = <&uart3_pins>;
+				rts-gpios = <&gpio 24 1>;
+				status = "okay";
+		};
+	};
+
+	fragment@7 {
+		target = <&uart5>;
+		__overlay__ {
+			label = "RS485_1";
+				pinctrl-names = "default";
+				pinctrl-0 = <&uart5_pins>;
+				rts-gpios = <&gpio 6 1>;
+				status = "okay";
+		};
+	};
+
+	fragment@8 {
+		target = <&uart2_pins>;
+		__dormant__ {
+			brcm,pins = <0 1>;
+			brcm,pull = <0 2>;
+		};
+	};
+
+	fragment@9 {
+		target = <&uart3_pins>;
+		__dormant__ {
+			brcm,pins = <4 5>;
+			brcm,pull = <0 2>;
+		};
+	};
+
+	fragment@a {
+		target = <&uart5_pins>;
+		__dormant__ {
+			brcm,pins = <12 13>;
+			brcm,pull = <0 2>;
+		};
+	};
+
+
+	fragment@f {
+		target = <&leds>;
+		__overlay__ {
+			compatible = "gpio-leds";
+
+			led_red: led_red {
+				label = "led-red";
+				linux,default-trigger = "default-off";
+				gpios = <&gpio 20 1>;
+				default-state = "off";
+			};
+			
+			led_green: led_green {
+				label = "led-green";
+				linux,default-trigger = "default-off";
+				gpios = <&gpio 26 1>;
+				default-state = "off";
+			};
+
+			led_orange: led_orange {
+				label = "led-orange";
+				linux,default-trigger = "default-off";
+				gpios = <&gpio 27 1>;
+				default-state = "off";
+			};
+
+			buzzer: buzzer {
+				label = "buzzer";
+				linux,default-trigger = "default-off";
+				gpios = <&gpio 21 0>;
+				default-state = "off";
+			};
+
+			LoRa_SX1302_rst:LoRa_SX1302_rst {
+				label = "LoRa-SX1302-rst";
+				linux,default-trigger = "default-off";
+				gpios = <&pcf857x 2 0>;
+				default-state = "off";
+			};
+
+			LoRa_SX1262_rst:LoRa_SX1262_rst {
+				label = "LoRa-SX1262-rst";
+				linux,default-trigger = "default-off";
+				gpios = <&pcf857x 1 0>;
+				default-state = "off";
+			};
+
+			LoRa_SX1262_cs:LoRa_SX1262_cs {
+				label = "LoRa-SX1262-cs";
+				linux,default-trigger = "default-off";
+				gpios = <&pcf857x 0 0>;
+				default-state = "off";
+			};
+
+			rs485_pwr_en:rs485_pwr_en {
+				label = "rs485-pwr";
+				linux,default-trigger = "default-off";
+				gpios = <&pcf857x 12 0>;
+				default-state = "off";
+			};
+
+			LTE_reset:LTE_reset {
+				label = "LTE-rst";
+				linux,default-trigger = "default-off";
+				gpios = <&pcf857x 3 0>;
+				default-state = "off";
+			};
+
+			// zigbee_reset:zigbee_reset {
+			// 	label = "zigbee-rst";
+			// 	linux,default-trigger = "default-off";
+			// 	gpios = <&pcf857x 3 0>;
+			// 	default-state = "off";
+			// };
+
+			tpm_reset:tpm_reset {
+				label = "tpm-rst";
+				linux,default-trigger = "default-off";
+				gpios = <&pcf857x 4 0>;
+				default-state = "off";
+			};
+
+			vdd_out:vdd_out {
+				label = "vdd-out";
+				linux,default-trigger = "default-off";
+				gpios = <&pcf857x 9 0>;
+				default-state = "off";
+			};
+
+			vdd_5v_out:vdd_5v_out {
+				label = "vdd-5v-out";
+				linux,default-trigger = "default-off";
+				gpios = <&pcf857x 10 0>;
+				default-state = "off";
+			};
+
+			usb2_rst:usb2_rst {
+				label = "usb2-rst";
+				linux,default-trigger = "default-off";
+				gpios = <&pcf857x 11 0>;
+				default-state = "off";
+			};
+			
+		};
+	};
+
+	__overrides__ {
+	};
+};	
