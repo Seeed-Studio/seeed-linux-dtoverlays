@@ -144,7 +144,6 @@
 			};
 	};
 
-	//remove id-gpio = <&tegra_main_gpio TEGRA234_MAIN_GPIO(Q, 1) GPIO_ACTIVE_HIGH>; lock
 	fragment@6{
 			target = <&p3737_avdd_cam_2v8>;
 			__overlay__ {
@@ -241,6 +240,7 @@
 		};
 	};
 
+	//remove <&tegra_aon_gpio TEGRA234_AON_GPIO(CC, 3) GPIO_ACTIVE_HIGH>
 	fragment@10{
 			target = <&dsi_vdd_1v8_bl_en>;
 			__overlay__ {
@@ -248,6 +248,7 @@
 			};
 	};
 
+	//HDMI hotplug
 	fragment@11{
 		target-path = "/display@13800000";
 		__overlay__ {
@@ -255,6 +256,64 @@
 			os_gpio_hotplug_a = <&tegra_main_gpio TEGRA234_MAIN_GPIO(M, 0) GPIO_ACTIVE_HIGH>;
 		};
 	};
+
+	//sudo  modprobe can_raw can
+	//ip link set can0 up type can bitrate 500000 dbitrate 1000000 berr-reporting on fd on
+	//ip link set can1 up type can bitrate 500000 dbitrate 1000000 berr-reporting on fd on
+	//send: cansend can0 123##1abcdabcd
+	//candump -x any 
+
+	//CAN0
+	fragment@12{
+		target-path = "/mttcan@c310000";
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	//CAN1
+	fragment@13{
+		target-path = "/mttcan@c320000";
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	//LED
+	fragment@14{
+		target-path = "/";
+		__overlay__ {
+			leds {
+				status = "okay";
+				compatible = "gpio-leds";
+
+				led {
+					label = "on-board:usr0";
+					gpios = <&tegra_main_gpio TEGRA234_MAIN_GPIO(Q, 6) GPIO_ACTIVE_HIGH>;
+					linux,default-trigger = "cpu0";
+					default-state = "off";
+				};
+			};
+		};
+	};
+	//rs485 and uart
+	// seeed@seeed-desktop:~$ sudo cat /sys/kernel/debug/pinctrl/2430000.pinmux/pinconf-groups | grep px5 -A 14
+	// 121 (uart2_rx_px5): 
+	// 	pull=0
+	// 	tristate=1
+	// 	enable-input=1
+	// 	open-drain=0
+	// 	io-reset=0
+	// 	rcv-sel=0
+	// 	io-hv=0
+	// 	loopback=0
+	// 	schmitt=0
+	// 	pull-down-strength=0
+	// 	pull-up-strength=0
+	// 	drive-type=0
+	// 	func=uartb
+	// 	pad-power=0
+
 
 };
 	
