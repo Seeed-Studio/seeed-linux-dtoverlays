@@ -14,7 +14,7 @@
 	fragment@0 {
         target-path="/";
         __overlay__ {
-            hardware = "reTerminal plus V1.0";
+            hardware = "reComputer V1.0";
         };
     };
 
@@ -66,7 +66,7 @@
 			#address-cells = <1>;
 			#size-cells = <0>;
 			
-			pcf8563w@51 {
+			pcf85063@51 {
 				compatible = "nxp,pcf85063";
 				reg = <0x51>;
 				reset-source;
@@ -80,7 +80,7 @@
 			eeprom@50 {
 				compatible = "atmel,24c32";
 				reg = <0x50>;
-				// wp-gpios = <&pcf857x 10 1>;
+				wp-gpios = <&pcf857x 8 0>;
 			};
 
 		};
@@ -89,10 +89,10 @@
 	fragment@5 {
 		target = <&uart2>;
 		__overlay__ {
-				label = "RS485_2";
+				label = "RS485_1";
 				pinctrl-names = "default";
 				pinctrl-0 = <&uart2_pins>;
-				rts-gpios = <&gpio 17 1>;
+				// rts-gpios = <&gpio 6 1>;
 				status = "okay";
 		};
 	};
@@ -100,10 +100,10 @@
 	fragment@6 {
 		target = <&uart3>;
 		__overlay__ {
-				label = "RS485_3";
+				label = "RS485_2";
 				pinctrl-names = "default";
 				pinctrl-0 = <&uart3_pins>;
-				rts-gpios = <&gpio 24 1>;
+				// rts-gpios = <&gpio 17 1>;
 				status = "okay";
 		};
 	};
@@ -111,10 +111,10 @@
 	fragment@7 {
 		target = <&uart5>;
 		__overlay__ {
-			label = "RS485_1";
+			label = "RS485_3";
 				pinctrl-names = "default";
 				pinctrl-0 = <&uart5_pins>;
-				rts-gpios = <&gpio 6 1>;
+				// rts-gpios = <&gpio 24 1>;
 				status = "okay";
 		};
 	};
