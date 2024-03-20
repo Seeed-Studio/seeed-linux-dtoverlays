@@ -296,7 +296,58 @@
 			};
 		};
 	};
+	// Because the following code is applied, the following command cannot be used to apply overlay.
+	// sudo /opt/nvidia/jetson-io/config-by-hardware.py  -n "Jetson Seeed AGX Orin reServer Overlay"
+	// But fdtoverlay can be used
+	//sudo  fdtoverlay -i  /boot/kernel_tegra234-p3701-0005-p3737-0000.dtb -o /boot/kernel_tegra234-p3701-0005-p3737-0000-user-custom.dtb /boot/agx-orin-seeed-reserver.dtbo
+	//
+	fragment@15{
+		target =  <&pinmux>; 
+		__overlay__ {
+			pinctrl-names = "default";
+			pinctrl-0 = <&jetson_io_pinmux>;
+			jetson_io_pinmux: exp-header-pinmux {
+				uart5_tx_py5 {
+						nvidia,pins = "uart5_tx_py5";
+						nvidia,function = "uarte";
+						nvidia,pull = <TEGRA_PIN_PULL_NONE>;
+						nvidia,tristate = <TEGRA_PIN_DISABLE>;
+						nvidia,enable-input = <TEGRA_PIN_DISABLE>;
+						nvidia,lpdr = <TEGRA_PIN_DISABLE>;
+				};
+
+				uart5_rx_py6 {
+						nvidia,pins = "uart5_rx_py6";
+						nvidia,function = "uarte";
+						nvidia,pull = <TEGRA_PIN_PULL_NONE>;
+						nvidia,tristate = <TEGRA_PIN_ENABLE>;
+						nvidia,enable-input = <TEGRA_PIN_ENABLE>;
+						nvidia,lpdr = <TEGRA_PIN_DISABLE>;
+				};
+
+				uart5_rts_py7 {
+						nvidia,pins = "uart5_rts_py7";
+						nvidia,function = "uarte";
+						nvidia,pull = <TEGRA_PIN_PULL_UP>;
+						nvidia,tristate = <TEGRA_PIN_DISABLE>;
+						nvidia,enable-input = <TEGRA_PIN_DISABLE>;
+						nvidia,lpdr = <TEGRA_PIN_DISABLE>;
+				};
+
+				uart5_cts_pz0 {
+						nvidia,pins = "uart5_cts_pz0";
+						nvidia,function = "uarte";
+						nvidia,pull = <TEGRA_PIN_PULL_NONE>;
+						nvidia,tristate = <TEGRA_PIN_ENABLE>;
+						nvidia,enable-input = <TEGRA_PIN_ENABLE>;
+						nvidia,lpdr = <TEGRA_PIN_DISABLE>;
+				};
+			};
+		};
+	};
+
 	//rs485 and uart
+	// Use the following command to check whether Pinmux is in effect.
 	// seeed@seeed-desktop:~$ sudo cat /sys/kernel/debug/pinctrl/2430000.pinmux/pinconf-groups | grep px5 -A 14
 	// 121 (uart2_rx_px5): 
 	// 	pull=0
@@ -313,6 +364,24 @@
 	// 	drive-type=0
 	// 	func=uartb
 	// 	pad-power=0
+
+	// check driver info
+	// seeed@seeed-desktop:~$ sudo  cat /proc/tty/driver/tegra_hsuart 
+	// serinfo:1.0 driver revision:
+	// 0: uart:TEGRA_UART mmio:0x03100000 irq:26 tx:0 rx:0 CTS
+	// 1: uart:TEGRA_UART mmio:0x03110000 irq:87 tx:0 rx:0 CTS
+	// 3: uart:TEGRA_UART mmio:0x03130000 irq:88 tx:0 rx:0 CTS
+	// 4: uart:TEGRA_UART mmio:0x03140000 irq:89 tx:3 rx:0 RTS|CTS|DTR
+
+	// ttyTHS4
+	fragment@16{
+		target-path = "/serial@3140000";
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	//ttyTHS0 for M.2 KEY-B (4G/5G)
 
 
 };
