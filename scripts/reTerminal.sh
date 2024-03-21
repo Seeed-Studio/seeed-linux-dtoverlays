@@ -260,6 +260,7 @@ function install_overlay_reComputer {
   cp -fv overlays/rpi/reComputer-overlay.dtbo $OVERLAY_DIR/reComputer.dtbo || exit 1;
 
   set_config_dtoverlay "reComputer"
+  set_config_dtoverlay "reComputer,uart2"
 }
 
 function uninstall_overlay_reComputer {
@@ -282,6 +283,7 @@ function uninstall_overlay_reComputer {
 
   rm -fv $OVERLAY_DIR/reComputer.dtbo || exit 1;
   remove_config_dtoverlay "reComputer"
+  remove_config_dtoverlay "reComputer,uart2"
 
   rm -fv overlays/rpi/.*.tmp
   rm -fv overlays/rpi/.*.cmd
