@@ -88,22 +88,22 @@
 	fragment@5 {
 		target = <&uart2>;
 		__overlay__ {
-				label = "RS485_1";
-				pinctrl-names = "default";
-				pinctrl-0 = <&uart2_pins>;
-				// rts-gpios = <&gpio 6 1>;
-				status = "okay";
+			label = "RS485_1";
+			pinctrl-names = "default";
+			pinctrl-0 = <&uart2_pins>;
+			rts-gpio = <&gpio 6 1>;
+			status = "okay";
 		};
 	};
 
 	fragment@6 {
 		target = <&uart3>;
 		__overlay__ {
-				label = "RS485_2";
-				pinctrl-names = "default";
-				pinctrl-0 = <&uart3_pins>;
-				// rts-gpios = <&gpio 17 1>;
-				status = "okay";
+			label = "RS485_2";
+			pinctrl-names = "default";
+			pinctrl-0 = <&uart3_pins>;
+			rts-gpio = <&gpio 17 1>;
+			status = "okay";
 		};
 	};
 
@@ -111,10 +111,10 @@
 		target = <&uart5>;
 		__overlay__ {
 			label = "RS485_3";
-				pinctrl-names = "default";
-				pinctrl-0 = <&uart5_pins>;
-				// rts-gpios = <&gpio 24 1>;
-				status = "okay";
+			pinctrl-names = "default";
+			pinctrl-0 = <&uart5_pins>;
+			rts-gpio = <&gpio 24 1>;
+			status = "okay";
 		};
 	};
 
