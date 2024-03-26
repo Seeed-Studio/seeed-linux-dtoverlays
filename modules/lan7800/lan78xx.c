@@ -2424,7 +2424,7 @@ static int lan78xx_phy_init(struct lan78xx_net *dev)
 			lan78xx_write_reg(dev, HW_CFG, reg);
 		}
 	}
-
+	lan78xx_write_reg(dev, HW_CFG,HW_CFG_LED0_EN_|HW_CFG_LED1_EN_|HW_CFG_LED2_EN_|HW_CFG_LED3_EN_);
 	genphy_config_aneg(phydev);
 
 	dev->fc_autoneg = phydev->autoneg;
@@ -4309,9 +4309,13 @@ static int lan78xx_probe(struct usb_interface *intf,
 	/* MTU range: 68 - 9000 */
 	netdev->max_mtu = LAN78XX_MAX_MTU;
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
 	netif_set_gso_max_size(netdev, LAN78XX_TSO_SIZE(dev));
-
 	netif_napi_add(netdev, &dev->napi, lan78xx_poll, LAN78XX_NAPI_WEIGHT);
+#else
+	netif_set_tso_max_size(netdev, LAN78XX_TSO_SIZE(dev));
+	netif_napi_add(netdev, &dev->napi, lan78xx_poll);
+#endif
 
 	INIT_DELAYED_WORK(&dev->wq, lan78xx_delayedwork);
 	init_usb_anchor(&dev->deferred);
@@ -4358,7 +4362,11 @@ static int lan78xx_probe(struct usb_interface *intf,
 		goto out4;
 
 	period = ep_intr->desc.bInterval;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
 	maxp = usb_maxpacket(dev->udev, dev->pipe_intr, 0);
+#else
+	maxp = usb_maxpacket(dev->udev, dev->pipe_intr);
+#endif
 	buf = kmalloc(maxp, GFP_KERNEL);
 	if (!buf)
 		goto out5;
@@ -4374,7 +4382,11 @@ static int lan78xx_probe(struct usb_interface *intf,
 		dev->urb_intr->transfer_flags |= URB_FREE_BUFFER;
 	}
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
 	dev->maxpacket = usb_maxpacket(dev->udev, dev->pipe_out, 1);
+#else
+	dev->maxpacket = usb_maxpacket(dev->udev, dev->pipe_out);
+#endif
 
 	/* driver requires remote-wakeup capability during autosuspend. */
 	intf->needs_remote_wakeup = 1;

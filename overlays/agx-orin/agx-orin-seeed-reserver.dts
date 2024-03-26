@@ -1,0 +1,411 @@
+/*
+ * Copyright (C) 2022 Seeed Studio
+ *
+ * MIT License
+ *
+ */
+
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/interrupt-controller/irq.h>
+#include <dt-bindings/pinctrl/pinctrl-tegra.h>
+#include <dt-bindings/gpio/tegra234-gpio.h>
+#include <dt-bindings/clock/tegra234-clock.h>
+#include <dt-bindings/net/ti-dp83867.h>
+
+/ {
+	overlay-name = "Jetson Seeed AGX Orin reServer Overlay";
+	jetson-header-name = "Jetson 40pin Header";
+	compatible = "nvidia,p3737-0000+p3701-0000", "nvidia,p3737-0000+p3701-0004", "nvidia,p3737-0000+p3701-0005", "nvidia,p3737-0000+p3701-0008";
+
+	//Gigabit Ethernet
+	fragment@0 {
+		target-path = "/ethernet@2310000";
+
+		__overlay__ {
+			status = "okay";
+			nvidia,mac-addr-idx = <1>;
+			nvidia,max-platform-mtu = <8000>;
+			nvidia,pause_frames = <0>;
+			nvidia,phy-reset-gpio = <&tegra_main_gpio TEGRA234_MAIN_GPIO(G, 5) 0>;
+			phy-handle = <&phy>;
+			phy-mode = "rgmii-id";		
+		
+			mdio {
+				compatible = "nvidia,eqos-mdio";
+				#address-cells = <1>;
+				#size-cells = <0>;
+				phy: phy@0 {
+					reg = <0>;
+					compatible = "ethernet-phy-ieee802.3-c22";
+					tx-fifo-depth = <DP83867_PHYCR_FIFO_DEPTH_4_B_NIB>;
+					rx-fifo-depth = <DP83867_PHYCR_FIFO_DEPTH_4_B_NIB>;
+					ti,max-output-impedance;
+				//	ti,clk-output-sel = <DP83867_CLK_O_SEL_CHN_A_RCLK>;
+					ti,rx-internal-delay = <DP83867_RGMIIDCTL_2_25_NS>;
+					ti,tx-internal-delay = <DP83867_RGMIIDCTL_2_75_NS>;
+					interrupt-parent = <&tegra_main_gpio>;
+					interrupts = <TEGRA234_MAIN_GPIO(G, 4) IRQ_TYPE_LEVEL_LOW>; //<TODO> Need to check
+				};			
+			};
+		};
+	};
+	
+	//refer to https://forums.developer.nvidia.com/t/tlv320aic3204-driver-will-support-for-agx-orin-64gb-som/239023/40
+	//playback
+	// amixer -c APE cset name="I2S1 Mux" ADMAIF1
+	// aplay -D hw:APE,0 file_example_WAV_10MG.wav
+	// amixer -c APE cset name="tlv HP DAC Playback Volume" 118
+	// amixer -c APE cset name="tlv PCM Playback Volume" 1
+	// amixer -c APE cset name="tlv PGA Level Volume" 95
+
+
+	// //record
+	// amixer -c APE cset name="ADMAIF1 Mux" I2S1
+	// arecord -D hw:APE,0 -c 2 -r 48000 -f S16_LE -d 15 my.wav
+	fragment@1 {
+		target-path = "/i2c@31e0000";
+		__overlay__ {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			
+			/delete-node/ rt5640.8-0018@18;
+
+			aic32x4: tlv320aic3104.1-001b@18 {
+				compatible = "ti,tlv320aic3104";
+				status = "okay";
+				reg = <0x18>;
+				clocks = <&bpmp TEGRA234_CLK_AUD_MCLK>;
+				//clocks = <&tegra_car TEGRA186_CLK_AUD_MCLK>; 
+				clock-names = "mclk";
+				sound-name-prefix = "tlv";
+				#sound-dai-cells = <1>;
+				dv-supply = <&battery_reg>;
+				av-supply = <&battery_reg>;
+				iov-supply = <&battery_reg>;
+			};
+		};
+	};
+
+	fragment@2 {
+		target-path="/";
+		__overlay__ {
+			clocks {
+				aic32x4_mclk: aic32x4_mclk {
+					compatible = "fixed-clock";
+					#clock-cells = <0>;
+					clock-frequency = <12288000>;
+					clock-output-names = "aic32x4-mclk";
+					status = "okay";
+				};
+			};
+		};
+	};
+
+	fragment@3 {
+		target = <&tegra_sound>;
+
+		__overlay__ {
+			status = "okay";
+			nvidia-audio-card,widgets =
+					"Headphone", "tlv Headphone Jack",
+					"Line", "tlv Line In";
+			nvidia-audio-card,routing =
+					"tlv Headphone Jack",       "tlv HPLOUT",
+					"tlv Headphone Jack",       "tlv HPROUT",
+					"tlv LINE1L",               "tlv Line In",
+					"tlv LINE1R",               "tlv Line In";
+			nvidia-audio-card,mclk-fs = <256>;
+		};
+	};
+
+	fragment@4 {
+		target = <&i2s1_to_codec>;
+		bitclock-master;
+		frame-master;
+		__overlay__ {
+			link-name = "ti-capture";
+			format = "i2s";
+			codec {
+					sound-dai = <&aic32x4 0>;
+					prefix = "tlv";
+			};
+		};
+	};
+
+	//sata
+	fragment@5{
+			target-path="/pcie@14180000";
+			__overlay__ {
+					status = "okay";
+					phys = <&p2u_hsio_0>;
+					phy-names = "p2u-0";
+			};
+	};
+
+	fragment@6{
+			target = <&p3737_avdd_cam_2v8>;
+			__overlay__ {
+				status = "disabled";
+			};
+	};
+
+	//set typc-c to gpio-usb-b-connector
+	//refer to https://docs.nvidia.com/jetson/archives/r35.5.0/DeveloperGuide/HR/JetsonModuleAdaptationAndBringUp/JetsonAgxOrinSeries.html#Under%20the%20Connector%20Node%20(Not%20Used%20on%20the%20P3737%20Carrier%20Board)
+	fragment@7{
+		//path xusb_padctl@3520000
+		target = <&xusb_padctl>;
+		__overlay__ {
+				ports {
+					usb2-0 {
+						mode = "otg";
+						connector {
+							compatible = "usb-b-connector", "gpio-usb-b-connector";
+							label = "micro-USB";
+							type = "micro";
+							vbus-gpio = <&tegra_main_gpio TEGRA234_MAIN_GPIO(AF, 3) GPIO_ACTIVE_HIGH>;
+							id-gpio = <&tegra_main_gpio TEGRA234_MAIN_GPIO(AF, 2) GPIO_ACTIVE_HIGH>;
+						};
+					};
+				};
+		};
+	};
+
+	//PCA9535RGER: IIC to gpio
+	//eg: set  M2B_DPR_3V3  to low: sudo gpioset  gpiochip2 0=0 
+	fragment@8{
+		target-path = "/i2c@3180000";
+		__overlay__ {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			gpio_xten: gpio_xten@21 {
+				compatible = "nxp,pca9535";
+				reg = <0x21>;
+				gpio-controller;
+				#gpio-cells = <2>;
+
+				interrupt-controller;
+				#interrupt-cells=<2>;
+
+				interrupt-parent = <&tegra_main_gpio>;
+				interrupts = <TEGRA234_MAIN_GPIO(AC, 5) IRQ_TYPE_EDGE_FALLING>;
+
+				gpio-line-names =
+						"M2B_DPR_3V3"			,"M2B_P_OFF_N_3V3",
+						"M2B_W_DIS2_N_3V3"		,"PCIe_WAKE_3V3",
+						"SIM_MUC_SEL_3V3"		,"PCIe_SX1261_RST_N_3V3",
+						"M2B_W_DIS1_N_3V3"		,"M2B_PCIe_RST_N_3V3",
+						"CAN1_120R_EN_3V3"		,"CAN0_120R_EN_3V3",
+						"TPM_RST_3V3"			,"TPM_CS_3V3",
+						"CODEC_RST_N_3V3"		,"USB_HUB_RST_N_3V3",
+						"CAM_VDD_SYS_EN_3V3"		,"UART2_EN_3V3";
+
+				gpio-line-offsets = <0>, <1>, <2>, <3>, <4>, <5>, <6>, <7>, <8>, <9>, <10>, <11>, <12>, <13>, <14>, <15>;
+			};
+		};
+	};
+
+	fragment@9 {
+		target-path = "/spi@c260000";
+		__overlay__ {
+			#address-cells = <0x01>;
+			#size-cells = <0x0>;
+
+			status = "okay";
+			cs-gpios = <&tegra_main_gpio TEGRA234_MAIN_GPIO(M, 3) GPIO_ACTIVE_HIGH>,
+						<&tegra_aon_gpio TEGRA234_AON_GPIO(CC, 3) GPIO_ACTIVE_HIGH>;
+			num-cs = <2>;
+
+			slb9670@0 {
+				compatible = "infineon,slb9670";
+				status = "okay";
+				reg = <0x0>;
+				spi-max-frequency = <10000000>;
+				controller-data {
+					nvidia,cs-setup-clk-count = <0x1e>;
+					nvidia,cs-hold-clk-count = <0x1e>;
+					nvidia,rx-clk-tap-delay = <0x7>;
+					nvidia,tx-clk-tap-delay = <0x0>;
+					nvidia,cs-inactive-cycles = <0x6>;
+				};
+			};
+			spi@1 { /* chips select 1 */
+				compatible = "tegra-spidev";
+				reg = <0x1>;
+				status = "okay";
+				spi-max-frequency = <10000000>;
+			};
+		};
+	};
+
+	//remove <&tegra_aon_gpio TEGRA234_AON_GPIO(CC, 3) GPIO_ACTIVE_HIGH>
+	fragment@10{
+			target = <&dsi_vdd_1v8_bl_en>;
+			__overlay__ {
+				status = "disabled";
+			};
+	};
+
+	//HDMI hotplug
+	fragment@11{
+		target-path = "/display@13800000";
+		__overlay__ {
+			status = "okay";
+			os_gpio_hotplug_a = <&tegra_main_gpio TEGRA234_MAIN_GPIO(M, 0) GPIO_ACTIVE_HIGH>;
+		};
+	};
+
+	//sudo  modprobe can_raw can
+	//ip link set can0 up type can bitrate 500000 dbitrate 1000000 berr-reporting on fd on
+	//ip link set can1 up type can bitrate 500000 dbitrate 1000000 berr-reporting on fd on
+	//send: cansend can0 123##1abcdabcd
+	//candump -x any 
+
+	//CAN0
+	fragment@12{
+		target-path = "/mttcan@c310000";
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	//CAN1
+	fragment@13{
+		target-path = "/mttcan@c320000";
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	//LED
+	fragment@14{
+		target-path = "/";
+		__overlay__ {
+			leds {
+				status = "okay";
+				compatible = "gpio-leds";
+
+				led {
+					label = "on-board:usr0";
+					gpios = <&tegra_main_gpio TEGRA234_MAIN_GPIO(Q, 6) GPIO_ACTIVE_HIGH>;
+					linux,default-trigger = "cpu0";
+					default-state = "off";
+				};
+			};
+			
+			//remove PEE.04
+			gpio-keys {
+				power_key {
+					status = "disabled";
+				};
+			};
+		};
+	};
+	// Because the following code is applied, the following command cannot be used to apply overlay.
+	// sudo /opt/nvidia/jetson-io/config-by-hardware.py  -n "Jetson Seeed AGX Orin reServer Overlay"
+	// But fdtoverlay can be used
+	//sudo  fdtoverlay -i  /boot/kernel_tegra234-p3701-0005-p3737-0000.dtb -o /boot/kernel_tegra234-p3701-0005-p3737-0000-user-custom.dtb /boot/agx-orin-seeed-reserver.dtbo
+	//
+	fragment@15{
+		target =  <&pinmux>; 
+		__overlay__ {
+			pinctrl-names = "default";
+			pinctrl-0 = <&jetson_io_pinmux>;
+			jetson_io_pinmux: exp-header-pinmux {
+				uart5_tx_py5 {
+						nvidia,pins = "uart5_tx_py5";
+						nvidia,function = "uarte";
+						nvidia,pull = <TEGRA_PIN_PULL_NONE>;
+						nvidia,tristate = <TEGRA_PIN_DISABLE>;
+						nvidia,enable-input = <TEGRA_PIN_DISABLE>;
+						nvidia,lpdr = <TEGRA_PIN_DISABLE>;
+				};
+
+				uart5_rx_py6 {
+						nvidia,pins = "uart5_rx_py6";
+						nvidia,function = "uarte";
+						nvidia,pull = <TEGRA_PIN_PULL_NONE>;
+						nvidia,tristate = <TEGRA_PIN_ENABLE>;
+						nvidia,enable-input = <TEGRA_PIN_ENABLE>;
+						nvidia,lpdr = <TEGRA_PIN_DISABLE>;
+				};
+
+				uart5_rts_py7 {
+						nvidia,pins = "uart5_rts_py7";
+						nvidia,function = "uarte";
+						nvidia,pull = <TEGRA_PIN_PULL_UP>;
+						nvidia,tristate = <TEGRA_PIN_DISABLE>;
+						nvidia,enable-input = <TEGRA_PIN_DISABLE>;
+						nvidia,lpdr = <TEGRA_PIN_DISABLE>;
+				};
+
+				uart5_cts_pz0 {
+						nvidia,pins = "uart5_cts_pz0";
+						nvidia,function = "uarte";
+						nvidia,pull = <TEGRA_PIN_PULL_NONE>;
+						nvidia,tristate = <TEGRA_PIN_ENABLE>;
+						nvidia,enable-input = <TEGRA_PIN_ENABLE>;
+						nvidia,lpdr = <TEGRA_PIN_DISABLE>;
+				};
+			};
+		};
+	};
+
+	//rs485 and uart
+	// Use the following command to check whether Pinmux is in effect.
+	// seeed@seeed-desktop:~$ sudo cat /sys/kernel/debug/pinctrl/2430000.pinmux/pinconf-groups | grep px5 -A 14
+	// 121 (uart2_rx_px5): 
+	// 	pull=0
+	// 	tristate=1
+	// 	enable-input=1
+	// 	open-drain=0
+	// 	io-reset=0
+	// 	rcv-sel=0
+	// 	io-hv=0
+	// 	loopback=0
+	// 	schmitt=0
+	// 	pull-down-strength=0
+	// 	pull-up-strength=0
+	// 	drive-type=0
+	// 	func=uartb
+	// 	pad-power=0
+
+	// check driver info
+	// seeed@seeed-desktop:~$ sudo  cat /proc/tty/driver/tegra_hsuart 
+	// serinfo:1.0 driver revision:
+	// 0: uart:TEGRA_UART mmio:0x03100000 irq:26 tx:0 rx:0 CTS
+	// 1: uart:TEGRA_UART mmio:0x03110000 irq:87 tx:0 rx:0 CTS
+	// 3: uart:TEGRA_UART mmio:0x03130000 irq:88 tx:0 rx:0 CTS
+	// 4: uart:TEGRA_UART mmio:0x03140000 irq:89 tx:3 rx:0 RTS|CTS|DTR
+
+	// ttyTHS4
+	fragment@16{
+		target-path = "/serial@3140000";
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	//ttyTHS0 for M.2 KEY-B (4G/5G)
+
+	//remove fixed-regulators/regulator@111, release PA.00
+	fragment@17{
+			target = <&p3737_vdd_3v3_sd>;
+			__overlay__ {
+				status = "disabled";
+			};
+	};
+
+	//remove fixed-regulators/regulator@114, release PA.01
+	fragment@18{
+			target = <&p3737_vdd_12v_pcie>;
+			__overlay__ {
+				status = "disabled";
+			};
+	};
+
+};
+	
+

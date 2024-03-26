@@ -24,6 +24,7 @@
 #include <linux/of.h>
 #include <linux/err.h>
 #include <linux/watchdog.h>
+#include <linux/version.h>
 
 #define PCF8563_REG_ST1 0x00 /* status */
 #define PCF8563_REG_ST2 0x01
@@ -702,7 +703,11 @@ static const struct rtc_class_ops pcf8563_rtc_ops = {
     // .alarm_irq_enable = pcf8563_irq_enable,
 };
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 6, 20)
 static int pcf8563_probe(struct i2c_client *client)
+#else
+static int pcf8563_probe(struct i2c_client *client, const struct i2c_device_id *id)
+#endif
 {
     struct pcf8563 *pcf8563;
     int err;
@@ -752,7 +757,11 @@ static int pcf8563_probe(struct i2c_client *client)
 
     pcf8563_watchdog_init(&client->dev, pcf8563);
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
+    err = rtc_register_device(pcf8563->rtc);
+#else
     err = devm_rtc_register_device(pcf8563->rtc);
+#endif
     if (err)
         return err;
 
@@ -783,7 +792,7 @@ static struct i2c_driver pcf8563_driver = {
         .name = "rtc-pcf8563w",
         .of_match_table = of_match_ptr(pcf8563_of_match),
     },
-    .probe_new = pcf8563_probe,
+    .probe = pcf8563_probe,
     .id_table = pcf8563_id,
 };
 

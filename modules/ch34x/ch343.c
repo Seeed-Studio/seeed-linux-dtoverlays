@@ -609,7 +609,11 @@ static int ch343_tty_open(struct tty_struct *tty, struct file *filp)
 	return tty_port_open(&ch343->port, tty, filp);
 }
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 6, 20)
+static void ch343_port_dtr_rts(struct tty_port *port, bool raise)
+#else
 static void ch343_port_dtr_rts(struct tty_port *port, int raise)
+#endif
 {
 	struct ch343 *ch343 = container_of(port, struct ch343, port);
 	int res;
@@ -723,7 +727,11 @@ static void ch343_tty_close(struct tty_struct *tty, struct file *filp)
 	tty_port_close(&ch343->port, tty, filp);
 }
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 6, 20)
+static ssize_t ch343_tty_write(struct tty_struct *tty, const u8 *buf, size_t count)
+#else
 static int ch343_tty_write(struct tty_struct *tty, const unsigned char *buf, int count)
+#endif
 {
 	struct ch343 *ch343 = tty->driver_data;
 	int stat;

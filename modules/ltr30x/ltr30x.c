@@ -1413,9 +1413,16 @@ static const char *ltr501_match_acpi_device(struct device *dev, int *chip_idx)
 	return dev_name(dev);
 }
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 6, 20)
+static int ltr501_probe(struct i2c_client *client)
+#else
 static int ltr501_probe(struct i2c_client *client,
-			const struct i2c_device_id *id)
+                       const struct i2c_device_id *id)
+#endif
 {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 6, 20)
+	const struct i2c_device_id *id = i2c_client_get_device_id(client);
+#endif
 	struct ltr501_data *data;
 	struct iio_dev *indio_dev;
 	struct regmap *regmap;
