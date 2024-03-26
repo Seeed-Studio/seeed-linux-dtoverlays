@@ -294,6 +294,13 @@
 					default-state = "off";
 				};
 			};
+			
+			//remove PEE.04
+			gpio-keys {
+				power_key {
+					status = "disabled";
+				};
+			};
 		};
 	};
 	// Because the following code is applied, the following command cannot be used to apply overlay.
@@ -383,6 +390,21 @@
 
 	//ttyTHS0 for M.2 KEY-B (4G/5G)
 
+	//remove fixed-regulators/regulator@111, release PA.00
+	fragment@17{
+			target = <&p3737_vdd_3v3_sd>;
+			__overlay__ {
+				status = "disabled";
+			};
+	};
+
+	//remove fixed-regulators/regulator@114, release PA.01
+	fragment@18{
+			target = <&p3737_vdd_12v_pcie>;
+			__overlay__ {
+				status = "disabled";
+			};
+	};
 
 };
 	
