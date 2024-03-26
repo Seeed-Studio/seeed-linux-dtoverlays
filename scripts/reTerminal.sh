@@ -483,6 +483,7 @@ function install {
     # and we insmod a new driver for ch342f
     blacklist_driver cdc_acm
   elif [ "$device" = "reComputer" ]; then
+    install_modules rtc-pcf8563w
     install_overlay_reComputer
   fi
   # display
@@ -525,6 +526,7 @@ function uninstall {
     uninstall_overlay_DM
     unblacklist_driver cdc_acm
   elif [ "$device" = "reComputer" ]; then
+    uninstall_modules rtc-pcf8563w
     uninstall_overlay_reComputer
   fi
 }

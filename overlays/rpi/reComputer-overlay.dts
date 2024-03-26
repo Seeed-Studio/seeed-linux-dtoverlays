@@ -65,8 +65,8 @@
 			#address-cells = <1>;
 			#size-cells = <0>;
 			
-			pcf85063@51 {
-				compatible = "nxp,pcf85063";
+			pcf8563w@51 {
+				compatible = "nxp,pcf8563w";
 				reg = <0x51>;
 				reset-source;
 				/* 0 = 4096Hz, 1 = 64Hz, 2 = 1Hz, 3 = 1/60Hz */
