@@ -251,7 +251,8 @@ function install_overlay_reComputer {
   set_config_value "enable_uart" "1"
 
   set_config_dtoverlay "dwc2,dr_mode=host"
-  set_config_dtoverlay "vc4-kms-v3d-pi4"
+  set_config_dtoverlay "vc4-kms-v3d"
+  set_config_dtoverlay "audremap,pins_18_19"
   set_config_dtoverlay "i2c1,pins_44_45"
   set_config_dtoverlay "i2c3,pins_2_3"
   set_config_dtoverlay "i2c6,pins_22_23"
@@ -276,7 +277,8 @@ function uninstall_overlay_reComputer {
   remove_config_value "enable_uart" "1"
 
   remove_config_dtoverlay "dwc2,dr_mode=host"
-  remove_config_dtoverlay "vc4-kms-v3d-pi4"
+  remove_config_dtoverlay "vc4-kms-v3d"
+  remove_config_dtoverlay "audremap,pins_18_19"
   remove_config_dtoverlay "i2c1,pins_44_45"
   remove_config_dtoverlay "i2c3,pins_2_3"
   remove_config_dtoverlay "i2c6,pins_22_23"
