@@ -77,7 +77,7 @@
 			};
 
 			eeprom@50 {
-				compatible = "atmel,24c32";
+				compatible = "atmel,24c256";
 				reg = <0x50>;
 				wp-gpios = <&pcf857x 8 0>;
 			};

@@ -280,11 +280,6 @@ function unblacklist_driver {
 }
 
 function install_overlay_reComputer {
-  # cmdline.txt
-  set_cmdline_value "logo.nologo"
-  set_cmdline_value "vt.global_cursor_default=0"
-  set_cmdline_value "loglevel=0"
-
   # config.txt
   set_config_dtparam "i2c_arm" "on"
   set_config_dtparam "spi" "on"
@@ -301,16 +296,10 @@ function install_overlay_reComputer {
   make overlays/rpi/reComputer-overlay.dtbo || exit 1;
   cp -fv overlays/rpi/reComputer-overlay.dtbo $OVERLAY_DIR/reComputer.dtbo || exit 1;
 
-  set_config_dtoverlay "reComputer"
   set_config_dtoverlay "reComputer,uart2"
 }
 
 function uninstall_overlay_reComputer {
-  # cmdline.txt
-  remove_cmdline_value "logo.nologo"
-  remove_cmdline_value "vt.global_cursor_default=0"
-  remove_cmdline_value "loglevel=0"
-
   # config.txt
   remove_config_dtparam "i2c_arm" "on"
   remove_config_dtparam "spi" "on"
@@ -325,7 +314,7 @@ function uninstall_overlay_reComputer {
   remove_config_dtoverlay "i2c6,pins_22_23"
 
   rm -fv $OVERLAY_DIR/reComputer.dtbo || exit 1;
-  remove_config_dtoverlay "reComputer"
+  remove_config_dtoverlay "reComputer,i2c0"
   remove_config_dtoverlay "reComputer,uart2"
 
   rm -fv overlays/rpi/.*.tmp
