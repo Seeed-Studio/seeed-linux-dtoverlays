@@ -43,7 +43,7 @@
 					rx-fifo-depth = <DP83867_PHYCR_FIFO_DEPTH_4_B_NIB>;
 					ti,max-output-impedance;
 				//	ti,clk-output-sel = <DP83867_CLK_O_SEL_CHN_A_RCLK>;
-					ti,rx-internal-delay = <DP83867_RGMIIDCTL_2_25_NS>;
+					ti,rx-internal-delay = <DP83867_RGMIIDCTL_2_75_NS>;
 					ti,tx-internal-delay = <DP83867_RGMIIDCTL_2_75_NS>;
 					interrupt-parent = <&tegra_main_gpio>;
 					interrupts = <TEGRA234_MAIN_GPIO(G, 4) IRQ_TYPE_LEVEL_LOW>; //<TODO> Need to check
@@ -294,6 +294,13 @@
 					default-state = "off";
 				};
 			};
+			
+			//remove PEE.04
+			gpio-keys {
+				power_key {
+					status = "disabled";
+				};
+			};
 		};
 	};
 	// Because the following code is applied, the following command cannot be used to apply overlay.
@@ -383,7 +390,23 @@
 
 	//ttyTHS0 for M.2 KEY-B (4G/5G)
 
+	//remove fixed-regulators/regulator@111, release PA.00
+	fragment@17{
+			target = <&p3737_vdd_3v3_sd>;
+			__overlay__ {
+				status = "disabled";
+			};
+	};
+
+	//remove fixed-regulators/regulator@114, release PA.01
+	fragment@18{
+			target = <&p3737_vdd_12v_pcie>;
+			__overlay__ {
+				status = "disabled";
+			};
+	};
 
 };
 	
+
 
