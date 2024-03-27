@@ -1104,7 +1104,7 @@ static int bq25790_parse_dt(struct bq25790_device *bq)
 	return 0;
 }
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 6, 20)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 3, 0)
 static int bq25790_probe(struct i2c_client *client)
 #else
 static int bq25790_probe(struct i2c_client *client,

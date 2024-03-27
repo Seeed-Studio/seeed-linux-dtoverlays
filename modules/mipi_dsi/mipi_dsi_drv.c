@@ -325,7 +325,7 @@ static int backlight_init(struct i2c_mipi_dsi *md)
 
 
 // I2C driver
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 6, 20)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 3, 0)
 static int i2c_md_probe(struct i2c_client *i2c)
 #else
 static int i2c_md_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
