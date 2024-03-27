@@ -79,7 +79,6 @@
 			eeprom@50 {
 				compatible = "atmel,24c256";
 				reg = <0x50>;
-				wp-gpios = <&pcf857x 8 0>;
 			};
 
 		};
@@ -274,6 +273,13 @@
 				label = "usb2-rst";
 				linux,default-trigger = "default-off";
 				gpios = <&pcf857x 11 0>;
+				default-state = "off";
+			};
+
+			eeprom_wp:eeprom_wp {
+				label = "eeprom-wp";
+				linux,default-trigger = "default-off";
+				gpios = <&pcf857x 8 0>;
 				default-state = "off";
 			};
 			
