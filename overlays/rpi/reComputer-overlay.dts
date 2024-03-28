@@ -250,9 +250,9 @@
 
 			tpm_reset:tpm_reset {
 				label = "tpm-rst";
-				linux,default-trigger = "default-on";
+				linux,default-trigger = "default-off";
 				gpios = <&pcf857x 4 1>;
-				default-state = "on";
+				default-state = "off";
 			};
 
 			vdd_out:vdd_out {
