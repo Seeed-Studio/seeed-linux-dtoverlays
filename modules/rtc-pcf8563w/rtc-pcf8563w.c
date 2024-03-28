@@ -703,7 +703,7 @@ static const struct rtc_class_ops pcf8563_rtc_ops = {
     // .alarm_irq_enable = pcf8563_irq_enable,
 };
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 6, 20)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 3, 0)
 static int pcf8563_probe(struct i2c_client *client)
 #else
 static int pcf8563_probe(struct i2c_client *client, const struct i2c_device_id *id)
