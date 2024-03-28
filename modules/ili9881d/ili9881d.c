@@ -498,7 +498,7 @@ static int ili9881d_dsi_probe(struct mipi_dsi_device *dsi)
 	ctx->dsi = dsi;
 	ctx->desc = of_device_get_match_data(&dsi->dev);
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 6, 20)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 3, 0)
 	ctx->panel.prepare_prev_first = true;
 #elif LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
 	ctx->panel.prepare_upstream_first = true;
