@@ -188,7 +188,7 @@
 							compatible = "pwm-backlight";
 							brightness-levels = <96 128 160 192 224 255>;
 							default-brightness-level = <4>;
-							pwms = <&pwm 1 200000>;
+							pwms = <&pwm 1 200000 0>;
 							power-supply = <&vdd_3v3_reg>;
 							status = "okay";
 					};
