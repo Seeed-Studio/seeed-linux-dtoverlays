@@ -502,6 +502,20 @@ function setup_display {
   esac
 }
 
+function setup_tp {
+  case $DISTRO_ID in
+    Raspbian|Debian)
+      case $DISTRO_CODE in
+        bookworm)
+          if [ "$device" = "reTerminal-plus" ]; then
+            cp -v $RES_PATH/98-touchscreen-cal.rules /etc/udev/rules.d/
+          fi
+        ;;
+      esac
+      ;;
+  esac
+}
+
 function install {
   if [ "$device" = "reTerminal" ]; then
     install_modules mipi_dsi ltr30x lis3lv02d bq24179_charger
@@ -521,6 +535,9 @@ function install {
 
   # display
   setup_display
+
+  # touch panel
+  setup_tp
 
   # audio
   if [ "$device" = "reTerminal" ]; then
