@@ -279,7 +279,7 @@ function unblacklist_driver {
   sed -i "/^blacklist $1$/d" $BLACKLIST_PATH
 }
 
-function install_overlay_reComputer {
+function install_overlay_reComputer-R100x {
   # config.txt
   set_config_dtparam "i2c_arm" "on"
   set_config_dtparam "spi" "on"
@@ -293,13 +293,13 @@ function install_overlay_reComputer {
   set_config_dtoverlay "i2c3,pins_2_3"
   set_config_dtoverlay "i2c6,pins_22_23"
 
-  make overlays/rpi/reComputer-overlay.dtbo || exit 1;
-  cp -fv overlays/rpi/reComputer-overlay.dtbo $OVERLAY_DIR/reComputer.dtbo || exit 1;
+  make overlays/rpi/reComputer-R100x-overlay.dtbo || exit 1;
+  cp -fv overlays/rpi/reComputer-R100x-overlay.dtbo $OVERLAY_DIR/reComputer-R100x.dtbo || exit 1;
 
-  set_config_dtoverlay "reComputer,uart2"
+  set_config_dtoverlay "reComputer-R100x,uart2"
 }
 
-function uninstall_overlay_reComputer {
+function uninstall_overlay_reComputer-R100x {
   # config.txt
   remove_config_dtparam "i2c_arm" "on"
   remove_config_dtparam "spi" "on"
@@ -313,9 +313,9 @@ function uninstall_overlay_reComputer {
   remove_config_dtoverlay "i2c3,pins_2_3"
   remove_config_dtoverlay "i2c6,pins_22_23"
 
-  rm -fv $OVERLAY_DIR/reComputer.dtbo || exit 1;
-  remove_config_dtoverlay "reComputer,i2c0"
-  remove_config_dtoverlay "reComputer,uart2"
+  rm -fv $OVERLAY_DIR/reComputer-R100x.dtbo || exit 1;
+  remove_config_dtoverlay "reComputer-R100x,i2c0"
+  remove_config_dtoverlay "reComputer-R100x,uart2"
 
   rm -fv overlays/rpi/.*.tmp
   rm -fv overlays/rpi/.*.cmd
@@ -560,9 +560,9 @@ function install {
     # we blacklist this driver in DM to avoid gibberish issue with ch342f chip.
     # and we insmod a new driver for ch342f
     blacklist_driver cdc_acm
-  elif [ "$device" = "reComputer" ]; then
+  elif [ "$device" = "reComputer-R100x" ]; then
     install_modules rtc-pcf8563w
-    install_overlay_reComputer
+    install_overlay_reComputer-R100x
   fi
 
   # display
@@ -596,9 +596,9 @@ function uninstall {
     uninstall_modules ili9881d ltr30x ch34x rtc-pcf8563w
     uninstall_overlay_DM
     unblacklist_driver cdc_acm
-  elif [ "$device" = "reComputer" ]; then
+  elif [ "$device" = "reComputer-R100x" ]; then
     uninstall_modules rtc-pcf8563w
-    uninstall_overlay_reComputer
+    uninstall_overlay_reComputer-R100x
   fi
 }
 
@@ -643,8 +643,8 @@ while [ ! -z "$1" ] ; do
   shift
 done
 
-if [ "$device" != "reTerminal" ] && [ "$device" != "reTerminal-plus" ] && [ "$device" != "reComputer" ]; then
-  echo "Invalid device type. the type should be reTerminal or reTerminal-plus reComputer" 1>&2
+if [ "$device" != "reTerminal" ] && [ "$device" != "reTerminal-plus" ] && [ "$device" != "reComputer-R100x" ]; then
+  echo "Invalid device type. the type should be reTerminal or reTerminal-plus reComputer-R100x" 1>&2
   exit 1;
 fi
 

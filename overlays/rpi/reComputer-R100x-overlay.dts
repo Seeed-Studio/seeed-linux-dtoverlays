@@ -16,7 +16,7 @@
 	fragment@0 {
         target-path="/";
         __overlay__ {
-            hardware = "reComputer-R1002 V1.0";
+            hardware = "reComputer-R100x V1.0";
         };
     };
 
