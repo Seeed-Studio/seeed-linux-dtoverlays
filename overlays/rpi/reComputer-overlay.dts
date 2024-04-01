@@ -8,13 +8,15 @@
  /dts-v1/;
  /plugin/;
 
+ #include "dt-bindings/gpio/gpio.h"
+
  / {
 	compatible = "brcm,bcm2835", "brcm,bcm2708", "brcm,bcm2709", "brcm,bcm2711";
 
 	fragment@0 {
         target-path="/";
         __overlay__ {
-            hardware = "reComputer V1.0";
+            hardware = "reComputer-R1002 V1.0";
         };
     };
 
@@ -53,6 +55,18 @@
 
 				gpio-controller;
 				#gpio-cells = <2>;
+
+				gpio-line-names =
+					"LoRaWAN_SX1262_CS"	 	,"LoRaWAN_SX1262_RST",
+					"LoRaWAN_SX1302_RST"	,"LTE_RESET",
+					"TPM_RST"				,"gpio_pin5",
+					"gpio_pin6"				,"gpio_pin7",
+					"EEPROM_WP"				,"VDD_OUT_CTL",
+					"VDD_5V_OUT_CTL"		,"USB2_RST_EN",
+					"RS485_POWER_EN"		,"gpio_pin13",
+					"gpio_pin14"			,"gpio_pin15";
+
+				gpio-line-offsets = <0>, <1>, <2>, <3>, <4>, <5>, <6>, <7>, <8>, <9>, <10>, <11>, <12>, <13>, <14>, <15>;
 			};
 		};
 	};
@@ -90,7 +104,7 @@
 			label = "RS485_1";
 			pinctrl-names = "default";
 			pinctrl-0 = <&uart2_pins>;
-			rts-gpio = <&gpio 6 1>;
+			rts-gpio = <&gpio 6 GPIO_ACTIVE_HIGH>;
 			status = "okay";
 		};
 	};
@@ -101,7 +115,7 @@
 			label = "RS485_2";
 			pinctrl-names = "default";
 			pinctrl-0 = <&uart3_pins>;
-			rts-gpio = <&gpio 17 1>;
+			rts-gpio = <&gpio 17 GPIO_ACTIVE_HIGH>;
 			status = "okay";
 		};
 	};
@@ -112,7 +126,7 @@
 			label = "RS485_3";
 			pinctrl-names = "default";
 			pinctrl-0 = <&uart5_pins>;
-			rts-gpio = <&gpio 24 1>;
+			rts-gpio = <&gpio 24 GPIO_ACTIVE_HIGH>;
 			status = "okay";
 		};
 	};
@@ -181,108 +195,84 @@
 			led_red: led_red {
 				label = "led-red";
 				linux,default-trigger = "default-off";
-				gpios = <&gpio 20 1>;
+				gpios = <&gpio 20 GPIO_ACTIVE_LOW>;
 				default-state = "off";
 			};
 			
 			led_green: led_green {
 				label = "led-green";
 				linux,default-trigger = "default-off";
-				gpios = <&gpio 26 1>;
+				gpios = <&gpio 26 GPIO_ACTIVE_LOW>;
 				default-state = "off";
 			};
 
 			led_orange: led_orange {
 				label = "led-orange";
 				linux,default-trigger = "default-off";
-				gpios = <&gpio 27 1>;
+				gpios = <&gpio 27 GPIO_ACTIVE_LOW>;
 				default-state = "off";
 			};
 
 			buzzer: buzzer {
 				label = "buzzer";
 				linux,default-trigger = "default-off";
-				gpios = <&gpio 21 0>;
+				gpios = <&gpio 21 GPIO_ACTIVE_HIGH>;
 				default-state = "off";
 			};
+		};
+	};
 
-			LoRa_SX1302_rst:LoRa_SX1302_rst {
-				label = "LoRa-SX1302-rst";
-				linux,default-trigger = "default-off";
-				gpios = <&pcf857x 2 0>;
-				default-state = "off";
-			};
-
-			LoRa_SX1262_rst:LoRa_SX1262_rst {
-				label = "LoRa-SX1262-rst";
-				linux,default-trigger = "default-off";
-				gpios = <&pcf857x 1 0>;
-				default-state = "off";
-			};
-
-			LoRa_SX1262_cs:LoRa_SX1262_cs {
-				label = "LoRa-SX1262-cs";
-				linux,default-trigger = "default-off";
-				gpios = <&pcf857x 0 0>;
-				default-state = "off";
-			};
-
-			rs485_pwr_en:rs485_pwr_en {
-				label = "rs485-pwr";
-				linux,default-trigger = "default-off";
-				gpios = <&pcf857x 12 0>;
-				default-state = "off";
-			};
+	fragment@11 {
+		target-path="/";
+		__overlay__ {
 
 			LTE_reset:LTE_reset {
-				label = "LTE-rst";
-				linux,default-trigger = "default-off";
-				gpios = <&pcf857x 3 0>;
-				default-state = "off";
+				compatible = "regulator-fixed";
+				regulator-name = "LTE-rst";
+				gpio = <&pcf857x 3 GPIO_ACTIVE_HIGH>;
+				enable-active-high;
+				regulator-always-on;
 			};
 
-			// zigbee_reset:zigbee_reset {
-			// 	label = "zigbee-rst";
-			// 	linux,default-trigger = "default-off";
-			// 	gpios = <&pcf857x 3 0>;
-			// 	default-state = "off";
-			// };
-
 			tpm_reset:tpm_reset {
-				label = "tpm-rst";
-				linux,default-trigger = "default-off";
-				gpios = <&pcf857x 4 1>;
-				default-state = "off";
+				compatible = "regulator-fixed";
+				regulator-name = "tpm-rst";
+				gpios = <&pcf857x 4 GPIO_ACTIVE_HIGH>;
+				enable-active-high;
+				regulator-always-on;
 			};
 
 			vdd_out:vdd_out {
-				label = "vdd-out";
-				linux,default-trigger = "default-off";
-				gpios = <&pcf857x 9 0>;
-				default-state = "off";
+				compatible = "regulator-fixed";
+				regulator-name = "vdd-out";
+				gpio = <&pcf857x 9 GPIO_ACTIVE_HIGH>;
+				enable-active-high;
+				regulator-always-on;
 			};
 
 			vdd_5v_out:vdd_5v_out {
-				label = "vdd-5v-out";
-				linux,default-trigger = "default-off";
-				gpios = <&pcf857x 10 0>;
-				default-state = "off";
+				compatible = "regulator-fixed";
+				regulator-name = "vdd-5v-out";
+				gpios = <&pcf857x 10 GPIO_ACTIVE_HIGH>;
+				enable-active-high;
+				regulator-always-on;
 			};
 
 			usb2_rst:usb2_rst {
-				label = "usb2-rst";
-				linux,default-trigger = "default-off";
-				gpios = <&pcf857x 11 0>;
-				default-state = "off";
+				compatible = "regulator-fixed";
+				regulator-name = "usb2-rst";
+				gpio = <&pcf857x 11 GPIO_ACTIVE_HIGH>;
+				enable-active-high;
+				regulator-always-on;
 			};
 
-			eeprom_wp:eeprom_wp {
-				label = "eeprom-wp";
-				linux,default-trigger = "default-off";
-				gpios = <&pcf857x 8 0>;
-				default-state = "off";
+			rs485_pwr_en:rs485_pwr_en {
+				compatible = "regulator-fixed";
+				regulator-name = "rs485-pwr";
+				gpio = <&pcf857x 12 GPIO_ACTIVE_HIGH>;
+				enable-active-high;
+				regulator-always-on;
 			};
-			
 		};
 	};
 
