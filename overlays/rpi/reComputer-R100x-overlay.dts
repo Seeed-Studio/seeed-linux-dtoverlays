@@ -65,8 +65,60 @@
 					"VDD_5V_OUT_CTL"		,"USB2_RST_EN",
 					"RS485_POWER_EN"		,"gpio_pin13",
 					"gpio_pin14"			,"gpio_pin15";
+					
+				LoRaWAN_SX1262_CS {
+					gpios = <&pcf857x 0 GPIO_ACTIVE_HIGH>;
+					output-low;
+					line-name = "LoRaWAN_SX1262_CS";
+				};
 
-				gpio-line-offsets = <0>, <1>, <2>, <3>, <4>, <5>, <6>, <7>, <8>, <9>, <10>, <11>, <12>, <13>, <14>, <15>;
+				LoRaWAN_SX1262_RST {
+					gpios = <&pcf857x 1 GPIO_ACTIVE_HIGH>;
+					output-low;
+					line-name = "LoRaWAN_SX1262_RST";
+				};
+
+				LoRaWAN_SX1302_RST {
+					gpios = <&pcf857x 2 GPIO_ACTIVE_HIGH>;
+					output-low;
+					line-name = "LoRaWAN_SX1302_RST";
+				};
+
+				LTE_RESET {
+					gpios = <&pcf857x 3 GPIO_ACTIVE_HIGH>;
+					output-high;
+					line-name = "LTE_RESET";
+				};
+
+				TPM_RST {
+					gpios = <&pcf857x 4 GPIO_ACTIVE_HIGH>;
+					output-high;
+					line-name = "TPM_RST";
+				};
+
+				VDD_OUT_CTL {
+					gpios = <&pcf857x 9 GPIO_ACTIVE_HIGH>;
+					output-high;
+					line-name = "VDD_OUT_CTL";
+				};
+
+				VDD_5V_OUT_CTL {
+					gpios = <&pcf857x 10 GPIO_ACTIVE_HIGH>;
+					output-high;
+					line-name = "VDD_5V_OUT_CTL";
+				};
+
+				USB2_RST_EN {
+					gpios = <&pcf857x 11 GPIO_ACTIVE_HIGH>;
+					output-high;
+					line-name = "USB2_RST_EN";
+				};
+
+				RS485_POWER_EN {
+					gpios = <&pcf857x 12 GPIO_ACTIVE_HIGH>;
+					output-high;
+					line-name = "RS485_POWER_EN";
+				};
 			};
 		};
 	};
@@ -206,8 +258,8 @@
 				default-state = "off";
 			};
 
-			led_orange: led_orange {
-				label = "led-orange";
+			led_blue: led_blue {
+				label = "led-blue";
 				linux,default-trigger = "default-off";
 				gpios = <&gpio 27 GPIO_ACTIVE_LOW>;
 				default-state = "off";
@@ -218,60 +270,6 @@
 				linux,default-trigger = "default-off";
 				gpios = <&gpio 21 GPIO_ACTIVE_HIGH>;
 				default-state = "off";
-			};
-		};
-	};
-
-	fragment@11 {
-		target-path="/";
-		__overlay__ {
-
-			LTE_reset:LTE_reset {
-				compatible = "regulator-fixed";
-				regulator-name = "LTE-rst";
-				gpio = <&pcf857x 3 GPIO_ACTIVE_HIGH>;
-				enable-active-high;
-				regulator-always-on;
-			};
-
-			tpm_reset:tpm_reset {
-				compatible = "regulator-fixed";
-				regulator-name = "tpm-rst";
-				gpios = <&pcf857x 4 GPIO_ACTIVE_HIGH>;
-				enable-active-high;
-				regulator-always-on;
-			};
-
-			vdd_out:vdd_out {
-				compatible = "regulator-fixed";
-				regulator-name = "vdd-out";
-				gpio = <&pcf857x 9 GPIO_ACTIVE_HIGH>;
-				enable-active-high;
-				regulator-always-on;
-			};
-
-			vdd_5v_out:vdd_5v_out {
-				compatible = "regulator-fixed";
-				regulator-name = "vdd-5v-out";
-				gpios = <&pcf857x 10 GPIO_ACTIVE_HIGH>;
-				enable-active-high;
-				regulator-always-on;
-			};
-
-			usb2_rst:usb2_rst {
-				compatible = "regulator-fixed";
-				regulator-name = "usb2-rst";
-				gpio = <&pcf857x 11 GPIO_ACTIVE_HIGH>;
-				enable-active-high;
-				regulator-always-on;
-			};
-
-			rs485_pwr_en:rs485_pwr_en {
-				compatible = "regulator-fixed";
-				regulator-name = "rs485-pwr";
-				gpio = <&pcf857x 12 GPIO_ACTIVE_HIGH>;
-				enable-active-high;
-				regulator-always-on;
 			};
 		};
 	};
