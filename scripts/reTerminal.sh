@@ -145,18 +145,23 @@ function install_kernel() {
         ;;
     esac
   } || {
-    # We would like to a fixed version
-    KERN_NAME=raspberrypi-kernel_${FORCE_KERNEL}_${arch_r}.deb
-    HDR_NAME=raspberrypi-kernel-headers_${FORCE_KERNEL}_${arch_r}.deb
-    _url=$(apt-get download --print-uris raspberrypi-kernel | sed -nre "s/'([^']+)'.*$/\1/g;p")
-    _prefix=$(echo $_url | sed -nre 's/^(.*)raspberrypi-kernel_.*$/\1/g;p')
+    if [ $DEBIAN_NUM -lt $BOOKWORM_NUM ]; then 
+      # We would like to a fixed version
+      KERN_NAME=raspberrypi-kernel_${FORCE_KERNEL}_${arch_r}.deb
+      HDR_NAME=raspberrypi-kernel-headers_${FORCE_KERNEL}_${arch_r}.deb
+      _url=$(apt-get download --print-uris raspberrypi-kernel | sed -nre "s/'([^']+)'.*$/\1/g;p")
+      _prefix=$(echo $_url | sed -nre 's/^(.*)raspberrypi-kernel_.*$/\1/g;p')
 
-    download_install_debpkg "$_prefix" "$KERN_NAME" && {
-      download_install_debpkg "$_prefix" "$HDR_NAME"
-    } || {
-      echo "Error: Install kernel or header failed"
-      exit 2
-    }
+      download_install_debpkg "$_prefix" "$KERN_NAME" && {
+        download_install_debpkg "$_prefix" "$HDR_NAME"
+      } || {
+        echo "Error: Install kernel or header failed"
+        exit 2
+      }
+    else
+      apt-get -y --force-yes install linux-image-rpi-${ker_ver##*-}=$FORCE_KERNEL 
+      apt-get -y --force-yes install linux-headers-rpi-${ker_ver##*-}=$FORCE_KERNEL
+    fi
   }
 }
 
@@ -651,12 +656,10 @@ fi
 if [ "X$keep_kernel" != "X" ]; then
   if [ $DEBIAN_NUM -lt $BOOKWORM_NUM ]; then
     FORCE_KERNEL=$(dpkg -s raspberrypi-kernel | awk '/^Version:/{printf "%s\n",$2;}')
-    echo -e "\n### Keep current system kernel not to change"
   else
-    echo -e "\n### Don't support option --keep-kernel currently."
-    echo -e "\n### Pls remove --keep-kernel in your command."
-    exit 1
+    FORCE_KERNEL=$(dpkg -s linux-image-rpi-v8 | awk '/^Version:/{printf "%s\n",$2;}')
   fi  
+  echo -e "\n### Keep current system kernel not to change"
 elif [ "X$compat_kernel" != "X" ]; then
   if [ $DEBIAN_NUM -lt $BOOKWORM_NUM ]; then
     echo -e "\n### Will compile with a compatible kernel..."
