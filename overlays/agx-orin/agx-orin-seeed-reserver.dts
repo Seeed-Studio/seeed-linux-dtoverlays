@@ -204,6 +204,12 @@
 						"CAM_VDD_SYS_EN_3V3"		,"UART2_EN_3V3";
 
 				gpio-line-offsets = <0>, <1>, <2>, <3>, <4>, <5>, <6>, <7>, <8>, <9>, <10>, <11>, <12>, <13>, <14>, <15>;
+
+				CAM_VDD_SYS_EN_3V3 {
+					gpios = <&gpio_xten 14 GPIO_ACTIVE_HIGH>;
+					output-high;
+					line-name = "CAM_VDD_SYS_EN_3V3";
+				};
 			};
 		};
 	};
@@ -402,8 +408,7 @@
 	fragment@18{
 			target = <&p3737_vdd_12v_pcie>;
 			__overlay__ {
-			 	gpio = <&gpio_xten 14 1>;	
-				status = "okay";
+				status = "disabled";
 			};
 	};
 
