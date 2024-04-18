@@ -704,7 +704,7 @@ fi
 
 if [ "X$keep_kernel" != "X" ]; then
   if [ $DEBIAN_NUM -lt $BOOKWORM_NUM ]; then
-    FORCE_KERNEL=$(dpkg -s raspberrypi-kernel | awk '/^Version:/{printf "%s\n",$2;}')
+    FORCE_KERNEL=$(dpkg -s raspberrypi-kernel | awk '/^Version:/{printf "%s\n",$2;}' | cut -d':' -f2)
   else
     FORCE_KERNEL=$(dpkg -s linux-image-rpi-v8 | awk '/^Version:/{printf "%s\n",$2;}')
   fi  
