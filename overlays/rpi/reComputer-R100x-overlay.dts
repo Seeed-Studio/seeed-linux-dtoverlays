@@ -264,12 +264,16 @@
 				gpios = <&gpio 27 GPIO_ACTIVE_LOW>;
 				default-state = "off";
 			};
+		};
+	};
 
-			buzzer: buzzer {
-				label = "buzzer";
-				linux,default-trigger = "default-off";
+	fragment@10 {
+		target-path="/";
+		__overlay__ {
+			beeper: beeper {
+				compatible = "gpio-beeper";
 				gpios = <&gpio 21 GPIO_ACTIVE_HIGH>;
-				default-state = "off";
+				status = "okay";
 			};
 		};
 	};
