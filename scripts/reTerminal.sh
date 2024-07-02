@@ -302,6 +302,11 @@ function install_overlay_reComputer-R100x {
   cp -fv overlays/rpi/reComputer-R100x-overlay.dtbo $OVERLAY_DIR/reComputer-R100x.dtbo || exit 1;
 
   set_config_dtoverlay "reComputer-R100x,uart2"
+
+  # make ./tools/rs485_control_DE 
+  apt-get install -y libgpiod-dev || exit 1;
+  gcc tools/rs485_control_DE/rs485_DE.c -o tools/rs485_control_DE/rs485_DE -lgpiod || exit 1;
+  cp tools/rs485_control_DE/rs485_DE /usr/local/bin || exit 1;
 }
 
 function uninstall_overlay_reComputer-R100x {
