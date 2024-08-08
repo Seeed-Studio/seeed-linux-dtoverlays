@@ -386,7 +386,7 @@ static void mcp25xxfd_dump_ram_fifo_obj_data(const struct mcp25xxfd_priv *priv, 
 	int i;
 	u8 len;
 
-	len = can_dlc2len(get_canfd_dlc(dlc));
+	len = can_fd_dlc2len(get_canfd_dlc(dlc));
 
 	if (!len) {
 		pr_info("%16s = -none-\n", "data");

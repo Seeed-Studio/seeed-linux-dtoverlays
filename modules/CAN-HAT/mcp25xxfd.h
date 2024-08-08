@@ -25,6 +25,9 @@
 #define sizeof_field(TYPE, MEMBER) sizeof((((TYPE *)0)->MEMBER))
 #endif
 
+#define get_can_dlc(i)   (min_t(u8, (i), CAN_MAX_DLC))
+#define get_canfd_dlc(i)   (min_t(u8, (i), CANFD_MAX_DLC))
+
 static inline void __dump(const void *d, unsigned int len)
 {
 	const u8 *data = d;

@@ -1292,7 +1292,7 @@ mcp25xxfd_handle_tefif_one(struct mcp25xxfd_priv *priv,
 	struct net_device_stats *stats = &priv->ndev->stats;
 	u32 seq, seq_masked, tef_tail_masked;
 	int err;
-
+	unsigned int frame_len = 0; // Declare variable to store frame length
 	seq = FIELD_GET(MCP25XXFD_OBJ_FLAGS_SEQ_MCP2518FD_MASK,
 			hw_tef_obj->flags);
 
@@ -1312,7 +1312,8 @@ mcp25xxfd_handle_tefif_one(struct mcp25xxfd_priv *priv,
 	stats->tx_bytes +=
 		can_rx_offload_get_echo_skb(&priv->offload,
 					    mcp25xxfd_get_tef_tail(priv),
-					    hw_tef_obj->ts);
+					    hw_tef_obj->ts,
+					    &frame_len); // Pass the address of frame_len
 	stats->tx_packets++;
 
 	/* finally increment the TEF pointer */
@@ -1479,7 +1480,7 @@ mcp25xxfd_hw_rx_obj_to_skb(const struct mcp25xxfd_priv *priv,
 			cfd->flags |= CANFD_BRS;
 
 		dlc = FIELD_GET(MCP25XXFD_OBJ_FLAGS_DLC, hw_rx_obj->flags);
-		cfd->len = can_dlc2len(get_canfd_dlc(dlc));
+		cfd->len = can_fd_dlc2len(get_canfd_dlc(dlc));
 	} else {
 		if (hw_rx_obj->flags & MCP25XXFD_OBJ_FLAGS_RTR)
 			cfd->can_id |= CAN_RTR_FLAG;
@@ -2318,7 +2319,7 @@ mcp25xxfd_tx_obj_from_skb(const struct mcp25xxfd_priv *priv,
 	 * harm, only the lower 7 bits will be transferred into the
 	 * TEF object.
 	 */
-	dlc = can_len2dlc(cfd->len);
+	dlc = can_fd_len2dlc(cfd->len);
 	flags |= FIELD_PREP(MCP25XXFD_OBJ_FLAGS_SEQ_MCP2518FD_MASK, seq) |
 		FIELD_PREP(MCP25XXFD_OBJ_FLAGS_DLC, dlc);
 
@@ -2348,7 +2349,7 @@ mcp25xxfd_tx_obj_from_skb(const struct mcp25xxfd_priv *priv,
 	/* Clear data at end of CAN frame */
 	// FIXME: what does the controller send in CANFD if can_dlc2len(can_len2dlc(cfd->len)) > cfd->len?
 	offset = round_down(cfd->len, sizeof(u32));
-	len = round_up(can_dlc2len(dlc), sizeof(u32)) - offset;
+	len = round_up(can_fd_dlc2len(dlc), sizeof(u32)) - offset;
 	if (len)
 		memset(hw_tx_obj->data + offset, 0x0, len);
 	memcpy(hw_tx_obj->data, cfd->data, cfd->len);
@@ -2391,6 +2392,10 @@ static netdev_tx_t mcp25xxfd_start_xmit(struct sk_buff *skb,
 	const canid_t can_id = ((struct canfd_frame *)skb->data)->can_id;
 	u8 tx_head;
 	int err;
+	
+	// Declare frame_len and canfd_frame at the beginning
+        unsigned int frame_len;
+        struct canfd_frame *cf;
 
 	if (can_dropped_invalid_skb(ndev, skb))
 		return NETDEV_TX_OK;
@@ -2420,7 +2425,23 @@ static netdev_tx_t mcp25xxfd_start_xmit(struct sk_buff *skb,
 		netif_stop_queue(ndev);
 	}
 
-	can_put_echo_skb(skb, ndev, tx_head);
+	// Initialize canfd_frame pointer
+    cf = (struct canfd_frame *)skb->data;
+
+    // Determine the frame length
+    if (cf->can_id & CAN_RTR_FLAG) {
+        // Remote Transmission Request frames have no data
+        frame_len = 0;
+    } else if (cf->can_id & CAN_EFF_FLAG) {
+        // Extended Frame Format (EFF) with CAN FD support
+        frame_len = (cf->len > CAN_MAX_DLEN) ? CAN_MAX_DLEN : cf->len;
+    } else {
+        // Standard Frame Format (SFF)
+        frame_len = (cf->len > CAN_MAX_DLEN) ? CAN_MAX_DLEN : cf->len;
+    }
+
+    // Call can_put_echo_skb with the additional frame_len parameter
+    can_put_echo_skb(skb, ndev, tx_head, frame_len);
 
 	err = mcp25xxfd_tx_obj_write(priv, tx_obj);
 	if (err)
