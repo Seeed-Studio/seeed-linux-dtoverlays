@@ -1,0 +1,50 @@
+mcp2518fd
+=======
+
+  mcp2518fd is a board with 2channel CAN/CANFD. This document is to explain the driver use for Jetpack 6.x with linux 36.2 & 36.3.
+  * With the link below is the process that communicate will Nvidia developer E2E.
+  [jetson-agx-orin-spi-interface-with-2-ch-can-fd-hat-mcp2518fd-spi-module](https://forums.developer.nvidia.com/t/jetson-agx-orin-spi-interface-with-2-ch-can-fd-hat-mcp2518fd-spi-module/302264)
+
+  * This link is the official testing on jetson orin nx with mcp2515 by nvidia on both Jetpack5.1.3 & Jetpack 6.x
+  [MCP2515_Verification](https://elinux.org/Jetson/L4T/peripheral/#MCP2515_Verification)
+
+  * For Jetpack 6.x, select the correspondant dtsi with your hardware.
+  tegra234-p3768-0000+p3767-xxxx-nv-common.dtsi // Jetson Orin Nano
+  tegra234-p3737-0000+p3701-xxxx-nv-common.dtsi // Jetson AGX Orin
+
+  the fist pXXXX is core board, the second pXXXX is carrier board.
+
+  Because the AGX Orin has only one spi, so I use the one SPI control two CAN channel mode.
+
+Example:
+--------
+
+/* SPI1, 40pin header, Pin 19(MOSI), Pin 21(MISO), Pin 23(CLK), Pin 24(CS) */
+spi@3210000{
+	status = "okay";
+	spi@0 {
+		compatible = "microchip,mcp2518fd";
+		reg = <0x0>;
+		spi-max-frequency = <2000000>;
+		interrupt-parent = <&gpio>;
+		interrupts = <TEGRA234_MAIN_GPIO(Q, 5) IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&can_clock>;
+		nvidia,enable-hw-based-cs;
+		controller-data {
+			nvidia,enable-hw-based-cs;
+			nvidia,rx-clk-tap-delay = <0x10>;
+			nvidia,tx-clk-tap-delay = <0x0>;
+		};
+	};
+	spi@1 {
+		compatible = "tegra-spidev";
+		reg = <0x1>;
+		spi-max-frequency = <50000000>;
+		controller-data {
+			nvidia,enable-hw-based-cs;
+			nvidia,rx-clk-tap-delay = <0x10>;
+			nvidia,tx-clk-tap-delay = <0x0>;
+		};
+	};
+
+};
