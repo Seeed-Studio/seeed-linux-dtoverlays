@@ -278,6 +278,39 @@
 		};
 	};
 
+	fragment@11 {
+		target-path="/";
+		__overlay__ {
+
+			vdd_out:vdd_out {
+				compatible = "regulator-fixed";
+				regulator-name = "vdd-out";
+				gpio = <&pcf857x 9 GPIO_ACTIVE_HIGH>;
+				enable-active-high;
+				regulator-boot-on;
+				regulator-always-on;
+			};
+
+			vdd_5v_out:vdd_5v_out {
+				compatible = "regulator-fixed";
+				regulator-name = "vdd-5v-out";
+				gpios = <&pcf857x 10 GPIO_ACTIVE_HIGH>;
+				enable-active-high;
+				regulator-boot-on;
+				regulator-always-on;
+			};
+
+			rs485_pwr:rs485_pwr {
+				compatible = "regulator-fixed";
+				regulator-name = "rs485-pwr";
+				gpio = <&pcf857x 12 GPIO_ACTIVE_HIGH>;
+				enable-active-high;
+				regulator-boot-on;
+				regulator-always-on;
+			};
+		};
+	};
+
 	__overrides__ {
 		uart2  = <0>,"=5!1";
 		i2c0 = <0>,"!5=1";
