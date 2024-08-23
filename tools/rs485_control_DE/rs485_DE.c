@@ -8,6 +8,7 @@
 #include <termios.h>
 #include <gpiod.h>
 #include <pty.h>
+#include <linux/serial.h>
 
 #define BUFFER_SIZE 256
 #define RS485_CONSUMER "RS485_program"
@@ -18,7 +19,7 @@ struct gpiod_line *line;
 struct gpiod_chip *rs485_chip;
 struct gpiod_line *rs485_line;
 
-void setup_gpio(char *rs485_de_chip, int rs485_de_line, char *rs485_en_chip, int rs485_en_line)
+void setup_gpio(char *rs485_de_chip, int rs485_de_line)
 {
     int ret;
 
@@ -44,33 +45,6 @@ void setup_gpio(char *rs485_de_chip, int rs485_de_line, char *rs485_en_chip, int
         gpiod_chip_close(chip);
         exit(EXIT_FAILURE);
     }
-    if (rs485_en_chip)
-    {
-        // open GPIO controller
-        rs485_chip = gpiod_chip_open(rs485_en_chip);
-        if (!rs485_chip) {
-            perror("gpiod_chip_open");
-            exit(EXIT_FAILURE);
-        }
-
-        // request GPIO line
-        rs485_line = gpiod_chip_get_line(rs485_chip, rs485_en_line);
-        if (!rs485_line) {
-            fprintf(stderr, "Failed to get GPIO line %d\n", rs485_de_line);
-            gpiod_chip_close(rs485_chip);
-            exit(EXIT_FAILURE);
-        }
-
-        // set GPIO as output
-        ret = gpiod_line_request_output(rs485_line, RS485_CONSUMER, 0);
-        if (ret < 0) {
-            fprintf(stderr, "Failed to request GPIO line as output: %s\n", strerror(-ret));
-            gpiod_chip_close(rs485_chip);
-            exit(EXIT_FAILURE);
-        }
-        gpiod_line_set_value(rs485_line, 1);
-    }
-    
 }
 
 void toggle_gpio_high() {
@@ -92,23 +66,20 @@ int main(int argc, char* argv[]) {
     ssize_t n;
     int ready;
     fd_set readfds, writefds;
-    int rs485_de_line, rs485_en_line;
-    char *rs485_de_chip, *rs485_en_chip , *rs485_dir;
-
+    int rs485_de_line;
+    char *rs485_de_chip, *rs485_dir;
 
     if(argc < 4) {
-        printf("Usage: %s /dev/ttyAMA* DE_CHIP(/dev/gpiochip*)  DE_LINE [RS485_dir] [EN_CHIP] [EN_LINE]\n", argv[0]);
+        printf("Usage: %s /dev/ttyAMA* DE_CHIP(/dev/gpiochip*)  DE_LINE [RS485_dir]\n", argv[0]);
         return 1;
     }
 
     tty_name = argv[1];
     rs485_de_chip = argv[2];
     rs485_de_line = atoi(argv[3]);
-    rs485_dir = (argc > 4) ? argv[4] : "/dev/ttyAMA10";
-    rs485_en_chip = (argc > 6) ? argv[5] : NULL;
-    rs485_en_line = (argc > 6) ? atoi(argv[6]) : -1;
+    rs485_dir = (argc > 4) ? argv[4] : "/dev/ttyAMA80";
 
-    setup_gpio(rs485_de_chip, rs485_de_line, rs485_en_chip, rs485_en_line);
+    setup_gpio(rs485_de_chip, rs485_de_line);
 
     // create pseudo terminal
     if (openpty(&master_fd, &slave_fd, slave_name, NULL, NULL) == -1) {
@@ -143,12 +114,23 @@ int main(int argc, char* argv[]) {
         perror("Unable to open serial port");
         return 1;
     }
+    // set rs485 mode
+    struct serial_rs485 rs485conf = {0};
+    rs485conf.flags |= SER_RS485_ENABLED;
+    if (ioctl (tty_fd, TIOCSRS485, &rs485conf) < 0) {
+        perror("ioctl");
+        return 1;
+    }
 
     // set serial port attributes
     tcgetattr(master_fd, &tty);
     cfmakeraw(&tty); // set raw mode
     tcsetattr(master_fd, TCSANOW, &tty);
-    tcsetattr(tty_fd, TCSANOW, &tty);
+    tcgetattr(tty_fd, &tty_termios);
+    // set baud rate
+    cfsetispeed(&tty_termios, cfgetispeed(&tty));
+    cfsetospeed(&tty_termios, cfgetispeed(&tty));
+    tcsetattr(tty_fd, TCSANOW, &tty_termios);
     // monitor file descriptors
     FD_ZERO(&readfds);
 
@@ -165,28 +147,32 @@ int main(int argc, char* argv[]) {
         if (FD_ISSET(master_fd, &readfds)) {
             toggle_gpio_high();
             tcgetattr(master_fd, &tty);
-            tcsetattr(tty_fd, TCSANOW, &tty);
+            tcgetattr(tty_fd, &tty_termios);
+            // set baud rate
+            cfsetispeed(&tty_termios, cfgetispeed(&tty));
+            cfsetospeed(&tty_termios, cfgetispeed(&tty));
+            tcsetattr(tty_fd, TCSANOW, &tty_termios);
             n = read(master_fd, buffer, BUFFER_SIZE - 1);
             if (n > 0) {
                 buffer[n] = '\0'; // make sure string is null terminated
                 // send data to serial port
                 write(tty_fd, buffer, n);
-                // wait for data to be sent
-                tcdrain(tty_fd);
             }
             toggle_gpio_low();
         }
         
         if (FD_ISSET(tty_fd, &readfds)) {
             tcgetattr(master_fd, &tty);
-            tcsetattr(tty_fd, TCSANOW, &tty);
+            tcgetattr(tty_fd, &tty_termios);
+            // set baud rate
+            cfsetispeed(&tty_termios, cfgetispeed(&tty));
+            cfsetospeed(&tty_termios, cfgetispeed(&tty));
+            tcsetattr(tty_fd, TCSANOW, &tty_termios);
             n = read(tty_fd, buffer, BUFFER_SIZE - 1);
             if (n > 0) {
                 buffer[n] = '\0'; 
                 // send data to pseudo terminal
                 write(master_fd, buffer, n);
-                // wait for data to be sent
-                tcdrain(master_fd);
             }
         }
     }
