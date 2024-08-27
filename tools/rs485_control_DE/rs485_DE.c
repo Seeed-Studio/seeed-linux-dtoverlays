@@ -19,14 +19,14 @@ struct gpiod_line *line;
 struct gpiod_chip *rs485_chip;
 struct gpiod_line *rs485_line;
 
-void setup_gpio(char *rs485_de_chip, int rs485_de_line)
+void setup_gpio(char *rs485_de_chip, int rs485_de_line, char *rs485_en_chip, int rs485_en_line)
 {
     int ret;
 
     // open GPIO controller
     chip = gpiod_chip_open(rs485_de_chip);
     if (!chip) {
-        perror("gpiod_chip_open");
+        fprintf(stderr, "gpiod_chip_open");
         exit(EXIT_FAILURE);
     }
 
@@ -45,6 +45,33 @@ void setup_gpio(char *rs485_de_chip, int rs485_de_line)
         gpiod_chip_close(chip);
         exit(EXIT_FAILURE);
     }
+    if (rs485_en_chip)
+    {
+        // open GPIO controller
+        rs485_chip = gpiod_chip_open(rs485_en_chip);
+        if (!rs485_chip) {
+            fprintf(stderr, "gpiod_chip_open");
+            return;
+        }
+
+        // request GPIO line
+        rs485_line = gpiod_chip_get_line(rs485_chip, rs485_en_line);
+        if (!rs485_line) {
+            fprintf(stderr, "Failed to get GPIO line %d\n", rs485_de_line);
+            gpiod_chip_close(rs485_chip);
+            return;
+        }
+
+        // set GPIO as output
+        ret = gpiod_line_request_output(rs485_line, RS485_CONSUMER, 0);
+        if (ret < 0) {
+            fprintf(stderr, "Failed to request GPIO line as output: %s\n", strerror(-ret));
+            gpiod_chip_close(rs485_chip);
+            return;
+        }
+        gpiod_line_set_value(rs485_line, 1);
+    }
+    
 }
 
 void toggle_gpio_high() {
@@ -66,20 +93,23 @@ int main(int argc, char* argv[]) {
     ssize_t n;
     int ready;
     fd_set readfds, writefds;
-    int rs485_de_line;
-    char *rs485_de_chip, *rs485_dir;
+    int rs485_de_line, rs485_en_line;
+    char *rs485_de_chip, *rs485_en_chip , *rs485_dir;
+
 
     if(argc < 4) {
-        printf("Usage: %s /dev/ttyAMA* DE_CHIP(/dev/gpiochip*)  DE_LINE [RS485_dir]\n", argv[0]);
+        printf("Usage: %s /dev/ttyAMA* DE_CHIP(/dev/gpiochip*)  DE_LINE [RS485_dir] [EN_CHIP] [EN_LINE]\n", argv[0]);
         return 1;
     }
 
     tty_name = argv[1];
     rs485_de_chip = argv[2];
     rs485_de_line = atoi(argv[3]);
-    rs485_dir = (argc > 4) ? argv[4] : "/dev/ttyAMA80";
+    rs485_dir = (argc > 4) ? argv[4] : "/dev/ttyAMA10";
+    rs485_en_chip = (argc > 6) ? argv[5] : NULL;
+    rs485_en_line = (argc > 6) ? atoi(argv[6]) : -1;
 
-    setup_gpio(rs485_de_chip, rs485_de_line);
+    setup_gpio(rs485_de_chip, rs485_de_line, rs485_en_chip, rs485_en_line);
 
     // create pseudo terminal
     if (openpty(&master_fd, &slave_fd, slave_name, NULL, NULL) == -1) {
