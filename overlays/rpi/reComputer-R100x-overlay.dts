@@ -156,6 +156,7 @@
 			label = "RS485_1";
 			pinctrl-names = "default";
 			pinctrl-0 = <&uart2_pins>;
+			linux,rs485-enabled-at-boot-time;
 			rts-gpio = <&gpio 6 GPIO_ACTIVE_HIGH>;
 			status = "okay";
 		};
@@ -167,6 +168,7 @@
 			label = "RS485_2";
 			pinctrl-names = "default";
 			pinctrl-0 = <&uart3_pins>;
+			linux,rs485-enabled-at-boot-time;
 			rts-gpio = <&gpio 17 GPIO_ACTIVE_HIGH>;
 			status = "okay";
 		};
@@ -178,6 +180,7 @@
 			label = "RS485_3";
 			pinctrl-names = "default";
 			pinctrl-0 = <&uart5_pins>;
+			linux,rs485-enabled-at-boot-time;
 			rts-gpio = <&gpio 24 GPIO_ACTIVE_HIGH>;
 			status = "okay";
 		};
