@@ -1,0 +1,277 @@
+/*
+ * Copyright (C) 2021 Seeed Studio
+ * ruiqian <ruiqian.tang@seeed.cc>
+ *
+ * MIT License
+ *
+ */
+ /dts-v1/;
+ /plugin/;
+
+ #include "dt-bindings/gpio/gpio.h"
+
+ / {
+	compatible = "brcm,bcm2835", "brcm,bcm2708", "brcm,bcm2709", "brcm,bcm2711";
+
+	fragment@0 {
+        target-path="/";
+        __overlay__ {
+            hardware = "reComputer-R110x V1.0";
+        };
+    };
+
+	fragment@1 {
+		target = <&i2c0>;
+		__overlay__ {
+			status = "okay";
+			clock-frequency = <400000>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
+	};
+
+	fragment@2 {
+		target = <&i2c1>;
+		__overlay__ {
+			status = "okay";
+			clock-frequency = <100000>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
+	};
+		
+	fragment@3 {
+		target = <&i2c3>;
+		__overlay__ {
+			status = "okay";
+			clock-frequency = <400000>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			pcf857x: pcf@21 {
+				compatible = "nxp,pca9535";
+				reg = <0x21>;
+				status = "okay";
+
+				gpio-controller;
+				#gpio-cells = <2>;
+
+				gpio-line-names =
+					"LoRaWAN_SX1262_CS"	 	,"LoRaWAN_SX1262_RST",
+					"LoRaWAN_SX1302_RST"	,"LTE_RESET",
+					"TPM_RST"				,"USR_LED_R",
+					"USR_LED_G"				,"USR_LED_B",
+					"EEPROM_WP"		        ,"Buzzer_EN",
+					"gpio_pin12"		    ,"gpio_pin13",
+					"RS485_POWER_EN"		,"CH344_RST",
+					"SD_DET"				,"gpio_pin15";
+
+				LoRaWAN_SX1262_CS {
+					gpios = <&pcf857x 0 GPIO_ACTIVE_HIGH>;
+					output-low;
+					line-name = "LoRaWAN_SX1262_CS";
+				};
+
+				LoRaWAN_SX1262_RST {
+					gpios = <&pcf857x 1 GPIO_ACTIVE_HIGH>;
+					output-low;
+					line-name = "LoRaWAN_SX1262_RST";
+				};
+
+				LoRaWAN_SX1302_RST {
+					gpios = <&pcf857x 2 GPIO_ACTIVE_HIGH>;
+					output-low;
+					line-name = "LoRaWAN_SX1302_RST";
+				};
+
+				LTE_RESET {
+					gpios = <&pcf857x 3 GPIO_ACTIVE_HIGH>;
+					output-high;
+					line-name = "LTE_RESET";
+				};
+
+				TPM_RST {
+					gpios = <&pcf857x 4 GPIO_ACTIVE_HIGH>;
+					output-high;
+					line-name = "TPM_RST";
+				};
+
+				USR_LED_R {
+					gpios = <&pcf857x 5 GPIO_ACTIVE_HIGH>;
+					output-high;
+					line-name = "USR_LED_R";
+				};
+
+				USR_LED_G {
+					gpios = <&pcf857x 6 GPIO_ACTIVE_HIGH>;
+					output-high;
+					line-name = "USR_LED_G";
+				};
+
+				USR_LED_B {
+					gpios = <&pcf857x 7 GPIO_ACTIVE_HIGH>;
+					output-high;
+					line-name = "USR_LED_B";
+				};
+
+				EEPROM_WP {
+					gpios = <&pcf857x 8 GPIO_ACTIVE_HIGH>;
+					output-high;
+					line-name = "EEPROM_WP";
+				};
+
+				Buzzer_EN {
+					gpios = <&pcf857x 9 GPIO_ACTIVE_HIGH>;
+					output-low;
+					line-name = "Buzzer_EN";
+				};
+
+				RS485_POWER_EN {
+					gpios = <&pcf857x 12 GPIO_ACTIVE_HIGH>;
+					output-high;
+					line-name = "RS485_POWER_EN";
+				};
+
+				CH344_RST {
+					gpios = <&pcf857x 13 GPIO_ACTIVE_HIGH>;
+					output-high;
+					line-name = "CH344_RST";
+				};
+
+				SD_DET {
+					gpios = <&pcf857x 14 GPIO_ACTIVE_HIGH>;
+					line-name = "SD_DET";
+				};
+			};
+		};
+	};
+
+	fragment@4 {
+		target = <&i2c5>;
+		__overlay__ {
+			status = "okay";
+			clock-frequency = <100000>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			
+			pcf8563w@51 {
+				compatible = "nxp,pcf8563w";
+				reg = <0x51>;
+				reset-source;
+				/* 0 = 4096Hz, 1 = 64Hz, 2 = 1Hz, 3 = 1/60Hz */
+				timer-frequency = <0x02>;
+				/* Timeout count, max 255 min 2*/
+				default-timeout =  <120>;
+				min-hw-heartbeat-ms = <2000>;
+			};
+
+			eeprom@50 {
+				compatible = "atmel,24c256";
+				reg = <0x50>;
+			};
+
+		};
+	};
+
+	fragment@b {
+		target = <&spi0>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@c {
+		target = <&spidev0>;
+		__overlay__ {
+			status = "disabled";
+		};
+	};
+
+	fragment@d {
+		target = <&spi0>;
+		__overlay__ {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			slb9670: slb9670@0 {
+				compatible = "infineon,slb9670";
+				reg = <0>;	/* CE0 */
+				#address-cells = <1>;
+				#size-cells = <0>;
+				spi-max-frequency = <32000000>;
+				status = "okay";
+			};
+
+		};
+	};
+
+
+	fragment@f {
+		target = <&leds>;
+		__overlay__ {
+			compatible = "gpio-leds";
+
+			led_red: led_red {
+				label = "led-red";
+				linux,default-trigger = "default-off";
+				gpios = <&pcf857x 5 GPIO_ACTIVE_LOW>;
+				default-state = "off";
+			};
+			
+			led_green: led_green {
+				label = "led-green";
+				linux,default-trigger = "default-off";
+				gpios = <&pcf857x 6 GPIO_ACTIVE_LOW>;
+				default-state = "off";
+			};
+
+			led_blue: led_blue {
+				label = "led-blue";
+				linux,default-trigger = "default-off";
+				gpios = <&pcf857x 7 GPIO_ACTIVE_LOW>;
+				default-state = "off";
+			};
+		};
+	};
+
+	fragment@10 {
+		target-path="/";
+		__overlay__ {
+			beeper: beeper {
+				compatible = "gpio-beeper";
+				gpios = <&pcf857x 9 GPIO_ACTIVE_HIGH>;
+				status = "okay";
+			};
+		};
+	};
+
+	fragment@1a {
+        target = <&sdhost>;
+        frag0: __overlay__ {
+            pinctrl-names = "default";
+            pinctrl-0 = <&sdhost_pins>;
+            bus-width = <4>;
+            brcm,overclock-50 = <0>;
+            brcm,pio-limit = <1>;
+            status = "okay";
+        };
+    };
+
+	fragment@1b {
+        target = <&gpio>;
+        __overlay__ {
+            sdhost_pins: sdhost_pins {
+                brcm,pins = <22 23 24 25 26 27>;
+                brcm,function = <4 4 4 4 4 4>; /* ALT0: SD0 */
+                brcm,pull = <0 2 2 2 2 2>; /* pull up all except clk */
+            };
+        };
+    };
+
+    __overrides__ {
+        overclock_50 = <&frag0>,"brcm,overclock-50:0";
+        force_pio = <&frag0>,"brcm,force-pio?";
+        pio_limit = <&frag0>,"brcm,pio-limit:0";
+        debug = <&frag0>,"brcm,debug?";
+    };
+
+};	
