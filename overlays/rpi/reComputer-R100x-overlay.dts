@@ -16,7 +16,7 @@
 	fragment@0 {
         target-path="/";
         __overlay__ {
-            hardware = "reComputer-R100x V1.0";
+            hardware = "reComputer-R100x V1.1";
         };
     };
 
@@ -30,18 +30,8 @@
 		};
 	};
 
-	fragment@2 {
-		target = <&i2c1>;
-		__overlay__ {
-			status = "okay";
-			clock-frequency = <100000>;
-			#address-cells = <1>;
-			#size-cells = <0>;
-		};
-	};
-		
 	fragment@3 {
-		target = <&i2c3>;
+		target = <&i2c5>;
 		__overlay__ {
 			status = "okay";
 			clock-frequency = <400000>;
@@ -59,11 +49,11 @@
 				gpio-line-names =
 					"LoRaWAN_SX1262_CS"	 	,"LoRaWAN_SX1262_RST",
 					"LoRaWAN_SX1302_RST"	,"LTE_RESET",
-					"TPM_RST"				,"gpio_pin5",
-					"gpio_pin6"				,"gpio_pin7",
+					"TPM_RST"				,"USR_LED_R",
+					"USR_LED_G"				,"USR_LED_B",
 					"EEPROM_WP"				,"VDD_OUT_CTL",
 					"VDD_5V_OUT_CTL"		,"USB2_RST_EN",
-					"RS485_POWER_EN"		,"gpio_pin13",
+					"RS485_POWER_EN"		,"Buzzer_EN",
 					"gpio_pin14"			,"gpio_pin15";
 					
 				LoRaWAN_SX1262_CS {
@@ -96,6 +86,30 @@
 					line-name = "TPM_RST";
 				};
 
+				USR_LED_R {
+					gpios = <&pcf857x 5 GPIO_ACTIVE_HIGH>;
+					output-high;
+					line-name = "USR_LED_R";
+				};
+
+				USR_LED_G {
+					gpios = <&pcf857x 6 GPIO_ACTIVE_HIGH>;
+					output-high;
+					line-name = "USR_LED_G";
+				};
+
+				USR_LED_B {
+					gpios = <&pcf857x 7 GPIO_ACTIVE_HIGH>;
+					output-high;
+					line-name = "USR_LED_B";
+				};
+
+				EEPROM_WP {
+					gpios = <&pcf857x 8 GPIO_ACTIVE_HIGH>;
+					output-high;
+					line-name = "EEPROM_WP";
+				};
+				
 				VDD_OUT_CTL {
 					gpios = <&pcf857x 9 GPIO_ACTIVE_HIGH>;
 					output-high;
@@ -118,6 +132,12 @@
 					gpios = <&pcf857x 12 GPIO_ACTIVE_HIGH>;
 					output-high;
 					line-name = "RS485_POWER_EN";
+				};
+
+				Buzzer_EN {
+					gpios = <&pcf857x 13 GPIO_ACTIVE_HIGH>;
+					output-low;
+					line-name = "Buzzer_EN";
 				};
 			};
 		};
@@ -157,7 +177,6 @@
 			pinctrl-names = "default";
 			pinctrl-0 = <&uart2_pins>;
 			linux,rs485-enabled-at-boot-time;
-			rts-gpio = <&gpio 6 GPIO_ACTIVE_HIGH>;
 			status = "okay";
 		};
 	};
@@ -169,44 +188,42 @@
 			pinctrl-names = "default";
 			pinctrl-0 = <&uart3_pins>;
 			linux,rs485-enabled-at-boot-time;
-			rts-gpio = <&gpio 17 GPIO_ACTIVE_HIGH>;
 			status = "okay";
 		};
 	};
 
 	fragment@7 {
-		target = <&uart5>;
+		target = <&uart4>;
 		__overlay__ {
 			label = "RS485_3";
 			pinctrl-names = "default";
-			pinctrl-0 = <&uart5_pins>;
+			pinctrl-0 = <&uart4_pins>;
 			linux,rs485-enabled-at-boot-time;
-			rts-gpio = <&gpio 24 GPIO_ACTIVE_HIGH>;
 			status = "okay";
 		};
 	};
 
 	fragment@8 {
 		target = <&uart2_pins>;
-		__dormant__ {
-			brcm,pins = <0 1>;
-			brcm,pull = <0 2>;
+		__overlay__ {
+			brcm,pins = <0 1 2 3>;
+			brcm,pull = <0 2 2 0>;
 		};
 	};
 
 	fragment@9 {
 		target = <&uart3_pins>;
-		__dormant__ {
-			brcm,pins = <4 5>;
-			brcm,pull = <0 2>;
+		__overlay__ {
+			brcm,pins = <4 5 6 7>;
+			brcm,pull = <0 2 2 0>;
 		};
 	};
 
 	fragment@a {
-		target = <&uart5_pins>;
-		__dormant__ {
-			brcm,pins = <12 13>;
-			brcm,pull = <0 2>;
+		target = <&uart4_pins>;
+		__overlay__ {
+			brcm,pins = <8 9 10 11>;
+			brcm,pull = <0 2 2 0>;
 		};
 	};
 
@@ -250,21 +267,21 @@
 			led_red: led_red {
 				label = "led-red";
 				linux,default-trigger = "default-off";
-				gpios = <&gpio 20 GPIO_ACTIVE_LOW>;
+				gpios = <&pcf857x 5 GPIO_ACTIVE_LOW>;
 				default-state = "off";
 			};
 			
 			led_green: led_green {
 				label = "led-green";
 				linux,default-trigger = "default-off";
-				gpios = <&gpio 26 GPIO_ACTIVE_LOW>;
+				gpios = <&pcf857x 6 GPIO_ACTIVE_LOW>;
 				default-state = "off";
 			};
 
 			led_blue: led_blue {
 				label = "led-blue";
 				linux,default-trigger = "default-off";
-				gpios = <&gpio 27 GPIO_ACTIVE_LOW>;
+				gpios = <&pcf857x 7 GPIO_ACTIVE_LOW>;
 				default-state = "off";
 			};
 		};
@@ -275,7 +292,7 @@
 		__overlay__ {
 			beeper: beeper {
 				compatible = "gpio-beeper";
-				gpios = <&gpio 21 GPIO_ACTIVE_HIGH>;
+				gpios = <&pcf857x 13 GPIO_ACTIVE_HIGH>;
 				status = "okay";
 			};
 		};
@@ -312,10 +329,5 @@
 				regulator-always-on;
 			};
 		};
-	};
-
-	__overrides__ {
-		uart2  = <0>,"=5!1";
-		i2c0 = <0>,"!5=1";
 	};
 };	

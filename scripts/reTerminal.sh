@@ -293,24 +293,19 @@ function install_overlay_reComputer {
 
   set_config_dtoverlay "dwc2,dr_mode=host"
   set_config_dtoverlay "vc4-kms-v3d"
-  set_config_dtoverlay "i2c1,pins_44_45"
-  set_config_dtoverlay "i2c3,pins_2_3"
+  set_config_dtoverlay "i2c5,pins_12_13"
 
   make overlays/rpi/$device-overlay.dtbo || exit 1;
   cp -fv overlays/rpi/$device-overlay.dtbo $OVERLAY_DIR/$device.dtbo || exit 1;
 
   if [ "$device" = "reComputer-R100x" ]; then
+    set_config_dtoverlay "i2c0,pins_44_45"
     set_config_dtoverlay "i2c6,pins_22_23"
-    set_config_dtoverlay "audremap,pins_18_19"
-    set_config_dtoverlay "reComputer-R100x,uart2"
-    # make ./tools/rs485_control_DE 
-    apt-get install -y libgpiod-dev || exit 1;
-    gcc tools/rs485_control_DE/rs485_DE.c -o tools/rs485_control_DE/rs485_DE -lgpiod || exit 1;
-    cp tools/rs485_control_DE/rs485_DE /usr/local/bin || exit 1;
-  elif [ "$device" = "reComputer-R110x" ]; then
-    set_config_dtoverlay "i2c5,pins_12_13" 
-    set_config_dtoverlay "reComputer-R110x"
+  elif [ "$device" = "reComputer-R110x" ]; then 
+    set_config_dtoverlay "i2c1,pins_44_45"
+    set_config_dtoverlay "i2c3,pins_2_3"
   fi
+  set_config_dtoverlay "$device"
 }
 
 function uninstall_overlay_reComputer {
@@ -322,18 +317,17 @@ function uninstall_overlay_reComputer {
 
   remove_config_dtoverlay "dwc2,dr_mode=host"
   remove_config_dtoverlay "vc4-kms-v3d"
-  remove_config_dtoverlay "i2c1,pins_44_45"
+  remove_config_dtoverlay "i2c5,pins_12_13" 
   remove_config_dtoverlay $device
   rm -fv $OVERLAY_DIR/$device.dtbo || exit 1;
-  remove_config_dtoverlay "reComputer-R110x"
   if [ "$device" = "reComputer-R100x" ]; then
+    remove_config_dtoverlay "i2c0,pins_44_45"
     remove_config_dtoverlay "i2c6,pins_22_23"
-    remove_config_dtoverlay "audremap,pins_18_19"
-    remove_config_dtoverlay "reComputer-R100x,i2c0"
-    remove_config_dtoverlay "reComputer-R100x,uart2"
   elif [ "$device" = "reComputer-R110x" ]; then
-    remove_config_dtoverlay "i2c5,pins_12_13" 
+    remove_config_dtoverlay "i2c1,pins_44_45"
+    remove_config_dtoverlay "i2c3,pins_2_3"
   fi
+  remove_config_dtoverlay "$device"
 
   rm -fv overlays/rpi/.*.tmp
   rm -fv overlays/rpi/.*.cmd
