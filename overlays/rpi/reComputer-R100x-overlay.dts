@@ -228,21 +228,21 @@
 	};
 
 	fragment@b {
-		target = <&spi0>;
+		target = <&spi1>;
 		__overlay__ {
 			status = "okay";
 		};
 	};
 
 	fragment@c {
-		target = <&spidev0>;
+		target = <&spidev1_0>;
 		__overlay__ {
 			status = "disabled";
 		};
 	};
 
 	fragment@d {
-		target = <&spi0>;
+		target = <&spi1>;
 		__overlay__ {
 			#address-cells = <1>;
 			#size-cells = <0>;
