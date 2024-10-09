@@ -7,38 +7,34 @@
  */
  /dts-v1/;
  /plugin/;
- 
+
  #include "dt-bindings/gpio/gpio.h"
 
- #define LED_RED_PINS <&pcf857x 5 GPIO_ACTIVE_LOW>
- #define LED_GREEN_PINS <&pcf857x 6 GPIO_ACTIVE_LOW>
- #define LED_BLUE_PINS <&pcf857x 7 GPIO_ACTIVE_LOW>
- #define LED_BEEPER_PINS <&pcf857x 13 GPIO_ACTIVE_LOW>
- 
+ #define LED_RED_PINS <&gpio 20 GPIO_ACTIVE_LOW>
+ #define LED_GREEN_PINS <&gpio 26 GPIO_ACTIVE_LOW>
+ #define LED_BLUE_PINS <&gpio 27 GPIO_ACTIVE_LOW>
+ #define LED_BEEPER_PINS <&gpio 21 GPIO_ACTIVE_HIGH>
+
  / {
 	fragment@0 {
         target-path="/";
         __overlay__ {
-            hardware = "reComputer-R100x V1.1";
+            hardware = "reComputer-R100x V1.0";
         };
     };
 
 	fragment@1 {
-		target = <&i2c0if>;
+		target = <&i2c1>;
 		__overlay__ {
+			clock-frequency = <100000>;
+			#address-cells = <1>;
+			#size-cells = <0>;
 			status = "okay";
 		};
 	};
 
 	fragment@2 {
-		target = <&i2c0mux>;
-		__overlay__ {
-			status = "okay";
-		};
-	};
-
-	fragment@3 {
-		target = <&i2c5>;
+		target = <&i2c3>;
 		__overlay__ {
 			clock-frequency = <400000>;
 			#address-cells = <1>;
@@ -56,11 +52,11 @@
 				gpio-line-names =
 					"LoRaWAN_SX1262_CS"	 	,"LoRaWAN_SX1262_RST",
 					"LoRaWAN_SX1302_RST"	,"LTE_RESET",
-					"TPM_RST"				,"USR_LED_R",
-					"USR_LED_G"				,"USR_LED_B",
+					"TPM_RST"				,"gpio_pin5",
+					"gpio_pin6"				,"gpio_pin7",
 					"EEPROM_WP"				,"VDD_OUT_CTL",
 					"VDD_5V_OUT_CTL"		,"USB2_RST_EN",
-					"RS485_POWER_EN"		,"Buzzer_EN",
+					"RS485_POWER_EN"		,"gpio_pin13",
 					"gpio_pin14"			,"gpio_pin15";
 					
 				LoRaWAN_SX1262_CS {
@@ -93,30 +89,6 @@
 					line-name = "TPM_RST";
 				};
 
-				USR_LED_R {
-					gpios = <&pcf857x 5 GPIO_ACTIVE_HIGH>;
-					output-high;
-					line-name = "USR_LED_R";
-				};
-
-				USR_LED_G {
-					gpios = <&pcf857x 6 GPIO_ACTIVE_HIGH>;
-					output-high;
-					line-name = "USR_LED_G";
-				};
-
-				USR_LED_B {
-					gpios = <&pcf857x 7 GPIO_ACTIVE_HIGH>;
-					output-high;
-					line-name = "USR_LED_B";
-				};
-
-				EEPROM_WP {
-					gpios = <&pcf857x 8 GPIO_ACTIVE_HIGH>;
-					output-high;
-					line-name = "EEPROM_WP";
-				};
-				
 				VDD_OUT_CTL {
 					gpios = <&pcf857x 9 GPIO_ACTIVE_HIGH>;
 					output-high;
@@ -140,42 +112,44 @@
 					output-high;
 					line-name = "RS485_POWER_EN";
 				};
-
-				Buzzer_EN {
-					gpios = <&pcf857x 13 GPIO_ACTIVE_HIGH>;
-					output-low;
-					line-name = "Buzzer_EN";
-				};
 			};
+		};
+	};
+
+	fragment@3 {
+		target = <&i2c1_pins>;
+		pins2: __overlay__ {
+			brcm,pins = <44 45>;
+			brcm,function = <6>; /* alt 2 */
+		};
+	};
+
+	fragment@4 {
+		target = <&i2c3_pins>;
+		__overlay__ {
+			brcm,pins = <2 3>;
+		};
+	};
+
+	fragment@5 {
+		target = <&spi0>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@6 {
+		target = <&spidev0>;
+		__overlay__ {
+			status = "disabled";
 		};
 	};
 
 	fragment@7 {
-		target = <&gpio>;
+		target = <&spi0>;
 		__overlay__ {
-			spi1_pins: spi1_pins {
-				brcm,pins = <19 20 21>;
-				brcm,function = <3>; /* alt4 */
-			};
-
-			spi1_cs_pins: spi1_cs_pins {
-				brcm,pins = <18 17>;
-				brcm,function = <1>; /* output */
-			};
-		};
-	};
-
-	fragment@8 {
-		target = <&spi1>;
-		frag1: __overlay__ {
-			/* needed to avoid dtc warning */
 			#address-cells = <1>;
 			#size-cells = <0>;
-			pinctrl-names = "default";
-			pinctrl-0 = <&spi1_pins &spi1_cs_pins>;
-			cs-gpios = <&gpio 18 1>, <&gpio 17 1>;
-			status = "okay";
-
 			slb9670: slb9670@0 {
 				compatible = "infineon,slb9670";
 				reg = <0>;	/* CE0 */
@@ -185,58 +159,32 @@
 				status = "okay";
 			};
 
-			spidev1_1: spidev@1 {
-				compatible = "spidev";
-				reg = <1>;      /* CE1 */
-				#address-cells = <1>;
-				#size-cells = <0>;
-				spi-max-frequency = <125000000>;
-				status = "okay";
-			};
+		};
+	};
+
+	fragment@8 {
+		target = <&uart2>;
+		__overlay__ {
+			rts-gpio = <&gpio 6 GPIO_ACTIVE_HIGH>;
 		};
 	};
 
 	fragment@9 {
-		target = <&uart2>;
+		target = <&uart3>;
 		__overlay__ {
-			status = "okay";
+			rts-gpio = <&gpio 17 GPIO_ACTIVE_HIGH>;
 		};
 	};
 
 	fragment@a {
-		target = <&uart4>;
+		target = <&uart5>;
 		__overlay__ {
 			label = "RS485_3";
-			pinctrl-names = "default";
-			pinctrl-0 = <&uart4_pins>;
 			linux,rs485-enabled-at-boot-time;
+			rts-gpio = <&gpio 24 GPIO_ACTIVE_HIGH>;
 			status = "okay";
 		};
 	};
-
-	fragment@b {
-		target = <&uart2_pins>;
-		__overlay__ {
-			brcm,pins = <0 1 2 3>;
-			brcm,pull = <0 2 2 0>;
-		};
-	};
-
-	fragment@c {
-		target = <&uart3_pins>;
-		__overlay__ {
-			brcm,pins = <4 5 6 7>;
-			brcm,pull = <0 2 2 0>;
-		};
-	};
-
-	fragment@d {
-		target = <&uart4_pins>;
-		__overlay__ {
-			brcm,pins = <8 9 10 11>;
-			brcm,pull = <0 2 2 0>;
-		};
-	};
-};	
+};
 
 #include "reComputer-R100x.dtsi"

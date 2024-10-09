@@ -24,7 +24,7 @@ dtc_cpp_flags  = -nostdinc		\
 
 define cmd_dtc
 	$(CPP) $(dtc_cpp_flags) -x assembler-with-cpp -o $(dtc-tmp) $< ;
-        $(DTC) -I dts -O dtb -o $@ -b 0 -@	\
+        $(DTC) -I dtsi -O dtb -o $@ -b 0 -@	\
                 $(DTC_FLAGS) 			\
                 $(dtc-tmp) ;
 endef

@@ -1,0 +1,130 @@
+/*
+ * Copyright (C) 2021 Seeed Studio
+ * ruiqian <ruiqian.tang@seeed.cc>
+ *
+ * MIT License
+ *
+ */
+
+ / {
+	compatible = "brcm,bcm2835", "brcm,bcm2708", "brcm,bcm2709", "brcm,bcm2711";
+
+	fragment@1a {
+		target = <&i2c6>;
+		__overlay__ {
+			status = "okay";
+			clock-frequency = <100000>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			
+			pcf8563w@51 {
+				compatible = "nxp,pcf8563w";
+				reg = <0x51>;
+				reset-source;
+				/* 0 = 4096Hz, 1 = 64Hz, 2 = 1Hz, 3 = 1/60Hz */
+				timer-frequency = <0x02>;
+				/* Timeout count, max 255 min 2*/
+				default-timeout =  <120>;
+				min-hw-heartbeat-ms = <2000>;
+			};
+
+			eeprom@50 {
+				compatible = "atmel,24c256";
+				reg = <0x50>;
+			};
+		};
+	};
+
+	fragment@1b {
+		target = <&uart2>;
+		__overlay__ {
+			label = "RS485_1";
+			linux,rs485-enabled-at-boot-time;
+		};
+	};
+
+	fragment@1c {
+		target = <&uart3>;
+		__overlay__ {
+			label = "RS485_2";
+			linux,rs485-enabled-at-boot-time;
+			status = "okay";
+		};
+	};
+
+	fragment@1f {
+		target = <&leds>;
+		__overlay__ {
+			compatible = "gpio-leds";
+
+			led_red: led_red {
+				label = "led-red";
+				linux,default-trigger = "default-off";
+				gpios = LED_RED_PINS;// <&pcf857x 5 GPIO_ACTIVE_LOW>;
+				default-state = "off";
+				status = "okay";
+			};
+			
+			led_green: led_green {
+				label = "led-green";
+				linux,default-trigger = "default-off";
+				gpios = LED_GREEN_PINS;
+				default-state = "off";
+				status = "okay";
+			};
+
+			led_blue: led_blue {
+				label = "led-blue";
+				linux,default-trigger = "default-off";
+				gpios = LED_BLUE_PINS;
+				default-state = "off";
+				status = "okay";
+			};
+		};
+	};
+
+	fragment@10 {
+		target-path="/";
+		__overlay__ {
+			beeper: beeper {
+				label = "beeper";
+				compatible = "gpio-beeper";
+				gpios = LED_BEEPER_PINS;
+				status = "okay";
+			};
+		};
+	};
+
+	fragment@11 {
+		target-path="/";
+		__overlay__ {
+
+			vdd_out:vdd_out {
+				compatible = "regulator-fixed";
+				regulator-name = "vdd-out";
+				gpio = <&pcf857x 9 GPIO_ACTIVE_HIGH>;
+				enable-active-high;
+				regulator-boot-on;
+				regulator-always-on;
+			};
+
+			vdd_5v_out:vdd_5v_out {
+				compatible = "regulator-fixed";
+				regulator-name = "vdd-5v-out";
+				gpios = <&pcf857x 10 GPIO_ACTIVE_HIGH>;
+				enable-active-high;
+				regulator-boot-on;
+				regulator-always-on;
+			};
+
+			rs485_pwr:rs485_pwr {
+				compatible = "regulator-fixed";
+				regulator-name = "rs485-pwr";
+				gpio = <&pcf857x 12 GPIO_ACTIVE_HIGH>;
+				enable-active-high;
+				regulator-boot-on;
+				regulator-always-on;
+			};
+		};
+	};
+};	

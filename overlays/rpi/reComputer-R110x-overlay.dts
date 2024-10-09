@@ -21,16 +21,20 @@
     };
 
 	fragment@1 {
-		target = <&i2c0>;
+		target = <&i2c0if>;
 		__overlay__ {
 			status = "okay";
-			clock-frequency = <400000>;
-			#address-cells = <1>;
-			#size-cells = <0>;
 		};
 	};
 
 	fragment@2 {
+		target = <&i2c0mux>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@3 {
 		target = <&i2c1>;
 		__overlay__ {
 			status = "okay";
@@ -40,7 +44,7 @@
 		};
 	};
 		
-	fragment@3 {
+	fragment@4 {
 		target = <&i2c3>;
 		__overlay__ {
 			status = "okay";
@@ -146,7 +150,7 @@
 		};
 	};
 
-	fragment@4 {
+	fragment@5 {
 		target = <&i2c5>;
 		__overlay__ {
 			status = "okay";
@@ -170,6 +174,21 @@
 				reg = <0x50>;
 			};
 
+		};
+	};
+
+	fragment@6 {
+		target = <&i2c1_pins>;
+		pins2: __overlay__ {
+			brcm,pins = <44 45>;
+			brcm,function = <6>; /* alt 2 */
+		};
+	};
+
+	fragment@7 {
+		target = <&i2c3_pins>;
+		__overlay__ {
+			brcm,pins = <2 3>;
 		};
 	};
 

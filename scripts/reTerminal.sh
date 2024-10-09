@@ -286,54 +286,38 @@ function unblacklist_driver {
 
 function install_overlay_reComputer {
   # config.txt
-  set_config_dtparam "i2c_arm" "on"
-  set_config_dtparam "spi" "on"
-
   set_config_value "enable_uart" "1"
 
   set_config_dtoverlay "dwc2,dr_mode=host"
   set_config_dtoverlay "vc4-kms-v3d"
-  set_config_dtoverlay "i2c1,pins_44_45"
-  set_config_dtoverlay "i2c3,pins_2_3"
-
   make overlays/rpi/$device-overlay.dtbo || exit 1;
   cp -fv overlays/rpi/$device-overlay.dtbo $OVERLAY_DIR/$device.dtbo || exit 1;
 
-  if [ "$device" = "reComputer-R100x" ]; then
-    set_config_dtoverlay "i2c6,pins_22_23"
+  if [ "$device" = "reComputer-R100x-v1-0" ]; then 
+    set_config_dtoverlay "uart2" # if use i2c0, remove uart2 and add i2c0
     set_config_dtoverlay "audremap,pins_18_19"
-    set_config_dtoverlay "reComputer-R100x,uart2"
     # make ./tools/rs485_control_DE 
     apt-get install -y libgpiod-dev || exit 1;
     gcc tools/rs485_control_DE/rs485_DE.c -o tools/rs485_control_DE/rs485_DE -lgpiod || exit 1;
     cp tools/rs485_control_DE/rs485_DE /usr/local/bin || exit 1;
-  elif [ "$device" = "reComputer-R110x" ]; then
-    set_config_dtoverlay "i2c5,pins_12_13" 
-    set_config_dtoverlay "reComputer-R110x"
   fi
+  set_config_dtoverlay "$device"
 }
 
 function uninstall_overlay_reComputer {
   # config.txt
-  remove_config_dtparam "i2c_arm" "on"
-  remove_config_dtparam "spi" "on"
-
   remove_config_value "enable_uart" "1"
 
   remove_config_dtoverlay "dwc2,dr_mode=host"
   remove_config_dtoverlay "vc4-kms-v3d"
-  remove_config_dtoverlay "i2c1,pins_44_45"
   remove_config_dtoverlay $device
   rm -fv $OVERLAY_DIR/$device.dtbo || exit 1;
-  remove_config_dtoverlay "reComputer-R110x"
-  if [ "$device" = "reComputer-R100x" ]; then
-    remove_config_dtoverlay "i2c6,pins_22_23"
+  if [ "$device" = "reComputer-R100x-v1-0" ]; then
+    remove_config_dtoverlay "uart2"
+    remove_config_dtoverlay "i2c0"
     remove_config_dtoverlay "audremap,pins_18_19"
-    remove_config_dtoverlay "reComputer-R100x,i2c0"
-    remove_config_dtoverlay "reComputer-R100x,uart2"
-  elif [ "$device" = "reComputer-R110x" ]; then
-    remove_config_dtoverlay "i2c5,pins_12_13" 
   fi
+  remove_config_dtoverlay "$device"
 
   rm -fv overlays/rpi/.*.tmp
   rm -fv overlays/rpi/.*.cmd
@@ -592,7 +576,7 @@ function install {
     # we blacklist this driver in DM to avoid gibberish issue with ch342f chip.
     # and we insmod a new driver for ch342f
     blacklist_driver cdc_acm
-  elif [ "$device" = "reComputer-R100x" ] || [ "$device" = "reComputer-R110x" ]; then
+  elif [ "$device" = "reComputer-R100x" ] || [ "$device" = "reComputer-R110x" ] || [ "$device" = "reComputer-R100x-v1-0" ]; then
     install_modules rtc-pcf8563w
     install_overlay_reComputer
   fi
@@ -631,7 +615,7 @@ function uninstall {
     uninstall_modules ili9881d ltr30x ch34x rtc-pcf8563w
     uninstall_overlay_DM
     unblacklist_driver cdc_acm
-  elif [ "$device" = "reComputer-R100x" ] || [ "$device" = "reComputer-R110x" ]; then
+  elif [ "$device" = "reComputer-R100x" ] || [ "$device" = "reComputer-R110x" ] || [ "$device" = "reComputer-R100x-v1-0" ]; then
     uninstall_modules rtc-pcf8563w
     uninstall_overlay_reComputer
   fi
@@ -678,8 +662,9 @@ while [ ! -z "$1" ] ; do
   shift
 done
 
-if [ "$device" != "reTerminal" ] && [ "$device" != "reTerminal-plus" ] && [ "$device" != "reComputer-R100x" ] && [ "$device" != "reComputer-R110x" ]; then
-  echo "Invalid device type. the type should be reTerminal or reTerminal-plus reComputer-R100x reComputer-R110x" 1>&2
+if [ "$device" != "reTerminal" ] && [ "$device" != "reTerminal-plus" ] && \
+    [ "$device" != "reComputer-R100x" ] && [ "$device" != "reComputer-R100x-v1-0" ] && [ "$device" != "reComputer-R110x" ]; then
+  echo "Invalid device type. the type should be reTerminal or reTerminal-plus reComputer-R100x reComputer-R100x-v1-0 reComputer-R110x" 1>&2
   exit 1;
 fi
 
