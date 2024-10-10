@@ -286,47 +286,24 @@ function unblacklist_driver {
 
 function install_overlay_reComputer {
   # config.txt
-  set_config_dtparam "i2c_arm" "on"
-  set_config_dtparam "spi" "on"
-
   set_config_value "enable_uart" "1"
 
   set_config_dtoverlay "dwc2,dr_mode=host"
   set_config_dtoverlay "vc4-kms-v3d"
-  set_config_dtoverlay "i2c5,pins_12_13"
 
   make overlays/rpi/$device-overlay.dtbo || exit 1;
   cp -fv overlays/rpi/$device-overlay.dtbo $OVERLAY_DIR/$device.dtbo || exit 1;
-
-  if [ "$device" = "reComputer-R100x" ]; then
-    set_config_dtoverlay "i2c0,pins_44_45"
-    set_config_dtoverlay "i2c6,pins_22_23"
-  elif [ "$device" = "reComputer-R110x" ]; then 
-    set_config_dtoverlay "i2c1,pins_44_45"
-    set_config_dtoverlay "i2c3,pins_2_3"
-  fi
   set_config_dtoverlay "$device"
 }
 
 function uninstall_overlay_reComputer {
   # config.txt
-  remove_config_dtparam "i2c_arm" "on"
-  remove_config_dtparam "spi" "on"
-
   remove_config_value "enable_uart" "1"
 
   remove_config_dtoverlay "dwc2,dr_mode=host"
   remove_config_dtoverlay "vc4-kms-v3d"
-  remove_config_dtoverlay "i2c5,pins_12_13" 
   remove_config_dtoverlay $device
   rm -fv $OVERLAY_DIR/$device.dtbo || exit 1;
-  if [ "$device" = "reComputer-R100x" ]; then
-    remove_config_dtoverlay "i2c0,pins_44_45"
-    remove_config_dtoverlay "i2c6,pins_22_23"
-  elif [ "$device" = "reComputer-R110x" ]; then
-    remove_config_dtoverlay "i2c1,pins_44_45"
-    remove_config_dtoverlay "i2c3,pins_2_3"
-  fi
   remove_config_dtoverlay "$device"
 
   rm -fv overlays/rpi/.*.tmp
