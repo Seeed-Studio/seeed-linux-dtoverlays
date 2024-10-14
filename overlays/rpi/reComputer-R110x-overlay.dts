@@ -158,6 +158,7 @@
 			eeprom@50 {
 				compatible = "atmel,24c256";
 				reg = <0x50>;
+				wp-gpios = <&pcf857x 8 GPIO_ACTIVE_HIGH>;
 			};
 
 		};

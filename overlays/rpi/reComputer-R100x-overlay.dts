@@ -169,12 +169,21 @@
 			eeprom@50 {
 				compatible = "atmel,24c256";
 				reg = <0x50>;
+				wp-gpios = <&pcf857x 8 GPIO_ACTIVE_HIGH>;
 			};
 
 		};
 	};
 
 	fragment@5 {
+		target = <&i2c0_pins>;
+		__overlay__ {
+			brcm,pins = <44 45>;
+			brcm,function = <5>; /* alt1 */
+		};
+	};
+
+	fragment@6 {
 		target = <&uart2>;
 		__overlay__ {
 			label = "RS485_1";
@@ -185,7 +194,7 @@
 		};
 	};
 
-	fragment@6 {
+	fragment@7 {
 		target = <&uart3>;
 		__overlay__ {
 			label = "RS485_2";
@@ -196,7 +205,7 @@
 		};
 	};
 
-	fragment@7 {
+	fragment@8 {
 		target = <&uart4>;
 		__overlay__ {
 			label = "RS485_3";
@@ -207,7 +216,7 @@
 		};
 	};
 
-	fragment@8 {
+	fragment@9 {
 		target = <&uart2_pins>;
 		__overlay__ {
 			brcm,pins = <0 1 2 3>;
@@ -215,7 +224,7 @@
 		};
 	};
 
-	fragment@9 {
+	fragment@10 {
 		target = <&uart3_pins>;
 		__overlay__ {
 			brcm,pins = <4 5 6 7>;
@@ -223,7 +232,7 @@
 		};
 	};
 
-	fragment@10 {
+	fragment@11 {
 		target = <&uart4_pins>;
 		__overlay__ {
 			brcm,pins = <8 9 10 11>;
@@ -231,7 +240,7 @@
 		};
 	};
 
-	fragment@11 {
+	fragment@12 {
 		target = <&gpio>;
 		__overlay__ {
 			spi1_pins: spi1_pins {
@@ -246,7 +255,7 @@
 		};
 	};
 
-	spi_frag:fragment@12 {
+	spi_frag:fragment@13 {
 		target = <&spi1>;
 		frag1: __overlay__ {
 			/* needed to avoid dtc warning */
@@ -275,14 +284,14 @@
 		};
 	};
 
-	fragment@13 {
+	fragment@14 {
 		target = <&spidev0>;
 		__overlay__ {
 			status = "disabled";
 		};
 	};
 
-	fragment@14 {
+	fragment@15 {
 		target = <&spi1>;
 		__overlay__ {
 			pinctrl-0 = <&spi1_pins &spi1_cs_pins>;
@@ -290,7 +299,7 @@
 		};
 	};
 
-	fragment@15 {
+	fragment@16 {
 		target = <&leds>;
 		__overlay__ {
 			compatible = "gpio-leds";
@@ -318,7 +327,7 @@
 		};
 	};
 
-	fragment@16 {
+	fragment@17 {
 		target-path="/";
 		__overlay__ {
 			beeper: beeper {
@@ -329,7 +338,7 @@
 		};
 	};
 
-	fragment@17 {
+	fragment@18 {
 		target-path="/";
 		__overlay__ {
 
@@ -462,12 +471,13 @@
 		};
 	};
 
+	/* If the hardware version is v1.1, no parameters need to be passed, if it is v1.0, the hardware will be passed uart2 or i2c0 according to the need  */
 	__overrides__ {
-		uart2 = <0>,"!1!2!7!8!9!10!11!14",
+		uart2 = <0>,"!1!2!5!8!9!10!11!12!15",
 			    <0>,"=21=22=23=24=25=26=27=28=29=30=31",
 		        <&i2c_frag>, "target:0=",<&i2c3>,
 		        <&spi_frag>, "target:0=",<&spi0>;
-		i2c0 = <0>,"!5!7!8!9!10!11!14",
+		i2c0 = <0>,"!5!6!8!9!10!11!12!15",
 			   <0>,"=20=21=22=23=25=26=27=28=29=30=31",
 		       <&i2c_frag>, "target:0=",<&i2c3>,
 		       <&spi_frag>, "target:0=",<&spi0>;
