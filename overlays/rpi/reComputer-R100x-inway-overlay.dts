@@ -1,0 +1,437 @@
+/*
+ * Copyright (C) 2021 Seeed Studio
+ * ruiqian <ruiqian.tang@seeed.cc>
+ *
+ * MIT License
+ *
+ */
+ /dts-v1/;
+ /plugin/;
+
+ #include "dt-bindings/gpio/gpio.h"
+
+ / {
+	compatible = "brcm,bcm2835", "brcm,bcm2708", "brcm,bcm2709", "brcm,bcm2711";
+
+	fragment@0 {
+        target-path="/";
+        __overlay__ {
+            hardware = "reComputer-R110x V1.0";
+        };
+    };
+
+	fragment@1 {
+		target = <&i2c3>;
+		__overlay__ {
+			status = "okay";
+			clock-frequency = <400000>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			tlv320aic3104: tlv320aic3104@18 {
+				#sound-dai-cells = <0>;
+				compatible = "ti,tlv320aic3104";
+				reg = <0x18>;
+				//reset-gpios = <&pcf857x 13 0>;
+				//ai3x-micbias-vg = <2>; // set MICBIAS to 2.5v
+		};
+
+			pcf857x: pcf@21 {
+				compatible = "nxp,pca9535";
+				reg = <0x21>;
+				status = "okay";
+
+				gpio-controller;
+				#gpio-cells = <2>;
+
+				gpio-line-names =
+					"Red_LED"				,"Green_LED",
+					"Blue_LED"				,"USR_LED_1",
+					"USR_LED_2"				,"USR_LED_3",
+					"gpio_pin6"				,"gpio_pin7",
+					"EEPROM_WP"		        ,"TPM_RST",
+					"LTE_RESET"		    	,"VDD_5V_RS232_CTL",
+					"VDD_5V_1WIRE_CTL"		,"IO_Buzzer_EN",
+					"USB_RST_EN"			,"PA_MUTE_CTL";
+
+				Red_LED {
+					gpios = <&pcf857x 0 GPIO_ACTIVE_HIGH>;
+					output-low;
+					line-name = "Red_LED";
+				};
+
+				Green_LED {
+					gpios = <&pcf857x 1 GPIO_ACTIVE_HIGH>;
+					output-low;
+					line-name = "Green_LED";
+				};
+
+				Blue_LED {
+					gpios = <&pcf857x 2 GPIO_ACTIVE_HIGH>;
+					output-low;
+					line-name = "Blue_LED";
+				};
+
+				USR_LED_1 {
+					gpios = <&pcf857x 3 GPIO_ACTIVE_HIGH>;
+					output-high;
+					line-name = "USR_LED_1";
+				};
+
+				USR_LED_2 {
+					gpios = <&pcf857x 4 GPIO_ACTIVE_HIGH>;
+					output-high;
+					line-name = "USR_LED_2";
+				};
+
+				USR_LED_3 {
+					gpios = <&pcf857x 5 GPIO_ACTIVE_HIGH>;
+					output-high;
+					line-name = "USR_LED_3";
+				};
+
+				EEPROM_WP {
+					gpios = <&pcf857x 8 GPIO_ACTIVE_HIGH>;
+					output-high;
+					line-name = "EEPROM_WP";
+				};
+
+				TPM_RST {
+					gpios = <&pcf857x 9 GPIO_ACTIVE_HIGH>;
+					output-low;
+					line-name = "TPM_RST";
+				};
+
+				LTE_RESET {
+					gpios = <&pcf857x 10 GPIO_ACTIVE_HIGH>;
+					output-high;
+					line-name = "LTE_RESET";
+				};
+
+				VDD_5V_RS232_CTL {
+					gpios = <&pcf857x 11 GPIO_ACTIVE_HIGH>;
+					output-high;
+					line-name = "VDD_5V_RS232_CTL";
+				};
+
+				VDD_5V_1WIRE_CTL {
+					gpios = <&pcf857x 12 GPIO_ACTIVE_HIGH>;
+					line-name = "VDD_5V_1WIRE_CTL";
+				};
+
+				IO_Buzzer_EN {
+					gpios = <&pcf857x 13 GPIO_ACTIVE_HIGH>;
+					line-name = "IO_Buzzer_EN";
+				};
+
+				USB_RST_EN {
+					gpios = <&pcf857x 14 GPIO_ACTIVE_HIGH>;
+					line-name = "USB_RST_EN";
+				};
+
+				PA_MUTE_CTL {
+					gpios = <&pcf857x 15 GPIO_ACTIVE_HIGH>;
+					line-name = "PA_MUTE_CTL";
+				};
+			};
+		};
+	};
+
+	fragment@2 {
+		target = <&i2c4>;
+		__overlay__ {
+			status = "okay";
+			clock-frequency = <100000>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			
+			adc081c: adc@54 {
+				compatible = "ti,adc081c";
+				reg = <0x54>;
+			};
+
+			ds2484: onewire@18 {
+				compatible = "maxim,ds2484";
+				reg = <0x18>;
+			};
+		};
+	};
+
+	fragment@3 {
+		target = <&i2c6>;
+		__overlay__ {
+			status = "okay";
+			clock-frequency = <100000>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			
+			pcf8563w@51 {
+				compatible = "nxp,pcf8563w";
+				reg = <0x51>;
+				reset-source;
+				/* 0 = 4096Hz, 1 = 64Hz, 2 = 1Hz, 3 = 1/60Hz */
+				timer-frequency = <0x02>;
+				/* Timeout count, max 255 min 2*/
+				default-timeout =  <120>;
+				min-hw-heartbeat-ms = <2000>;
+			};
+
+			eeprom@50 {
+				compatible = "atmel,24c256";
+				reg = <0x50>;
+				wp-gpios = <&pcf857x 8 GPIO_ACTIVE_HIGH>;
+			};
+
+		};
+	};
+
+	fragment@4 {
+		target = <&i2c3_pins>;
+		__overlay__ {
+			brcm,pins = <2 3>;
+		};
+	};
+
+	fragment@5 {
+		target = <&i2c4_pins>;
+		__overlay__ {
+			brcm,pins = <6 7>;
+		};
+	};
+
+	fragment@25 {
+		target = <&i2s>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@6 {
+		target = <&uart5>;
+		__overlay__ {
+			label = "RS232";
+			status = "okay";
+		};
+	};
+
+	fragment@c {
+			target-path = "/clocks";
+			__overlay__ {
+					clk_mcp251xfd_osc_0: mcp251xfd-spi0-0-osc {
+							#clock-cells = <0>;
+							compatible = "fixed-clock";
+							clock-frequency = <40000000>;
+					};
+			};
+	};
+
+	fragment@7 {
+		target = <&spi0>;
+		__overlay__ {
+			cs-gpios = <&gpio 8 1>, <&gpio 44 1>, <&gpio 45 1>;
+			status = "okay";
+		};
+	};
+	
+	fragment@8 {
+		target = <&spi0_cs_pins>;
+		__overlay__ {
+			brcm,pins = <8 44 45>;
+			brcm,function = <1>; /* output */
+			status = "okay";
+		};
+	};
+
+	fragment@10 {
+		target = <&spidev0>;
+		__overlay__ {
+			status = "disabled";
+		};
+	};
+
+	fragment@11 {
+		target = <&spidev1>;
+		__overlay__ {
+			status = "disabled";
+		};
+	};
+
+	fragment@b {
+			target = <&gpio>;
+			__overlay__ {
+					mcp251xfd_pins_0: mcp251xfd_spi0_0_pins {
+							brcm,pins = <17>;
+							brcm,function = <0>;//BCM2835_FSEL_GPIO_IN 
+					};
+					mcp251xfd_pins_1: mcp251xfd_spi0_1_pins {
+							brcm,pins = <24>;
+							brcm,function = <0>;//BCM2835_FSEL_GPIO_IN 
+					};
+			};
+	};
+
+	fragment@12 {
+		target = <&spi0>;
+		__overlay__ {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			slb9670: slb9670@0 {
+				compatible = "infineon,slb9670";
+				reg = <0>;	/* CE0 */
+				#address-cells = <1>;
+				#size-cells = <0>;
+				spi-max-frequency = <32000000>;
+				status = "okay";
+			};
+
+			mcp2518fd0: can@1 {
+				compatible = "microchip,mcp2518fd";
+				reg = <1>;
+				pinctrl-names = "default";
+				pinctrl-0 = <&mcp251xfd_pins_0>;
+				clocks = <&clk_mcp251xfd_osc_0>;
+				interrupt-parent = <&gpio>;
+				interrupts = <17 8>;//IRQ_TYPE_LEVEL_LOW 
+				spi-max-frequency = <20000000>;
+			};
+
+			mcp2518fd1: can@2 {
+				compatible = "microchip,mcp2518fd";
+				reg = <2>;
+				pinctrl-names = "default";
+				pinctrl-0 = <&mcp251xfd_pins_1>;
+				clocks = <&clk_mcp251xfd_osc_0>;
+				interrupt-parent = <&gpio>;
+				interrupts = <24 8>;//IRQ_TYPE_LEVEL_LOW 
+				spi-max-frequency = <20000000>;
+			};
+
+		};
+	};
+
+	fragment@13 {
+		target-path="/";
+		__overlay__ {
+
+			tlv320aic3104_mclk: tlv320aic3104_mclk {
+				#clock-cells = <0>;
+				compatible = "fixed-clock";
+				clock-frequency = <24576000>;
+			};
+		};
+	};
+
+	fragment@14 {
+		target = <&sound>;
+		slave_overlay: __overlay__ {
+			compatible = "simple-audio-card";
+			simple-audio-card,format = "dsp_b";
+			simple-audio-card,name = "seeed2micvoicec";
+			status = "okay";
+
+			simple-audio-card,widgets =
+					"Headphone", "Headphone Jack",
+					"Line", "Line In";
+			simple-audio-card,routing =
+					"Headphone Jack",       "HPLOUT",
+					"Headphone Jack",       "HPROUT",
+					"LINE1L",               "Line In",
+					"LINE1R",               "Line In";
+			simple-audio-card,bitclock-inversion;
+			
+			simple-audio-card,cpu {
+					sound-dai = <&i2s>;
+			};
+			sound_master: simple-audio-card,codec {
+							#sound-dai-cells = <0>;
+							sound-dai = <&tlv320aic3104>;
+							clocks = <&tlv320aic3104_mclk>;
+							clock-names = "mclk";
+			};
+		};
+	};
+
+	fragment@15 {
+		target = <&leds>;
+		__overlay__ {
+			compatible = "gpio-leds";
+
+			led_red: led_red {
+				label = "led-red";
+				linux,default-trigger = "default-off";
+				gpios = <&pcf857x 0 GPIO_ACTIVE_LOW>;
+				default-state = "off";
+			};
+			
+			led_green: led_green {
+				label = "led-green";
+				linux,default-trigger = "default-off";
+				gpios = <&pcf857x 1 GPIO_ACTIVE_LOW>;
+				default-state = "off";
+			};
+
+			led_blue: led_blue {
+				label = "led-blue";
+				linux,default-trigger = "default-off";
+				gpios = <&pcf857x 2 GPIO_ACTIVE_LOW>;
+				default-state = "off";
+			};
+
+			led_usr1: led_usr1 {
+				label = "led_usr1";
+				linux,default-trigger = "default-off";
+				gpios = <&pcf857x 3 GPIO_ACTIVE_HIGH>;
+				default-state = "off";
+			};
+			
+			led_usr2: led_usr2 {
+				label = "led_usr2";
+				linux,default-trigger = "default-off";
+				gpios = <&pcf857x 4 GPIO_ACTIVE_HIGH>;
+				default-state = "off";
+			};
+
+			led_usr3: led_usr3 {
+				label = "led_usr3";
+				linux,default-trigger = "default-off";
+				gpios = <&pcf857x 5 GPIO_ACTIVE_HIGH>;
+				default-state = "off";
+			};
+		};
+	};
+
+	fragment@16 {
+		target-path="/";
+		__overlay__ {
+			beeper: beeper {
+				compatible = "gpio-beeper";
+				gpios = <&pcf857x 13 GPIO_ACTIVE_HIGH>;
+				status = "okay";
+			};
+		};
+	};
+
+	fragment@17 {
+		target-path="/";
+		__overlay__ {
+			VDD_5V_RS232_CTL:VDD_5V_RS232_CTL {
+				compatible = "regulator-fixed";
+				regulator-name = "VDD_5V_RS232_CTL";
+				gpio = <&pcf857x 11 GPIO_ACTIVE_HIGH>;
+				enable-active-high;
+				regulator-boot-on;
+				regulator-always-on;
+			};
+
+			VDD_5V_1WIRE_CTL:VDD_5V_1WIRE_CTL {
+				compatible = "regulator-fixed";
+				regulator-name = "VDD_5V_1WIRE_CTL";
+				gpio = <&pcf857x 12 GPIO_ACTIVE_HIGH>;
+				enable-active-high;
+				regulator-boot-on;
+				regulator-always-on;
+			};
+		};
+	};
+};	
