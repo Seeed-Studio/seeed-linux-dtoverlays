@@ -44,15 +44,15 @@ clean:
 PHONY += install
 install:
 	@for i in ${DT}; do									\
-		cp $$i-overlay.dtbo ${DEST}/$$i.dtbo || exit;	\
-		echo install $$i-overlay.dtbo ${DEST}/$$i.dtbo;	\
+		cp $$i ${DEST} || exit;	\
+		echo install ${DEST}/$$i;	\
 	done
 
 PHONY += uninstall
 uninstall:
 	@for i in ${DT}; do						\
-		rm ${DEST}/$$i.dtbo || exit;		\
-		echo uninstall ${DEST}/$$i.dtbo;	\
+		rm ${DEST}/$$i || exit;		\
+		echo uninstall ${DEST}/$$i;	\
 	done
 
 PHONY += FORCE
