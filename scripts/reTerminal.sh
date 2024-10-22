@@ -531,6 +531,20 @@ function setup_display {
           ;;
       esac
       ;;
+    Ubuntu)
+      case $DISTRO_CODE in
+	noble)
+          for file in /home/*
+          do
+            if [ "$device" = "reTerminal" ]; then
+              cp -v "$RES_PATH/monitors.xml" "$file/.config/monitors.xml"
+            elif [ "$device" = "reTerminal-plus" ]; then
+              cp -v "$RES_PATH/monitors-plus.xml" "$file/.config/monitors.xml"
+            fi
+          done
+          ;;
+      esac
+      ;;
   esac
 }
 
@@ -552,10 +566,10 @@ function install {
   if [ "$device" = "reTerminal" ]; then
     install_modules mipi_dsi ltr30x lis3lv02d bq24179_charger
     install_overlay reTerminal
-    if [ $DEBIAN_NUM -lt $BOOKWORM_NUM ]; then
-      setup_overlay reTerminal tp_rotate=1
-    else
+    if [ $DEBIAN_NUM -eq $BOOKWORM_NUM ]; then
       setup_overlay reTerminal tp_rotate=0
+    else
+      setup_overlay reTerminal tp_rotate=1
     fi
   elif [ "$device" = "reTerminal-plus" ]; then
     install_modules ltr30x ili9881d ch34x rtc-pcf8563w
