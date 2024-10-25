@@ -290,7 +290,7 @@ function install_overlay_reComputer {
 
   set_config_dtoverlay "dwc2,dr_mode=host"
   set_config_dtoverlay "vc4-kms-v3d"
-
+  set_config_dtoverlay "vc4-kms-dsi-7inch"
   make overlays/rpi/$device-overlay.dtbo || exit 1;
   cp -fv overlays/rpi/$device-overlay.dtbo $OVERLAY_DIR/$device.dtbo || exit 1;
   set_config_dtoverlay "$device"
@@ -302,6 +302,7 @@ function uninstall_overlay_reComputer {
 
   remove_config_dtoverlay "dwc2,dr_mode=host"
   remove_config_dtoverlay "vc4-kms-v3d"
+  remove_config_dtoverlay "vc4-kms-dsi-7inch"
   remove_config_dtoverlay $device
   rm -fv $OVERLAY_DIR/$device.dtbo || exit 1;
   remove_config_dtoverlay "$device"
