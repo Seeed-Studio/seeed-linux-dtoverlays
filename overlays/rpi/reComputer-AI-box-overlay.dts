@@ -1,0 +1,198 @@
+/*
+ * Copyright (C) 2021 Seeed Studio
+ * ruiqian <ruiqian.tang@seeed.cc>
+ *
+ * MIT License
+ *
+ */
+ /dts-v1/;
+ /plugin/;
+
+ #include "dt-bindings/gpio/gpio.h"
+
+ / {
+	compatible = "brcm,bcm2835", "brcm,bcm2708", "brcm,bcm2709", "brcm,bcm2711";
+
+	fragment@0 {
+        target-path="/";
+        __overlay__ {
+            hardware = "reComputer AI BOX V1.0";
+        };
+    };
+
+	fragment@23 {
+		target = <&i2c1>;
+		__overlay__ {
+			status = "okay";
+			clock-frequency = <400000>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			pcf8563w@51 {
+				compatible = "nxp,pcf8563w";
+				reg = <0x51>;
+				reset-source;
+				/* 0 = 4096Hz, 1 = 64Hz, 2 = 1Hz, 3 = 1/60Hz */
+				timer-frequency = <0x02>;
+				/* Timeout count, max 255 min 2*/
+				default-timeout =  <120>;
+				min-hw-heartbeat-ms = <2000>;
+			};
+		};
+	};
+
+	fragment@3 {
+		target = <&i2c3>;
+		__overlay__ {
+			status = "okay";
+			clock-frequency = <400000>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
+	};
+
+	fragment@5 {
+		target = <&i2c6>;
+		__overlay__ {
+			status = "okay";
+			clock-frequency = <100000>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			
+			eeprom@50 {
+				compatible = "atmel,24c32";
+				reg = <0x50>;
+			};
+
+		};
+	};
+
+	fragment@6 {
+		target = <&i2c1_pins>;
+		__overlay__ {
+			brcm,pins = <44 45>;
+			brcm,function = <6>; /* alt1 */
+		};
+	};
+
+	fragment@7 {
+		target = <&i2c3_pins>;
+		__overlay__ {
+			brcm,pins = <2 3>;
+		};
+	};
+
+	fragment@8 {
+		target = <&i2c6_pins>;
+		__overlay__ {
+			brcm,pins = <0 1>;
+		};
+	};
+
+	fragment@9 {
+		target = <&uart3>;
+		__overlay__ {
+			label = "RS232";
+			status = "okay";
+		};
+	};
+
+	fragment@10 {
+		target = <&uart3_pins>;
+		__overlay__ {
+			brcm,pins = <4 5>;
+			brcm,pull = <0 2>;
+		};
+	};
+
+	fragment@11 {
+		target = <&spi0>;
+		__overlay__ {
+			/* needed to avoid dtc warning */
+			#address-cells = <1>;
+			#size-cells = <0>;
+			pinctrl-names = "default";
+			cs-gpios = <&gpio 8 1>;
+			status = "okay";
+		};
+	};
+
+	fragment@12 {
+		target = <&spi0_cs_pins>;
+		__overlay__ {
+			brcm,pins = <8>;
+		};
+	};
+
+	fragment@13 {
+		target = <&spidev1>;
+		__overlay__ {
+			status = "disabled";
+		};
+	};
+
+
+	fragment@14 {
+		target = <&leds>;
+		__overlay__ {
+			compatible = "gpio-leds";
+			usr_led10: usr_led0 {
+				label = "usr-led";
+				linux,default-trigger = "default-off";
+				gpios = <&gpio 6 GPIO_ACTIVE_HIGH>;
+				default-state = "off";
+			};
+		};
+	};
+	fragment@15 {
+		target-path="/";
+		__overlay__ {
+			gpio-fan@0 {
+				compatible = "gpio-fan";
+				gpios = <&gpio 16 0>;
+				gpio-fan,speed-map = <0    0>,
+									<3000 1>,
+									<6000 2>;
+				#cooling-cells = <2>;
+			};
+		};
+	};	
+
+	fragment@17 {
+		target = <&audio_pins>;
+		__overlay__ {
+			brcm,pins = <18 19>;
+			brcm,function = <2>;
+		};
+	};
+
+	fragment@18 {
+		target = <&sdhost>;
+		frag0: __overlay__ {
+			pinctrl-names = "default";
+			pinctrl-0 = <&sdhost_pins>;
+			bus-width = <4>;
+			brcm,overclock-50 = <0>;
+			brcm,pio-limit = <1>;
+			status = "okay";
+		};
+	};
+
+	fragment@19 {
+		target = <&gpio>;
+		__overlay__ {
+				sdhost_pins: sdhost_pins {
+				brcm,pins = <22 23 24 25 26 27>;
+				brcm,function = <4 4 4 4 4 4>; /* ALT0: SD0 */
+				brcm,pull = <0 2 2 2 2 2>; /* pull up all except clk */
+			};
+		};
+	};
+
+	__overrides__ {
+		overclock_50 = <&frag0>,"brcm,overclock-50:0";
+		force_pio = <&frag0>,"brcm,force-pio?";
+		pio_limit = <&frag0>,"brcm,pio-limit:0";
+		debug = <&frag0>,"brcm,debug?";
+	};
+};	

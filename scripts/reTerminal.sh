@@ -290,7 +290,9 @@ function install_overlay_reComputer {
 
   set_config_dtoverlay "dwc2,dr_mode=host"
   set_config_dtoverlay "vc4-kms-v3d"
-  set_config_dtoverlay "vc4-kms-dsi-7inch"
+  if [ "$device" = "reComputer-R100x" ]; then
+    set_config_dtoverlay "vc4-kms-dsi-7inch"
+  fi
   make overlays/rpi/$device-overlay.dtbo || exit 1;
   cp -fv overlays/rpi/$device-overlay.dtbo $OVERLAY_DIR/$device.dtbo || exit 1;
   set_config_dtoverlay "$device"
@@ -302,7 +304,9 @@ function uninstall_overlay_reComputer {
 
   remove_config_dtoverlay "dwc2,dr_mode=host"
   remove_config_dtoverlay "vc4-kms-v3d"
-  remove_config_dtoverlay "vc4-kms-dsi-7inch"
+  if [ "$device" = "reComputer-R100x" ]; then
+    remove_config_dtoverlay "vc4-kms-dsi-7inch"
+  fi
   remove_config_dtoverlay $device
   rm -fv $OVERLAY_DIR/$device.dtbo || exit 1;
   remove_config_dtoverlay "$device"
@@ -578,7 +582,7 @@ function install {
     # we blacklist this driver in DM to avoid gibberish issue with ch342f chip.
     # and we insmod a new driver for ch342f
     blacklist_driver cdc_acm
-  elif [ "$device" = "reComputer-R100x" ] || [ "$device" = "reComputer-R110x" ]; then
+  elif [ "$device" = "reComputer-R100x" ] || [ "$device" = "reComputer-R110x" ] || [ "$device" = "reComputer-AI-box" ]; then
     install_modules rtc-pcf8563w
     install_overlay_reComputer
   fi
@@ -664,8 +668,8 @@ while [ ! -z "$1" ] ; do
   shift
 done
 
-if [ "$device" != "reTerminal" ] && [ "$device" != "reTerminal-plus" ] && [ "$device" != "reComputer-R100x" ] && [ "$device" != "reComputer-R110x" ]; then
-  echo "Invalid device type. the type should be reTerminal or reTerminal-plus reComputer-R100x reComputer-R110x" 1>&2
+if [ "$device" != "reTerminal" ] && [ "$device" != "reTerminal-plus" ] && [ "$device" != "reComputer-R100x" ] && [ "$device" != "reComputer-R110x" ] && [ "$device" != "reComputer-AI-box" ]; then
+  echo "Invalid device type. the type should be reTerminal or reTerminal-plus reComputer-R100x reComputer-R110x reComputer-AI-box" 1>&2
   exit 1;
 fi
 
