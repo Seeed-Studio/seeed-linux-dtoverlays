@@ -167,6 +167,13 @@
 	};
 
 	fragment@18 {
+		target = <&chosen>;
+		__overlay__  {
+			bootargs = "snd_bcm2835.enable_headphones=1";
+		};
+	};
+
+	fragment@19 {
 		target = <&sdhost>;
 		frag0: __overlay__ {
 			pinctrl-names = "default";
@@ -178,7 +185,7 @@
 		};
 	};
 
-	fragment@19 {
+	fragment@20 {
 		target = <&gpio>;
 		__overlay__ {
 				sdhost_pins: sdhost_pins {
