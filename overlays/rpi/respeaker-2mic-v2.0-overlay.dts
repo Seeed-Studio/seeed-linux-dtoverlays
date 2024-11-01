@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Seeed Studio
+ * Copyright (C) 2024 Seeed Studio
  * bbear <bbear953308023@gmail.com>
  *
  * MIT License
@@ -42,7 +42,6 @@
     				#sound-dai-cells = <0>;
     				compatible = "ti,tlv320aic3104";
     				reg = <0x18>;
-    				//reset-gpios = <&pcf857x 13 0>;
     				ai3x-micbias-vg = <2>; // set MICBIAS to 2.5v
     		};
     	};
