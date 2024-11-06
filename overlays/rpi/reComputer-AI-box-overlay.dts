@@ -147,18 +147,44 @@
 	fragment@15 {
 		target-path="/";
 		__overlay__ {
-			gpio-fan@0 {
+			gpio-fan: gpio-fan@0 {
 				compatible = "gpio-fan";
 				gpios = <&gpio 16 0>;
 				gpio-fan,speed-map = <0    0>,
-									<3000 1>,
-									<6000 2>;
+									<5000 1>;
 				#cooling-cells = <2>;
 			};
 		};
 	};	
+	fragment@16 {
+		target = <&cpu_thermal>;
+		__overlay__ {
+			polling-delay = <2000>;	/* milliseconds */
+		};
+	};
 
 	fragment@17 {
+		target = <&thermal_trips>;
+		__overlay__ {
+			cpu_hot: trip-point@0 {
+				temperature = <55000>;	/* (millicelsius) Fan started at 55°C */
+				hysteresis = <10000>;	/* (millicelsius) Fan stopped at 45°C */
+				type = "active";
+			};
+		};
+	};
+
+	fragment@18 {
+		target = <&cooling_maps>;
+		__overlay__ {
+			map0 {
+				trip = <&cpu_hot>;
+				cooling-device = <&gpio-fan 1 1>;
+			};
+		};
+	};
+
+	fragment@19 {
 		target = <&audio_pins>;
 		__overlay__ {
 			brcm,pins = <18 19>;
@@ -166,14 +192,14 @@
 		};
 	};
 
-	fragment@18 {
+	fragment@20 {
 		target = <&chosen>;
 		__overlay__  {
 			bootargs = "snd_bcm2835.enable_headphones=1";
 		};
 	};
 
-	fragment@19 {
+	fragment@21 {
 		target = <&sdhost>;
 		frag0: __overlay__ {
 			pinctrl-names = "default";
@@ -185,7 +211,7 @@
 		};
 	};
 
-	fragment@20 {
+	fragment@22 {
 		target = <&gpio>;
 		__overlay__ {
 				sdhost_pins: sdhost_pins {
