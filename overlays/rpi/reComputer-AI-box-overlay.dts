@@ -147,7 +147,7 @@
 	fragment@15 {
 		target-path="/";
 		__overlay__ {
-			gpio-fan: gpio-fan@0 {
+			gpio_fan: gpio-fan@0 {
 				compatible = "gpio-fan";
 				gpios = <&gpio 16 0>;
 				gpio-fan,speed-map = <0    0>,
@@ -179,7 +179,7 @@
 		__overlay__ {
 			map0 {
 				trip = <&cpu_hot>;
-				cooling-device = <&gpio-fan 1 1>;
+				cooling-device = <&gpio_fan 1 1>;
 			};
 		};
 	};
