@@ -1,83 +1,93 @@
 /*
- * Copyright (C) 2024 Seeed Studio
- * bbear <bbear953308023@gmail.com>
- *
- * MIT License
- *
- */
+* Copyright (C) 2024 Seeed Studio
+* bbear <bbear953308023@gmail.com>
+*
+* MIT License
+*
+*/
 /dts-v1/;
 /plugin/;
 
 / {
-    compatible = "brcm,bcm2835", "brcm,bcm2708", "brcm,bcm2709", "brcm,bcm2711";
-
-    fragment@0 {
-        target-path="/";
-        __overlay__ {
-            hardware = "reSpeaker V2.0";
-        };
-    };
-
-    fragment@1 {
-    	target-path="/";
-    	__overlay__ {
-    
-    		tlv320aic3104_mclk: tlv320aic3104_mclk {
-    				#clock-cells = <0>;
-    				compatible = "fixed-clock";
-    				clock-frequency = <24576000>;
-    		};
-    	};
-    };
-    
-    fragment@2 {
-    	target = <&i2c1>;
-    	__overlay__ {
-    		#address-cells = <1>;
-    		#size-cells = <0>;
-    		clock-frequency = <400000>;
-    		status = "okay";
-    
-    		tlv320aic3104: tlv320aic3104@18 {
-    				#sound-dai-cells = <0>;
-    				compatible = "ti,tlv320aic3104";
-    				reg = <0x18>;
-    				ai3x-micbias-vg = <2>; // set MICBIAS to 2.5v
-    		};
-    	};
-    };
-    
-    fragment@3 {
-    	target = <&sound>;
-    	slave_overlay: __overlay__ {
-    		compatible = "simple-audio-card";
-    		simple-audio-card,format = "dsp_b";
-    		simple-audio-card,name = "seeed2micvoicec";
-    		status = "okay";
-    
-    		simple-audio-card,widgets =
-    				"Headphone", "Headphone Jack",
-    				"Line", "Line In";
-    		simple-audio-card,routing =
-    				"Headphone Jack",       "HPLOUT",
-    				"Headphone Jack",       "HPROUT",
-    				"LINE1L",               "Line In",
-    				"LINE1R",               "Line In";
-    		simple-audio-card,bitclock-inversion;
-    		
-    		simple-audio-card,cpu {
-    				sound-dai = <&i2s>;
-    		};
-    		sound_master: simple-audio-card,codec {
-    						#sound-dai-cells = <0>;
-    						sound-dai = <&tlv320aic3104>;
-    						clocks = <&tlv320aic3104_mclk>;
-    						clock-names = "mclk";
-    		};
-    	};
-    };
-    
-    __overrides__ {
-    };
+	compatible = "brcm,bcm2835", "brcm,bcm2708", "brcm,bcm2709", "brcm,bcm2711";
+	
+	fragment@0 {
+		target-path="/";
+		__overlay__ {
+			hardware = "reSpeaker V2.0";
+		};
+	};
+	
+	fragment@1 {
+		target-path="/";
+		__overlay__ {
+			
+			tlv320aic3104_mclk: tlv320aic3104_mclk {
+				#clock-cells = <0>;
+				compatible = "fixed-clock";
+				clock-frequency = <24576000>;
+			};
+		};
+	};
+	
+	fragment@2 {
+		target = <&i2c1>;
+		__overlay__ {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			clock-frequency = <400000>;
+			status = "okay";
+			
+			tlv320aic3104: tlv320aic3104@18 {
+				#sound-dai-cells = <0>;
+				compatible = "ti,tlv320aic3104";
+				reg = <0x18>;
+				ai3x-micbias-vg = <2>;// set MICBIAS to 2.5v
+			};
+		};
+	};
+	
+	fragment@3 {
+		target = <&i2s_clk_consumer>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+	
+	fragment@4 {
+		target = <&sound>;
+		slave_overlay: __overlay__ {
+			compatible = "simple-audio-card";
+			simple-audio-card,format = "i2s";
+			simple-audio-card,name = "seeed2micvoicec";
+			i2s-controller = <&i2s_clk_consumer>;
+			status = "okay";
+			
+			simple-audio-card,widgets =
+			"Headphone", "Headphone Jack",
+			"Line", "Line In";
+			simple-audio-card,routing =
+			"Headphone Jack",       "HPLOUT",
+			"Headphone Jack",       "HPROUT",
+			"LINE1L",               "Line In",
+			"LINE1R",               "Line In";
+			
+			simple-audio-card,bitclock-master = <&sound_master>;
+			simple-audio-card,frame-master = <&sound_master>;
+			
+			simple-audio-card,cpu {
+				sound-dai = <&i2s_clk_consumer>;
+			};
+			sound_master: simple-audio-card,codec {
+				#sound-dai-cells = <0>;
+				sound-dai = <&tlv320aic3104>;
+				clocks = <&tlv320aic3104_mclk>;
+				clock-names = "mclk";
+			};
+		};
+	};
+	
+	__overrides__ {
+	};
 };
 
