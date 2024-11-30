@@ -86,6 +86,15 @@ enum REG_ADDR {
 	REG_MAX
 };
 
+/* dsi error code */
+enum DSI_ERR {
+	DSI_OK = 0,
+	DSI_FAILURE = -1,
+	DSI_REG_ERR = -2,
+	DSI_ATTACH_ERR = -3,
+	DSI_I2C_ERR = -4,
+	DSI_PANEL_ERR = -5,
+};
 #define DSI_DCS_WRITE(dsi, seq...)		\
 	{									\
 		int ret = 0;					\
@@ -98,6 +107,8 @@ enum REG_ADDR {
 struct panel_data {
 	void (*set_dsi)(struct mipi_dsi_device *dsi);
 	const struct drm_panel_funcs *funcs;
+
+	
 };
 
 struct i2c_mipi_dsi {

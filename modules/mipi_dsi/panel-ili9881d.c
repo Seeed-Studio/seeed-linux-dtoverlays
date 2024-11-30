@@ -61,15 +61,11 @@ static int ili9881d_prepare(struct drm_panel *panel)
 
 	DBG_PRINT("Prepare ILI9881D");
 
-	if (!dsi)
+	if (!dsi){
+		DBG_FUNC("NO DSI");
 		return -1;
-
-	ret = mipi_dsi_generic_read(dsi, &addr, sizeof(addr), &val, sizeof(val));
-	if(ret < 0){
-		DBG_FUNC("No LCD connected,pls check your hardware!");
-		return -ENODEV;
 	}
-	
+
 	ILI9881_PAGE(0x01);           
 	IILI9881_COMMAND(0x91,0x00);
 	IILI9881_COMMAND(0x92,0x00);
@@ -295,9 +291,18 @@ static int ili9881d_prepare(struct drm_panel *panel)
 	return 0;
 }
 
+static int ili9881d_unprepare(struct drm_panel *panel)
+{
+	struct mipi_dsi_device *dsi = ili9881d_dsi;
+
+	mipi_dsi_dcs_enter_sleep_mode(dsi);
+	return 0;
+}
+
 static const struct drm_panel_funcs ili9881d_funcs = {
 	.get_modes = ili9881d_get_modes,
 	.prepare = ili9881d_prepare,
+	.unprepare	= ili9881d_unprepare,
 };
 
 static void ili9881d_set_dsi(struct mipi_dsi_device *dsi)
