@@ -532,6 +532,12 @@ function setup_display {
               mkdir -p $file/.config/
               cp -v $RES_PATH/wayfire.ini $file/.config/
             fi 
+            if [ -e "$file/.config/kanshi/config" ]; then 
+              sed -i 's/\(output DSI-1.*\)transform normal/\1transform 270/' "$file/.config/kanshi/config"
+            else
+              mkdir -p $file/.config/kanshi/
+              cp -v $RES_PATH/config $file/.config/kanshi/
+            fi 
           done
           ;;
       esac
@@ -572,8 +578,6 @@ function install {
     install_modules mipi_dsi ltr30x lis3lv02d bq24179_charger
     install_overlay reTerminal
     if [ $DEBIAN_NUM -eq $BOOKWORM_NUM ]; then
-      setup_overlay reTerminal tp_rotate=0
-    else
       setup_overlay reTerminal tp_rotate=1
     fi
   elif [ "$device" = "reTerminal-plus" ]; then

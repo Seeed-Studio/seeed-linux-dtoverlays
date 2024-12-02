@@ -47,6 +47,7 @@ static int ili9881d_get_modes(struct drm_panel *panel, struct drm_connector *con
 	connector->display_info.height_mm = mode->height_mm;
 	drm_mode_probed_add(connector, mode);
 
+	drm_connector_set_panel_orientation(connector, DRM_MODE_PANEL_ORIENTATION_RIGHT_UP);
 	return 1;
 }
 
