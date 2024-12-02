@@ -342,10 +342,10 @@ function install_overlay_DM {
   set_config_dtoverlay "i2c3,pins_4_5"
   set_config_dtoverlay "imx219,cam0"
 
-  make overlays/rpi/reTerminal-plus-overlay.dtbo || exit 1;
-  cp -fv overlays/rpi/reTerminal-plus-overlay.dtbo $OVERLAY_DIR/reTerminal-plus.dtbo || exit 1;
+  make overlays/rpi/reTerminal-DM-overlay.dtbo || exit 1;
+  cp -fv overlays/rpi/reTerminal-DM-overlay.dtbo $OVERLAY_DIR/reTerminal-DM.dtbo || exit 1;
 
-  set_config_dtoverlay "reTerminal-plus"
+  set_config_dtoverlay "reTerminal-DM"
 
   # commit old parameters
   commit_config_value "gpio=13=pu"
@@ -377,8 +377,8 @@ function uninstall_overlay_DM {
   remove_config_dtoverlay "i2c3,pins_4_5"
   remove_config_dtoverlay "imx219,cam0"
 
-  rm -fv $OVERLAY_DIR/reTerminal-plus.dtbo || exit 1;
-  remove_config_dtoverlay "reTerminal-plus"
+  rm -fv $OVERLAY_DIR/reTerminal-DM.dtbo || exit 1;
+  remove_config_dtoverlay "reTerminal-DM"
 
   rm -fv overlays/rpi/.*.tmp
   rm -fv overlays/rpi/.*.cmd
@@ -487,7 +487,7 @@ function usage() {
                              coressponding kernel headers.
              --autoremove    used for automatic cleaning
              --device <type>   specified device type. 
-                               if device is reTerminal-plus, type=reTerminal-plus
+                               if device is reTerminal-DM, type=reTerminal-DM
                                if device is reTerminal, type=reTerminal
                                the default device type value is reTerminal
              --help          show this help message
@@ -515,7 +515,7 @@ function setup_display {
           do
             if [ "$device" = "reTerminal" ]; then
               cp -v "$RES_PATH/monitors.xml" "$file/.config/monitors.xml"
-            elif [ "$device" = "reTerminal-plus" ]; then
+            elif [ "$device" = "reTerminal-DM" ]; then
               cp -v "$RES_PATH/monitors-plus.xml" "$file/.config/monitors.xml"
             fi
           done
@@ -549,7 +549,7 @@ function setup_display {
           do
             if [ "$device" = "reTerminal" ]; then
               cp -v "$RES_PATH/monitors.xml" "$file/.config/monitors.xml"
-            elif [ "$device" = "reTerminal-plus" ]; then
+            elif [ "$device" = "reTerminal-DM" ]; then
               cp -v "$RES_PATH/monitors-plus.xml" "$file/.config/monitors.xml"
             fi
           done
@@ -564,7 +564,7 @@ function setup_tp {
     Raspbian|Debian)
       case $DISTRO_CODE in
         bookworm)
-          if [ "$device" = "reTerminal-plus" ]; then
+          if [ "$device" = "reTerminal-DM" ]; then
             cp -v $RES_PATH/98-touchscreen-cal.rules /etc/udev/rules.d/
           fi
         ;;
@@ -580,7 +580,7 @@ function install {
     if [ $DEBIAN_NUM -eq $BOOKWORM_NUM ]; then
       setup_overlay reTerminal tp_rotate=1
     fi
-  elif [ "$device" = "reTerminal-plus" ]; then
+  elif [ "$device" = "reTerminal-DM" ]; then
     install_modules ltr30x ili9881d ch34x rtc-pcf8563w
     install_overlay_DM
     # we blacklist this driver in DM to avoid gibberish issue with ch342f chip.
@@ -621,7 +621,7 @@ function uninstall {
     uninstall_modules mipi_dsi ltr30x lis3lv02d bq24179_charger
     unsetup_overlay reTerminal tp_rotate=1
     uninstall_overlay reTerminal
-  elif [ "$device" = "reTerminal-plus" ]; then
+  elif [ "$device" = "reTerminal-DM" ]; then
     uninstall_modules ili9881d ltr30x ch34x rtc-pcf8563w
     uninstall_overlay_DM
     unblacklist_driver cdc_acm
@@ -672,8 +672,8 @@ while [ ! -z "$1" ] ; do
   shift
 done
 
-if [ "$device" != "reTerminal" ] && [ "$device" != "reTerminal-plus" ] && [ "$device" != "reComputer-R100x" ] && [ "$device" != "reComputer-R110x" ] && [ "$device" != "reComputer-AI-box" ]; then
-  echo "Invalid device type. the type should be reTerminal or reTerminal-plus reComputer-R100x reComputer-R110x reComputer-AI-box" 1>&2
+if [ "$device" != "reTerminal" ] && [ "$device" != "reTerminal-DM" ] && [ "$device" != "reComputer-R100x" ] && [ "$device" != "reComputer-R110x" ] && [ "$device" != "reComputer-AI-box" ]; then
+  echo "Invalid device type. the type should be reTerminal or reTerminal-DM reComputer-R100x reComputer-R110x reComputer-AI-box" 1>&2
   exit 1;
 fi
 

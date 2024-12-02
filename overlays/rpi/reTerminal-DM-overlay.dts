@@ -14,7 +14,7 @@
     fragment@0 {
         target-path="/";
         __overlay__ {
-            hardware = "reTerminal plus V1.0";
+            hardware = "reTerminal DM V1.0";
         };
     };
 
