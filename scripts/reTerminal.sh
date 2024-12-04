@@ -536,7 +536,11 @@ function setup_display {
               sed -i 's/\(output DSI-1.*\)transform normal/\1transform 270/' "$file/.config/kanshi/config"
             else
               mkdir -p $file/.config/kanshi/
-              cp -v $RES_PATH/config $file/.config/kanshi/
+              if [ "$device" = "reTerminal-DM" ]; then
+                cp -v $RES_PATH/kanshi-config-DM $file/.config/kanshi/config
+              else
+                cp -v $RES_PATH/kanshi-config $file/.config/kanshi/config
+              fi
             fi 
           done
           ;;
@@ -595,7 +599,7 @@ function install {
   setup_display
 
   # touch panel
-  setup_tp
+  # setup_tp
 
   # audio
   if [ "$device" = "reTerminal" ]; then
