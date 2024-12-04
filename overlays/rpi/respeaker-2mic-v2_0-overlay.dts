@@ -35,7 +35,6 @@
 		__overlay__ {
 			#address-cells = <1>;
 			#size-cells = <0>;
-			clock-frequency = <400000>;
 			status = "okay";
 			
 			tlv320aic3104: tlv320aic3104@18 {
