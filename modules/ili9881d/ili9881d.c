@@ -368,6 +368,20 @@ static int ili9881d_prepare(struct drm_panel *panel)
 	gpiod_set_value_cansleep(ctx->reset, 0);
 	msleep(20);
 
+	ret = mipi_dsi_dcs_set_tear_on(ctx->dsi, MIPI_DSI_DCS_TEAR_MODE_VBLANK);
+	if (ret) {
+		dsi_status = 1;
+		return ret;
+	}
+
+	msleep(120);
+
+	ret = mipi_dsi_dcs_set_display_on(ctx->dsi);
+	if (ret) {
+		dsi_status = 1;
+		return ret;
+	}
+
 	for (i = 0; i < ctx->desc->init_length; i++) {
 		const struct ili9881d_instr *instr = &ctx->desc->init[i];
 
@@ -388,19 +402,7 @@ static int ili9881d_prepare(struct drm_panel *panel)
 		dsi_status = 1;
 		return ret;
 	}
-
-	ret = mipi_dsi_dcs_set_tear_on(ctx->dsi, MIPI_DSI_DCS_TEAR_MODE_VBLANK);
-	if (ret) {
-		dsi_status = 1;
-		return ret;
-	}
-
-	ret = mipi_dsi_dcs_exit_sleep_mode(ctx->dsi);
-	if (ret) {
-		dsi_status = 1;
-		return ret;
-	}
-
+	
 	dsi_status = 0;
 
 	return 0;
@@ -410,10 +412,6 @@ static int ili9881d_enable(struct drm_panel *panel)
 {
 	struct ili9881d *ctx = panel_to_ili9881d(panel);
 
-	msleep(120);
-
-	mipi_dsi_dcs_set_display_on(ctx->dsi);
-
 	return 0;
 }
 
@@ -421,14 +419,13 @@ static int ili9881d_disable(struct drm_panel *panel)
 {
 	struct ili9881d *ctx = panel_to_ili9881d(panel);
 
-	return mipi_dsi_dcs_set_display_off(ctx->dsi);
+	return 0;
 }
 
 static int ili9881d_unprepare(struct drm_panel *panel)
 {
 	struct ili9881d *ctx = panel_to_ili9881d(panel);
 
-	mipi_dsi_dcs_enter_sleep_mode(ctx->dsi);
 	regulator_disable(ctx->power);
 	gpiod_set_value_cansleep(ctx->reset, 1);
 
