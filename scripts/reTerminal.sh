@@ -590,8 +590,8 @@ function install {
     # we blacklist this driver in DM to avoid gibberish issue with ch342f chip.
     # and we insmod a new driver for ch342f
     blacklist_driver cdc_acm
-  elif [ "$device" = "reComputer-R100x" ] || [ "$device" = "reComputer-R110x" ] \ 
-     || [ "$device" = "reComputer-AI-box" ] || [ "$device" != "reComputer-AI-box-cm5" ]; then
+  elif [ "$device" = "reComputer-R100x" ] || [ "$device" = "reComputer-R110x" ] || \
+       [ "$device" = "reComputer-AI-box" ] || [ "$device" = "reComputer-AI-box-cm5" ]; then
     install_modules rtc-pcf8563w
     install_overlay_reComputer
   fi
@@ -630,8 +630,8 @@ function uninstall {
     uninstall_modules ili9881d ltr30x ch34x rtc-pcf8563w
     uninstall_overlay_DM
     unblacklist_driver cdc_acm
-  elif [ "$device" = "reComputer-R100x" ] || [ "$device" = "reComputer-R110x" ] \
-   || [ "$device" = "reComputer-AI-box" ] || [ "$device" != "reComputer-AI-box-cm5" ]; then
+  elif [ "$device" = "reComputer-R100x" ] || [ "$device" = "reComputer-R110x" ] || \
+       [ "$device" = "reComputer-AI-box" ] || [ "$device" != "reComputer-AI-box-cm5" ]; then
     uninstall_modules rtc-pcf8563w
     uninstall_overlay_reComputer
   fi
@@ -678,8 +678,8 @@ while [ ! -z "$1" ] ; do
   shift
 done
 
-if [ "$device" != "reTerminal" ] && [ "$device" != "reTerminal-DM" ] && \ 
-    [ "$device" != "reComputer-R100x" ] && [ "$device" != "reComputer-R110x" ] && \ 
+if [ "$device" != "reTerminal" ] && [ "$device" != "reTerminal-DM" ] && \
+    [ "$device" != "reComputer-R100x" ] && [ "$device" != "reComputer-R110x" ] && \
     [ "$device" != "reComputer-AI-box" ] && [ "$device" != "reComputer-AI-box-cm5" ]; then
   echo "Invalid device type. the type should be reTerminal or reTerminal-DM reComputer-R100x reComputer-R110x reComputer-AI-box" 1>&2
   exit 1;
