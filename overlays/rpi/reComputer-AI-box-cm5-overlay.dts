@@ -65,6 +65,12 @@
 				reg = <0x18>;
 				ai3x-micbias-vg = <2>;// set MICBIAS to 2.5v
 			};
+
+			eeprom@50 {
+				compatible = "atmel,24c32";
+				reg = <0x50>;
+				wp-gpios = <&gpio 27 GPIO_ACTIVE_HIGH>;
+			};
 		};
 	};
 
@@ -86,7 +92,7 @@
 			#size-cells = <0>;
 			pinctrl-names = "default";
 			pinctrl-0 = <&rp1_spi4_gpio9 &spi4_cs_pins>;
-			cs-gpios = <&gpio 8 1>;
+			cs-gpios = <&gpio 8 GPIO_ACTIVE_HIGH>;
 			status = "okay";
 
 			slb9670: slb9670@0 {
