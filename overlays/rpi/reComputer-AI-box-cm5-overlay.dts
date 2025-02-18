@@ -32,9 +32,11 @@
 	};
 
 	fragment@4 {
-		target = <&i2c0>;
+		target = <&i2c6>;
 		__overlay__ {
 			status = "okay";
+			pinctrl-0 = <&rp1_i2c6_38_39>;
+			pinctrl-names = "default";
 			clock-frequency = <100000>;
 			#address-cells = <1>;
 			#size-cells = <0>;
@@ -85,14 +87,34 @@
 	};
 
 	fragment@7 {
-		target = <&spi4>;
+		target = <&spidev0>;
+		__overlay__ {
+			status = "disabled";
+		};
+	};
+
+	fragment@8 {
+		target = <&spidev1>;
+		__overlay__ {
+			status = "disabled";
+		};
+	};
+
+	fragment@9 {
+		target = <&spi0_cs_pins>;
+		__overlay__ {
+			brcm,pins = <8>;
+		};
+	};
+
+	fragment@10 {
+		target = <&spi0>;
 		__overlay__ {
 			/* needed to avoid dtc warning */
 			#address-cells = <1>;
 			#size-cells = <0>;
 			pinctrl-names = "default";
-			pinctrl-0 = <&rp1_spi4_gpio9 &spi4_cs_pins>;
-			cs-gpios = <&gpio 8 GPIO_ACTIVE_HIGH>;
+			cs-gpios = <&gpio 8 1>;
 			status = "okay";
 
 			slb9670: slb9670@0 {
@@ -106,14 +128,14 @@
 		};
 	};
 
-	fragment@8 {
+	fragment@11 {
 		target = <&i2s_clk_consumer>;
 		__overlay__ {
 			status = "okay";
 		};
 	};
 
-	fragment@9 {
+	fragment@12 {
 		target = <&sound>;
 		slave_overlay: __overlay__ {
 			compatible = "simple-audio-card";
