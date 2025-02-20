@@ -25,26 +25,6 @@
 #include <video/mipi_display.h>
 #include <linux/version.h>
 
-static int dsi_status = 0; //0:dsi is ok, not 0:something wrong with dsi
-static ssize_t dsi_state_show(struct device *dev,
-		struct device_attribute *attr, char *buf)
-{
-	if (!dsi_status)
-		return scnprintf(buf, PAGE_SIZE, "ok\r\n");
-	else
-		return scnprintf(buf, PAGE_SIZE, "error\r\n");
-}
-
-static DEVICE_ATTR(dsi_state, 0444, dsi_state_show, NULL);
-
-static struct attribute *dsi_state_attrs[] = {
-	&dev_attr_dsi_state.attr,
-	NULL
-};
-
-static const struct attribute_group dsi_attr_group = {
-	.attrs = dsi_state_attrs,
-};
 
 enum ili9881d_op {
 	ILI9881C_SWITCH_PAGE,
@@ -63,11 +43,19 @@ struct ili9881d_instr {
 	} arg;
 };
 
+enum ili9881_desc_flags {
+	ILI9881_FLAGS_NO_SHUTDOWN_CMDS = BIT(0),
+	ILI9881_FLAGS_PANEL_ON_IN_PREPARE = BIT(1),
+	ILI9881_FLAGS_MAX = BIT(31),
+};
+
 struct ili9881d_desc {
 	const struct ili9881d_instr *init;
 	const size_t init_length;
 	const struct drm_display_mode *mode;
-	const unsigned flags;
+	const unsigned mode_flags;
+	unsigned int lanes;
+	enum ili9881_desc_flags flags;
 };
 
 struct ili9881d {
@@ -77,6 +65,8 @@ struct ili9881d {
 
 	struct regulator	*power;
 	struct gpio_desc	*reset;
+
+	enum drm_panel_orientation	orientation;
 };
 
 #define ILI9881C_SWITCH_PAGE_INSTR(_page)	\
@@ -370,7 +360,6 @@ static int ili9881d_prepare(struct drm_panel *panel)
 
 	ret = mipi_dsi_dcs_set_tear_on(ctx->dsi, MIPI_DSI_DCS_TEAR_MODE_VBLANK);
 	if (ret) {
-		dsi_status = 1;
 		return ret;
 	}
 
@@ -378,10 +367,9 @@ static int ili9881d_prepare(struct drm_panel *panel)
 
 	ret = mipi_dsi_dcs_set_display_on(ctx->dsi);
 	if (ret) {
-		dsi_status = 1;
 		return ret;
 	}
-
+	
 	for (i = 0; i < ctx->desc->init_length; i++) {
 		const struct ili9881d_instr *instr = &ctx->desc->init[i];
 
@@ -392,18 +380,15 @@ static int ili9881d_prepare(struct drm_panel *panel)
 						      instr->arg.cmd.data);
 
 		if (ret) {
-			dsi_status = 1;
 			return ret;
 		}
 	}
 
 	ret = ili9881d_switch_page(ctx, 0);
 	if (ret) {
-		dsi_status = 1;
 		return ret;
 	}
 	
-	dsi_status = 0;
 
 	return 0;
 }
@@ -412,12 +397,25 @@ static int ili9881d_enable(struct drm_panel *panel)
 {
 	struct ili9881d *ctx = panel_to_ili9881d(panel);
 
+	if (!(ctx->desc->flags & ILI9881_FLAGS_PANEL_ON_IN_PREPARE)) {
+		msleep(120);
+
+		mipi_dsi_dcs_set_display_on(ctx->dsi);
+	}
+
 	return 0;
 }
 
 static int ili9881d_disable(struct drm_panel *panel)
 {
 	struct ili9881d *ctx = panel_to_ili9881d(panel);
+
+	if (!(ctx->desc->flags & ILI9881_FLAGS_NO_SHUTDOWN_CMDS)) {
+		if (ctx->desc->flags & ILI9881_FLAGS_PANEL_ON_IN_PREPARE)
+			mipi_dsi_dcs_set_display_off(ctx->dsi);
+
+		mipi_dsi_dcs_enter_sleep_mode(ctx->dsi);
+	}
 
 	return 0;
 }
@@ -472,8 +470,15 @@ static int ili9881d_get_modes(struct drm_panel *panel,
 	connector->display_info.width_mm = mode->width_mm;
 	connector->display_info.height_mm = mode->height_mm;
 
-	drm_connector_set_panel_orientation(connector, DRM_MODE_PANEL_ORIENTATION_RIGHT_UP);
+	drm_connector_set_panel_orientation(connector, ctx->orientation);
 	return 1;
+}
+
+static enum drm_panel_orientation ili9881d_get_orientation(struct drm_panel *panel)
+{
+	struct ili9881d *ctx = panel_to_ili9881d(panel);
+
+	return ctx->orientation;
 }
 
 static const struct drm_panel_funcs ili9881d_funcs = {
@@ -482,6 +487,7 @@ static const struct drm_panel_funcs ili9881d_funcs = {
 	.enable		= ili9881d_enable,
 	.disable	= ili9881d_disable,
 	.get_modes	= ili9881d_get_modes,
+	.get_orientation = ili9881d_get_orientation,
 };
 
 static int ili9881d_dsi_probe(struct mipi_dsi_device *dsi)
@@ -510,10 +516,17 @@ static int ili9881d_dsi_probe(struct mipi_dsi_device *dsi)
 		return PTR_ERR(ctx->power);
 	}
 
-	ctx->reset = devm_gpiod_get(&dsi->dev, "reset", GPIOD_OUT_LOW);
+	ctx->reset = devm_gpiod_get_optional(&dsi->dev, "reset", GPIOD_OUT_LOW);
 	if (IS_ERR(ctx->reset)) {
 		dev_err(&dsi->dev, "Couldn't get our reset GPIO\n");
 		return PTR_ERR(ctx->reset);
+	}
+
+	ret = of_drm_get_panel_orientation(dsi->dev.of_node, &ctx->orientation);
+	if (ret) {
+		dev_err(&dsi->dev, "%pOF: failed to get orientation: %d\n",
+			dsi->dev.of_node, ret);
+		return ret;
 	}
 
 	ret = drm_panel_of_backlight(&ctx->panel);
@@ -522,15 +535,13 @@ static int ili9881d_dsi_probe(struct mipi_dsi_device *dsi)
 
 	drm_panel_add(&ctx->panel);
 
-	dsi->mode_flags = ctx->desc->flags;
+	dsi->mode_flags = ctx->desc->mode_flags;
 	dsi->format = MIPI_DSI_FMT_RGB888;
-	dsi->lanes = 4;
+	dsi->lanes = ctx->desc->lanes;
 
 	ret = mipi_dsi_attach(dsi);
 	if (ret)
 		drm_panel_remove(&ctx->panel);
-
-	ret = sysfs_create_group(&dsi->dev.kobj, &dsi_attr_group);
 
 	return ret;
 }
@@ -545,8 +556,8 @@ static void ili9881d_dsi_remove(struct mipi_dsi_device *dsi)
 
 	mipi_dsi_detach(dsi);
 	drm_panel_remove(&ctx->panel);
-	sysfs_remove_group(&dsi->dev.kobj, &dsi_attr_group);
-
+	gpiod_set_value_cansleep(ctx->reset, 1);
+	regulator_disable(ctx->power);
 #if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
 	return 0;
 #endif
@@ -556,7 +567,8 @@ static const struct ili9881d_desc gjx101c7_desc = {
 	.init = gjx101c7_init,
 	.init_length = ARRAY_SIZE(gjx101c7_init),
 	.mode = &nwe080_default_mode,
-	.flags = MIPI_DSI_MODE_VIDEO_SYNC_PULSE | MIPI_DSI_MODE_VIDEO,
+	.mode_flags = MIPI_DSI_MODE_VIDEO_SYNC_PULSE | MIPI_DSI_MODE_VIDEO,
+	.lanes = 4,
 };
 
 static const struct of_device_id ili9881d_of_match[] = {

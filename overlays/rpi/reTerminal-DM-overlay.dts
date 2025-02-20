@@ -92,7 +92,7 @@
 
 				backlight = <&lcd_backlight>;
 				reset-gpios=<&pcf857x 15 1>;
-
+				rotation = <90>;
 				port {
 					panel_dsi_port: endpoint {
 						remote-endpoint = <&dsi_out_port>;
