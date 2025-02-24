@@ -53,7 +53,7 @@ struct ili9881d_desc {
 	const struct ili9881d_instr *init;
 	const size_t init_length;
 	const struct drm_display_mode *mode;
-	const unsigned mode_flags;
+	const unsigned long mode_flags;
 	unsigned int lanes;
 	enum ili9881_desc_flags flags;
 };
@@ -358,18 +358,6 @@ static int ili9881d_prepare(struct drm_panel *panel)
 	gpiod_set_value_cansleep(ctx->reset, 0);
 	msleep(20);
 
-	ret = mipi_dsi_dcs_set_tear_on(ctx->dsi, MIPI_DSI_DCS_TEAR_MODE_VBLANK);
-	if (ret) {
-		return ret;
-	}
-
-	msleep(120);
-
-	ret = mipi_dsi_dcs_set_display_on(ctx->dsi);
-	if (ret) {
-		return ret;
-	}
-	
 	for (i = 0; i < ctx->desc->init_length; i++) {
 		const struct ili9881d_instr *instr = &ctx->desc->init[i];
 
@@ -389,6 +377,19 @@ static int ili9881d_prepare(struct drm_panel *panel)
 		return ret;
 	}
 	
+	ret = mipi_dsi_dcs_set_tear_on(ctx->dsi, MIPI_DSI_DCS_TEAR_MODE_VBLANK);
+	if (ret)
+		return ret;
+
+	ret = mipi_dsi_dcs_exit_sleep_mode(ctx->dsi);
+	if (ret)
+		return ret;
+
+	if (ctx->desc->flags & ILI9881_FLAGS_PANEL_ON_IN_PREPARE) {
+		msleep(120);
+
+		ret = mipi_dsi_dcs_set_display_on(ctx->dsi);
+	}
 
 	return 0;
 }
@@ -410,11 +411,8 @@ static int ili9881d_disable(struct drm_panel *panel)
 {
 	struct ili9881d *ctx = panel_to_ili9881d(panel);
 
-	if (!(ctx->desc->flags & ILI9881_FLAGS_NO_SHUTDOWN_CMDS)) {
-		if (ctx->desc->flags & ILI9881_FLAGS_PANEL_ON_IN_PREPARE)
-			mipi_dsi_dcs_set_display_off(ctx->dsi);
-
-		mipi_dsi_dcs_enter_sleep_mode(ctx->dsi);
+	if (!(ctx->desc->flags & ILI9881_FLAGS_PANEL_ON_IN_PREPARE)) {
+		mipi_dsi_dcs_set_display_off(ctx->dsi);
 	}
 
 	return 0;
@@ -423,6 +421,13 @@ static int ili9881d_disable(struct drm_panel *panel)
 static int ili9881d_unprepare(struct drm_panel *panel)
 {
 	struct ili9881d *ctx = panel_to_ili9881d(panel);
+
+	if (!(ctx->desc->flags & ILI9881_FLAGS_NO_SHUTDOWN_CMDS)) {
+		if (ctx->desc->flags & ILI9881_FLAGS_PANEL_ON_IN_PREPARE)
+			mipi_dsi_dcs_set_display_off(ctx->dsi);
+
+		mipi_dsi_dcs_enter_sleep_mode(ctx->dsi);
+	}
 
 	regulator_disable(ctx->power);
 	gpiod_set_value_cansleep(ctx->reset, 1);
@@ -516,7 +521,7 @@ static int ili9881d_dsi_probe(struct mipi_dsi_device *dsi)
 		return PTR_ERR(ctx->power);
 	}
 
-	ctx->reset = devm_gpiod_get_optional(&dsi->dev, "reset", GPIOD_OUT_LOW);
+	ctx->reset = devm_gpiod_get(&dsi->dev, "reset", GPIOD_OUT_LOW);
 	if (IS_ERR(ctx->reset)) {
 		dev_err(&dsi->dev, "Couldn't get our reset GPIO\n");
 		return PTR_ERR(ctx->reset);
@@ -557,7 +562,7 @@ static void ili9881d_dsi_remove(struct mipi_dsi_device *dsi)
 	mipi_dsi_detach(dsi);
 	drm_panel_remove(&ctx->panel);
 	gpiod_set_value_cansleep(ctx->reset, 1);
-	regulator_disable(ctx->power);
+	// regulator_disable(ctx->power);
 #if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
 	return 0;
 #endif
@@ -568,6 +573,8 @@ static const struct ili9881d_desc gjx101c7_desc = {
 	.init_length = ARRAY_SIZE(gjx101c7_init),
 	.mode = &nwe080_default_mode,
 	.mode_flags = MIPI_DSI_MODE_VIDEO_SYNC_PULSE | MIPI_DSI_MODE_VIDEO,
+	.flags = ILI9881_FLAGS_NO_SHUTDOWN_CMDS |
+		 ILI9881_FLAGS_PANEL_ON_IN_PREPARE,
 	.lanes = 4,
 };
 
