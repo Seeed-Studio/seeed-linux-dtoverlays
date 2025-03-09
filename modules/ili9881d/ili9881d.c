@@ -492,7 +492,9 @@ static const struct drm_panel_funcs ili9881d_funcs = {
 	.enable		= ili9881d_enable,
 	.disable	= ili9881d_disable,
 	.get_modes	= ili9881d_get_modes,
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 3, 0)
 	.get_orientation = ili9881d_get_orientation,
+#endif
 };
 
 static int ili9881d_dsi_probe(struct mipi_dsi_device *dsi)
@@ -533,11 +535,14 @@ static int ili9881d_dsi_probe(struct mipi_dsi_device *dsi)
 			dsi->dev.of_node, ret);
 		return ret;
 	}
-
+#if IS_ENABLED(CONFIG_DRM_PANEL) && (IS_BUILTIN(CONFIG_BACKLIGHT_CLASS_DEVICE) || \
+	(IS_MODULE(CONFIG_DRM) && IS_MODULE(CONFIG_BACKLIGHT_CLASS_DEVICE)))
 	ret = drm_panel_of_backlight(&ctx->panel);
 	if (ret)
 		return ret;
-
+#else
+	ctx->panel.backlight = devm_of_find_backlight(ctx->panel.dev);
+#endif
 	drm_panel_add(&ctx->panel);
 
 	dsi->mode_flags = ctx->desc->mode_flags;
