@@ -536,7 +536,7 @@ function setup_display {
               mkdir -p $file/.config/
               cp -v $RES_PATH/wayfire.ini $file/.config/
             fi 
-            if [ -e "$file/.config/kanshi/config" ]; then 
+            if [[ -e "$file/.config/kanshi/config" && ! $(grep -q '^output DSI-1' "$file/.config/kanshi/config") ]]; then
               sed -i 's/\(output DSI-1.*\)transform normal/\1transform 270/' "$file/.config/kanshi/config"
             else
               mkdir -p $file/.config/kanshi/
@@ -605,6 +605,9 @@ function install {
 
   # touch panel
   # setup_tp
+
+  # rebuild initramfs
+  update-initramfs -c -k $(uname -r)
 
   # audio
   if [ "$device" = "reTerminal" ]; then
