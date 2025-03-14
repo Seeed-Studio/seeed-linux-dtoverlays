@@ -757,7 +757,7 @@ static int pcf8563_probe(struct i2c_client *client, const struct i2c_device_id *
 
     pcf8563_watchdog_init(&client->dev, pcf8563);
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 15, 0)
     err = rtc_register_device(pcf8563->rtc);
 #else
     err = devm_rtc_register_device(pcf8563->rtc);
