@@ -167,4 +167,11 @@
 			};
 		};
 	};
+	fragment@13 {
+		target = <&pciex1>;
+		__overlay__ {
+			max-link-speed = <3>;
+			status = "okay";
+		};
+	};
 };	
