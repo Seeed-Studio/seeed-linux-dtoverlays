@@ -306,7 +306,9 @@ static int backlight_update(struct backlight_device *bd)
 	int brightness = bd->props.brightness;
 
 	if (bd->props.power != FB_BLANK_UNBLANK ||
+#if (LINUX_VERSION_CODE <= KERNEL_VERSION(6, 12, 0))
 		bd->props.fb_blank != FB_BLANK_UNBLANK ||
+#endif
 		bd->props.state & (BL_CORE_SUSPENDED | BL_CORE_FBBLANK)) {
 			brightness = 0;
 		}
