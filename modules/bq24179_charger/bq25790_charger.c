@@ -131,14 +131,6 @@ static int bq25790_watchdog_time[BQ25790_NUM_WD_VAL] = {0, 500, 1000, 2000,
 							20000, 40000, 80000,
 							160000};
 
-static enum power_supply_usb_type bq25790_usb_type[] = {
-	POWER_SUPPLY_USB_TYPE_ACA,
-	POWER_SUPPLY_USB_TYPE_SDP,
-	POWER_SUPPLY_USB_TYPE_CDP,
-	POWER_SUPPLY_USB_TYPE_DCP,
-	POWER_SUPPLY_USB_TYPE_UNKNOWN,
-};
-
 static int bq25790_usb_notifier(struct notifier_block *nb, unsigned long val,
 				void *priv)
 {
@@ -918,8 +910,11 @@ static int bq25790_property_is_writeable(struct power_supply *psy,
 static const struct power_supply_desc bq25790_power_supply_desc = {
 	.name = "bq25790-charger",
 	.type = POWER_SUPPLY_TYPE_USB,
-	.usb_types = bq25790_usb_type,
-	.num_usb_types = ARRAY_SIZE(bq25790_usb_type),
+	.usb_types = BIT(POWER_SUPPLY_USB_TYPE_ACA)|
+	BIT(POWER_SUPPLY_USB_TYPE_SDP)|
+	BIT(POWER_SUPPLY_USB_TYPE_CDP)|
+	BIT(POWER_SUPPLY_USB_TYPE_DCP)|
+	BIT(POWER_SUPPLY_USB_TYPE_UNKNOWN),
 	.properties = bq25790_power_supply_props,
 	.num_properties = ARRAY_SIZE(bq25790_power_supply_props),
 	.get_property = bq25790_charger_get_property,
