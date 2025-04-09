@@ -28,6 +28,7 @@
 #include <linux/atomic.h>
 #include <linux/of_device.h>
 #include <linux/of.h>
+#include <linux/version.h>
 #include "lis3lv02d.h"
 
 #define DRIVER_NAME     "lis3lv02d"
@@ -662,7 +663,7 @@ static int lis3lv02d_misc_fasync(int fd, struct file *file, int on)
 
 static const struct file_operations lis3lv02d_misc_fops = {
 	.owner   = THIS_MODULE,
-#if (LINUX_VERSION_CODE <= KERNEL_VERSION(6, 12, 20))
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 12, 20))
         .llseek  = no_llseek,
 #endif
 	.read    = lis3lv02d_misc_read,
