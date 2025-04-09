@@ -435,8 +435,10 @@ function install_overlay {
     make overlays/rpi/$i-overlay.dtbo || exit 1;
     cp -fv overlays/rpi/$i-overlay.dtbo $OVERLAY_DIR/$i.dtbo || exit 1;
 
-	grep -q "^dtoverlay=$i$" $CFG_PATH || \
-	  echo "dtoverlay=$i" >> $CFG_PATH
+    if [ $i != "reTerminal-bridge" ]; then
+      grep -q "^dtoverlay=$i$" $CFG_PATH || \
+      echo "dtoverlay=$i" >> $CFG_PATH
+    fi
   done
 }
 
@@ -584,7 +586,7 @@ function setup_tp {
 function install {
   if [ "$device" = "reTerminal" ]; then
     install_modules mipi_dsi ltr30x lis3lv02d bq24179_charger
-    install_overlay reTerminal
+    install_overlay reTerminal reTerminal-bridge
     if [ $DEBIAN_NUM -eq $BOOKWORM_NUM ]; then
       setup_overlay reTerminal tp_rotate=1
     fi
@@ -632,7 +634,7 @@ function uninstall {
   if [ "$device" = "reTerminal" ]; then
     uninstall_modules mipi_dsi ltr30x lis3lv02d bq24179_charger
     unsetup_overlay reTerminal tp_rotate=1
-    uninstall_overlay reTerminal
+    uninstall_overlay reTerminal reTerminal-bridge
   elif [ "$device" = "reTerminal-DM" ]; then
     uninstall_modules ili9881d ltr30x ch34x rtc-pcf8563w
     uninstall_overlay_DM
