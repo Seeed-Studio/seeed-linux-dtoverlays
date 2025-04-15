@@ -451,7 +451,7 @@ static void i2c_md_remove(struct i2c_client *i2c)
 	i2c_md_write(md, REG_LCD_RST, 0);
 	i2c_md_write(md, REG_PWM, 0);
 
-	mipi_dsi_detach(md->dsi);
+	// mipi_dsi_detach(md->dsi); // TODO: check if this is needed
 	drm_panel_remove(&md->panel);
 	mipi_dsi_device_unregister(md->dsi);
 	sysfs_remove_group(&i2c->dev.kobj, &dsi_attr_group);
@@ -473,7 +473,7 @@ static void i2c_md_shutdown(struct i2c_client *i2c)
 	i2c_md_write(md, REG_LCD_RST, 0);
 	i2c_md_write(md, REG_PWM, 0);
 
-	mipi_dsi_detach(md->dsi);
+	// mipi_dsi_detach(md->dsi); // TODO: check if this is needed
 	drm_panel_remove(&md->panel);
 	mipi_dsi_device_unregister(md->dsi);
 }
