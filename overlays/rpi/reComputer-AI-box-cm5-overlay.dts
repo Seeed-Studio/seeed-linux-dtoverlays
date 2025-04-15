@@ -174,4 +174,11 @@
 			status = "okay";
 		};
 	};
+
+	fragment@14 {
+		target = <&uart0>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
 };	

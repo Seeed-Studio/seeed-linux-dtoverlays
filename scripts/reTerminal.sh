@@ -289,6 +289,11 @@ function unblacklist_driver {
 }
 
 function install_overlay_reComputer {
+  # cmdline.txt
+  if [ "$device" = "reComputer-AI-box-cm5" ]; then
+    remove_cmdline_value "console=serial0,115200"
+    set_cmdline_value "console=ttyAMA0,115200"
+  fi
   # config.txt
   set_config_value "enable_uart" "1"
 
@@ -303,6 +308,8 @@ function install_overlay_reComputer {
 }
 
 function uninstall_overlay_reComputer {
+  # cmdline.txt
+  remove_cmdline_value "console=ttyAMA0,115200"
   # config.txt
   remove_config_value "enable_uart" "1"
 
