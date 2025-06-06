@@ -71,6 +71,12 @@
 #define PCF8563_WD_VAL_MAX 255
 #define PCF8563_WD_VAL_DEFAULT 60
 
+static bool nowayout = WATCHDOG_NOWAYOUT;
+module_param(nowayout, bool, 0);
+MODULE_PARM_DESC(nowayout,
+		"Watchdog cannot be stopped once started (default="
+				__MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
+
 static struct i2c_driver pcf8563_driver;
 
 struct pcf8563
@@ -215,6 +221,11 @@ static int pcf8563_wdt_stop(struct watchdog_device *wdd)
     struct i2c_client *client = pcf8563->client;
     unsigned char val;
 
+    if (nowayout) {
+	/* return without stopping as nowayout is set */
+        return 0;
+    }
+
     dev_dbg(wdd->parent, "%s: stop watchdog", __func__);
 
     val = pcf8563->freq & PCF8563_TMRC_MASK;
@@ -300,6 +311,7 @@ static int pcf8563_watchdog_init(struct device *dev, struct pcf8563 *pcf8563)
         return -EIO;
     }
 
+    watchdog_set_nowayout(&pcf8563->wdd, nowayout);
     watchdog_set_drvdata(&pcf8563->wdd, pcf8563);
 
     err = pcf8563_write_block_data(pcf8563->client, PCF8563_REG_TMRC, 1, &pcf8563->freq);
@@ -311,8 +323,8 @@ static int pcf8563_watchdog_init(struct device *dev, struct pcf8563 *pcf8563)
 
     err = devm_watchdog_register_device(dev, &pcf8563->wdd);
 
-    dev_info(dev, "timer-frequency: %d, default-timeout: %d, min-hw-heartbeat-ms: %d",
-             pcf8563->freq, pcf8563->wdd.timeout, pcf8563->wdd.min_hw_heartbeat_ms);
+    dev_info(dev, "timer-frequency: %d, default-timeout: %d, min-hw-heartbeat-ms: %d, nowayout: %d",
+             pcf8563->freq, pcf8563->wdd.timeout, pcf8563->wdd.min_hw_heartbeat_ms, nowayout);
 
     dev_info(dev, "%s: watchdog%d is attached\n", __func__,
              pcf8563->wdd.id);
