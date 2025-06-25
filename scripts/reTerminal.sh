@@ -304,6 +304,10 @@ function install_overlay_reComputer {
   fi
   make overlays/rpi/$device-overlay.dtbo || exit 1;
   cp -fv overlays/rpi/$device-overlay.dtbo $OVERLAY_DIR/$device.dtbo || exit 1;
+  if [ "$device" = "reComputer-R2x" ]; then
+    make overlays/rpi/reComputer-R21-overlay.dtbo || exit 1;
+    cp -fv overlays/rpi/reComputer-R21-overlay.dtbo $OVERLAY_DIR/reComputer-R21.dtbo || exit 1;
+  fi
   set_config_dtoverlay "$device"
 }
 
@@ -604,7 +608,8 @@ function install {
     # and we insmod a new driver for ch342f
     blacklist_driver cdc_acm
   elif [ "$device" = "reComputer-R100x" ] || [ "$device" = "reComputer-R110x" ] || \
-       [ "$device" = "reComputer-AI-box" ] || [ "$device" = "reComputer-AI-box-cm5" ]; then
+       [ "$device" = "reComputer-AI-box" ] || [ "$device" = "reComputer-AI-box-cm5" ] || \
+       [ "$device" = "reComputer-R2x" ]; then
     install_modules rtc-pcf8563w
     install_overlay_reComputer
   fi
@@ -647,7 +652,8 @@ function uninstall {
     uninstall_overlay_DM
     unblacklist_driver cdc_acm
   elif [ "$device" = "reComputer-R100x" ] || [ "$device" = "reComputer-R110x" ] || \
-       [ "$device" = "reComputer-AI-box" ] || [ "$device" != "reComputer-AI-box-cm5" ]; then
+       [ "$device" = "reComputer-AI-box" ] || [ "$device" != "reComputer-AI-box-cm5" ] || \
+       [ "$device" = "reComputer-R2x" ]; then
     uninstall_modules rtc-pcf8563w
     uninstall_overlay_reComputer
   fi
@@ -696,8 +702,9 @@ done
 
 if [ "$device" != "reTerminal" ] && [ "$device" != "reTerminal-DM" ] && \
     [ "$device" != "reComputer-R100x" ] && [ "$device" != "reComputer-R110x" ] && \
-    [ "$device" != "reComputer-AI-box" ] && [ "$device" != "reComputer-AI-box-cm5" ]; then
-  echo "Invalid device type. the type should be reTerminal or reTerminal-DM reComputer-R100x reComputer-R110x reComputer-AI-box" 1>&2
+    [ "$device" != "reComputer-AI-box" ] && [ "$device" != "reComputer-AI-box-cm5" ] && \
+    [ "$device" != "reComputer-R2x" ]; then
+  echo "Invalid device type. the type should be reTerminal or reTerminal-DM reComputer-R100x reComputer-R110x reComputer-R2x reComputer-AI-box" 1>&2
   exit 1;
 fi
 

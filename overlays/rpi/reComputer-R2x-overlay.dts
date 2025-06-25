@@ -1,0 +1,386 @@
+/dts-v1/;
+/plugin/;
+
+/* #include "dt-bindings/gpio/gpio.h" */
+
+/ {
+    compatible = "brcm,bcm2712";
+
+    fragment@0 {
+        target-path="/";
+        __overlay__ {
+            hardware = "reComputer 2.x";
+        };
+    };
+
+    fragment@1 {
+        target = <&i2c6>;
+        __overlay__ {
+            status = "okay";
+            pinctrl-0 = <&rp1_i2c6_38_39>;
+            pinctrl-names = "default";
+            clock-frequency = <100000>;
+            #address-cells = <1>;
+            #size-cells = <0>;
+
+            eeprom@50 {
+                compatible = "atmel,24c32";
+                reg = <0x50>;
+                wp-gpios = <&pca9535 5 0>;
+            };
+
+            pcf8563@51 {
+                compatible = "nxp,pcf8563";
+                reg = <0x51>;
+                reset-source;
+                /* 0 = 4096Hz, 1 = 64Hz, 2 = 1Hz, 3 = 1/60Hz */
+                timer-frequency = <0x02>;
+                /* Timeout count, max 255 min 2*/
+                default-timeout =  <120>;
+                min-hw-heartbeat-ms = <2000>;
+            };
+
+            atecc608a@60 {
+                compatible = "sferalabs,atecc";
+                reg = <0x60>;
+                status = "okay";
+			};
+        };
+    };
+
+    fragment@2 {
+        target = <&i2c1>;
+        __overlay__ {
+            status = "okay";
+            pinctrl-0 = <&rp1_i2c1_10_11>;
+            pinctrl-names = "default";
+            clock-frequency = <400000>;
+            #address-cells = <1>;
+            #size-cells = <0>;
+
+            pca9535: pca@21 {
+                compatible = "nxp,pca9535";
+                reg = <0x21>;
+                status = "okay";
+
+                gpio-controller;
+                #gpio-cells = <2>;
+
+                gpio-line-names =
+                    "RS485_POWER_EN",
+                    "CH344_RST",
+                    "CH342_RST",
+                    "TPM_RST",
+                    "Buzzer_EN",
+                    "EEP_WP",
+                    "USER_LED_B",
+                    "USER_LED_G",
+                    "USER_LED_R",
+                    "LoRaWAN_SX1302_RST",
+                    "LoRaWAN_SX1262_RST",
+                    "LoRaWAN_SX1262_CS",
+                    "DO_4",
+                    "DO_3",
+                    "DO_2",
+                    "DO_1"
+                ;
+
+                RS485_POWER_EN {
+                    gpios = <&pca9535 0 0>;
+                    output-high;
+                    line-name = "RS485_POWER_EN";
+                };
+
+                CH344_RST {
+                    gpios = <&pca9535 1 0>;
+                    output-high;
+                    line-name = "CH344_RST";
+                };
+
+                CH342_RST {
+                    gpios = <&pca9535 2 0>;
+                    output-high;
+                    line-name = "CH342_RST";
+                };
+
+                TPM_RST {
+                    gpios = <&pca9535 3 0>;
+                    output-high;
+                    line-name = "TPM_RST";
+                };
+
+                Buzzer_EN {
+                    gpios = <&pca9535 4 0>;
+                    output-low;
+                    line-name = "Buzzer_EN";
+                };
+
+                EEP_WP {
+                    gpios = <&pca9535 5 0>;
+                    output-high;
+                    line-name = "EEP_WP";
+                };
+
+                USER_LED_B {
+                    gpios = <&pca9535 6 0>;
+                    output-high;
+                    line-name = "USER_LED_B";
+                };
+
+                USER_LED_G {
+                    gpios = <&pca9535 7 0>;
+                    output-high;
+                    line-name = "USER_LED_G";
+                };
+
+                USER_LED_R {
+                    gpios = <&pca9535 8 0>;
+                    output-high;
+                    line-name = "USER_LED_R";
+                };
+
+                LoRaWAN_SX1302_RST {
+                    gpios = <&pca9535 9 0>;
+                    output-low;
+                    line-name = "LoRaWAN_SX1302_RST";
+                };
+
+                LoRaWAN_SX1262_RST {
+                    gpios = <&pca9535 10 0>;
+                    output-low;
+                    line-name = "LoRaWAN_SX1262_RST";
+                };
+
+                LoRaWAN_SX1262_CS {
+                    gpios = <&pca9535 11 0>;
+                    output-low;
+                    line-name = "LoRaWAN_SX1262_CS";
+                };
+
+                DO_4 {
+                    gpios = <&pca9535 12 0>;
+                    output-low;
+                    line-name = "DO_4";
+                };
+
+                DO_3 {
+                    gpios = <&pca9535 13 0>;
+                    output-low;
+                    line-name = "DO_3";
+                };
+
+                DO_2 {
+                    gpios = <&pca9535 14 0>;
+                    output-low;
+                    line-name = "DO_2";
+                };
+
+                DO_1 {
+                    gpios = <&pca9535 15 0>;
+                    output-low;
+                    line-name = "DO_1";
+                };
+            };
+        };
+    };
+
+    fragment@3 {
+        target = <&i2c3>;
+        __overlay__ {
+            status = "okay";
+            pinctrl-0 = <&rp1_i2c3_22_23>;
+            pinctrl-names = "default";
+            #address-cells = <1>;
+            #size-cells = <0>;
+
+            pca9554: pca@38 {
+                compatible = "nxp,pca9554";
+                reg = <0x38>;
+                status = "okay";
+
+                gpio-controller;
+                #gpio-cells = <2>;
+
+                gpio-line-names =
+                    "M2B_POWER_OFF",
+                    "M2B_W_DISABLE1",
+                    "M2B_DPR_3V3",
+                    "M2B_W_DISABLE2",
+                    "SIM_MUX_SEL",
+                    "485_1_120R_EN",
+                    "M2B_PCIe_Reset_3V3",
+                    "485_2_120R_EN"
+                ;
+
+                M2B_POWER_OFF {
+                    gpios = <&pca9554 0 0>;
+                    output-high;
+                    line-name = "M2B_POWER_OFF";
+                };
+
+                M2B_W_DISABLE1 {
+                    gpios = <&pca9554 1 0>;
+                    output-low;
+                    line-name = "M2B_W_DISABLE1";
+                };
+
+                M2B_DPR_3V3 {
+                    gpios = <&pca9554 2 0>;
+                    output-high;
+                    line-name = "M2B_DPR_3V3";
+                };
+
+                M2B_W_DISABLE2 {
+                    gpios = <&pca9554 3 0>;
+                    output-high;
+                    line-name = "M2B_W_DISABLE2";
+                };
+
+                SIM_MUX_SEL {
+                    gpios = <&pca9554 4 0>;
+                    output-high;
+                    line-name = "SIM_MUX_SEL";
+                };
+
+                485_1_120R_EN {
+                    gpios = <&pca9554 5 0>;
+                    output-low;
+                    line-name = "485_1_120R_EN";
+                };
+
+                M2B_PCIe_Reset_3V3 {
+                    gpios = <&pca9554 6 0>;
+                    output-low;
+                    line-name = "M2B_PCIe_Reset_3V3";
+                };
+
+                485_2_120R_EN {
+                    gpios = <&pca9554 7 0>;
+                    output-low;
+                    line-name = "485_2_120R_EN";
+                };
+            };
+        };
+    };
+
+    fragment@4 {
+        target = <&i2c2>;
+        __overlay__ {
+            status = "okay";
+            pinctrl-0 = <&rp1_i2c2_12_13>;
+            pinctrl-names = "default";
+            clock-frequency = <100000>;
+        };
+    };
+
+    fragment@5 {
+        target-path="/";
+        __overlay__ {
+            beeper: beeper {
+                compatible = "gpio-beeper";
+                gpios = <&pca9535 4 0>;
+                status = "okay";
+            };
+        };
+    };
+
+    fragment@6 {
+        target = <&leds>;
+        __overlay__ {
+            compatible = "gpio-leds";
+            led_red: led_red {
+                label = "led-red";
+                linux,default-trigger = "default-off";
+                gpios = <&pca9535 8 0>;
+                default-state = "off";
+            };
+
+            led_green: led_green {
+                label = "led-green";
+                linux,default-trigger = "default-off";
+                gpios = <&pca9535 7 0>;
+                default-state = "off";
+            };
+
+            led_blue: led_blue {
+                label = "led-blue";
+                linux,default-trigger = "default-off";
+                gpios = <&pca9535 6 0>;
+                default-state = "off";
+            };
+        };
+    };
+
+    fragment@7 {
+        target = <&pciex1>;
+        __overlay__ {
+            max-link-speed = <3>;
+            status = "okay";
+        };
+    };
+
+    fragment@8 {
+        target = <&uart0>;
+        __overlay__ {
+            status = "okay";
+        };
+    };
+
+    fragment@9 {
+        target = <&gpio>;
+        __overlay__ {
+            spi2_cs_pins: spi2_cs_pins {
+                functions = "spi2";
+                pins = "gpio0", "gpio24";
+                bias-pull-up;
+            };
+        };
+    };
+
+    fragment@10 {
+        target = <&spi2>;
+        __overlay__ {
+            status = "okay";
+            pinctrl-names = "default";
+            pinctrl-0 = <&rp1_spi2_gpio1 &spi2_cs_pins>;
+            cs-gpios = <&gpio 0 1>, <&gpio 24 1>;
+
+            #address-cells = <1>;
+            #size-cells = <0>;
+
+            spidev_frag: spidev@0 {
+                compatible = "spidev";
+                reg = <0>;      /* CE0 */
+                #address-cells = <1>;
+                #size-cells = <0>;
+                spi-max-frequency = <125000000>;
+                status = "okay";
+            };
+
+            slb9670: slb9670@1 {
+                compatible = "infineon,slb9670";
+                reg = <1>;  /* CE1 */
+                #address-cells = <1>;
+                #size-cells = <0>;
+                /* spi-max-frequency = <32000000>; */
+                spi-max-frequency = <12500000>;
+                status = "okay";
+            };
+        };
+    };
+
+    fragment@11 {
+        target-path = "/";
+        __overlay__ {
+            CH342_RST: CH342_RST{
+                compatible = "regulator-fixed";
+                regulator-name = "CH342_RST";
+                gpio = <&pca9535 2 0>;
+                enable-active-high;
+                regulator-boot-on;
+                regulator-always-on;
+                status = "okay";
+            };
+        };
+    };
+};

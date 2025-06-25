@@ -1,0 +1,70 @@
+/dts-v1/;
+/plugin/;
+
+/* #include "dt-bindings/gpio/gpio.h" */
+
+/ {
+    compatible = "brcm,bcm2712";
+
+    fragment@0 {
+        target-path = "/clocks";
+        __overlay__ {
+            /* external 40M oscillator of mcp2518fd on SPI3.0 */
+            mcp2518fd_osc: mcp2518fd_osc {
+                compatible = "fixed-clock";
+                #clock-cells = <0>;
+                clock-frequency  = <40000000>;
+            };
+        };
+    };
+
+    fragment@1 {
+        target = <&gpio>;
+        __overlay__ {
+            can_int_pins: can_int_pins {
+                brcm,pins = <9 8>;
+                brcm,function = <0>; /* input */
+            };
+
+            spi3_cs_pins: spi3_cs_pins {
+                functions = "spi3";
+                pins = "gpio4", "gpio25";
+                bias-pull-up;
+            };
+        };
+    };
+
+    fragment@2 {
+        target = <&spi3>;
+        __overlay__ {
+            status = "okay";
+            pinctrl-names = "default";
+            pinctrl-0 = <&rp1_spi3_gpio5 &spi3_cs_pins>;
+            cs-gpios = <&gpio 4 1>, <&gpio 25 1>;
+
+            #address-cells = <1>;
+            #size-cells = <0>;
+
+            can0: can0@0 {
+                compatible = "microchip,mcp251xfd";
+                reg = <0>;
+                pinctrl-names = "default";
+                pinctrl-0 = <&can_int_pins>;
+                spi-max-frequency = <20000000>;
+                interrupt-parent = <&gpio>;
+                interrupts = <9 8>;
+                clocks = <&mcp2518fd_osc>;
+            };
+
+            can1: can1@1 {
+                compatible = "microchip,mcp251xfd";
+                reg = <1>;
+                pinctrl-names = "default";
+                spi-max-frequency = <20000000>;
+                interrupt-parent = <&gpio>;
+                interrupts = <8 8>;
+                clocks = <&mcp2518fd_osc>;
+            };
+        };
+    };
+};
