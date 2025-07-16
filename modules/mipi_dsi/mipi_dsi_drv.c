@@ -478,11 +478,11 @@ static void i2c_md_shutdown(struct i2c_client *i2c)
 	mipi_dsi_device_unregister(md->dsi);
 }
 
-extern const struct panel_data ili9881d_data;
+extern const struct panel_data ili9881x_data;
 static const struct of_device_id i2c_md_of_ids[] = {
 	{
-		.compatible = "i2c_dsi,ili9881d",
-		.data = (const void*)&ili9881d_data,
+		.compatible = "i2c_dsi,ili9881x",
+		.data = (const void*)&ili9881x_data,
 	},
 	{ } /* sentinel */
 };
@@ -514,9 +514,10 @@ static int __init i2c_md_init(void)
 
 	DBG_FUNC("Register MIPI-DSI driver");
 	ret = mipi_dsi_driver_register(&mipi_dsi_driver);
-	if (ret < 0)
+	if (ret < 0){
 		dsi_status = DSI_REG_ERR;
 		return ret;
+	}
 
 	return ret;
 }

@@ -9,7 +9,7 @@ KVERSION ?= $(shell uname -r)
 obj-m := mipi_dsi.o
 mipi_dsi-objs := mipi_dsi_drv.o		\
 				 touch_panel.o		\
-				 panel-ili9881d.o
+				 panel-ili9881x.o
 
 all:
 	$(MAKE) -C /lib/modules/$(KVERSION)/build M=$(PWD) modules

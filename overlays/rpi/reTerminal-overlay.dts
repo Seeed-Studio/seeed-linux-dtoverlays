@@ -103,7 +103,7 @@
 			};
 			
 			mipi_dsi: mipi_dsi@45 {
-				compatible = "i2c_dsi,ili9881d";
+				compatible = "i2c_dsi,ili9881x";
 				reg = <0x45>;
 				
 				mcu_auto_reset_enable = <0>;
