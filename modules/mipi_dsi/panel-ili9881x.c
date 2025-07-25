@@ -31,8 +31,9 @@ static const struct drm_display_mode ili9881x_modes = {
 // Panel type enum
 enum ili9881_panel_type {
 	ILI9881_UNKNOWN = 0,
-	ILI9881D,
-	ILI9881C,
+	ILI9881D03,
+	ILI9881D02,
+	ILI9881C05,
 };
 
 static enum ili9881_panel_type panel_type = ILI9881_UNKNOWN;
@@ -59,8 +60,8 @@ static int ili9881_read_id(struct mipi_dsi_device *dsi)
 	ret |= mipi_dsi_dcs_read(dsi, 0x01, &id[1], 1);
 	ret |= mipi_dsi_dcs_read(dsi, 0x02, &id[2], 1);
 	if (ret >= 0 && id[0] == 0x98 && id[1] == 0x81 && id[2] == 0x5C) {
-		panel_type = ILI9881C;
-		pr_info("Detected ILI9881C: ID = %02x %02x %02x\n", id[0], id[1], id[2]);
+		panel_type = ILI9881C05;
+		pr_info("Detected ILI9881C05: ID = %02x %02x %02x\n", id[0], id[1], id[2]);
 		return 0;
 	}
 
@@ -72,8 +73,13 @@ static int ili9881_read_id(struct mipi_dsi_device *dsi)
 	ret |= mipi_dsi_dcs_read(dsi, 0xF2, &id[2], 1);
 	ret |= mipi_dsi_dcs_read(dsi, 0xF3, &id[3], 1);
 	if (ret >= 0 && id[0] == 0x98 && id[1] == 0x81) {
-		panel_type = ILI9881D;
-		pr_info("Detected ILI9881D: ID = %02x %02x %02x %02x\n", id[0], id[1], id[2], id[3]);
+		if(id[2] == 0x1A){
+			panel_type = ILI9881D03;
+			pr_info("Detected ILI9881D03: ID = %02x %02x %02x %02x\n", id[0], id[1], id[2], id[3]);
+		}else if(id[2] == 0x0D){
+			panel_type = ILI9881D02;
+			pr_info("Detected ILI9881D02: ID = %02x %02x %02x %02x\n", id[0], id[1], id[2], id[3]);
+		}
 		return 0;
 	}
 
@@ -82,21 +88,217 @@ static int ili9881_read_id(struct mipi_dsi_device *dsi)
 	return -ENODEV;
 }
 
-// Optional: Add ILI9881C-specific initialization here
-static void ili9881c_init(struct mipi_dsi_device *dsi)
+// Optional: Add ILI9881C05-specific initialization here
+static void ili9881c05_init(struct mipi_dsi_device *dsi)
 {
-	// Currently only sends display ON commands as placeholder
+	pr_info("Initializing ILI9881C05 display...\n");
+	// Page 0
 	ILI9881_PAGE(0x00);
-	ILI9881_COMMAND(0x11);
+
+	ILI9881_COMMAND(0x11); // Sleep Out
 	msleep(120);
-	ILI9881_COMMAND(0x29);
+	ILI9881_COMMAND(0x29); // Display On
 	msleep(40);
 }
 
-// Optional: Add ILI9881D-specific initialization here
-static void ili9881d_init(struct mipi_dsi_device *dsi)
+// Optional: Add ILI9881D02-specific initialization here
+static void ili9881d02_init(struct mipi_dsi_device *dsi)
 {
-	
+	pr_info("Initializing ILI9881D02 display...\n");
+	// Page 3
+	ILI9881_PAGE(0x03);
+	ILI9881_COMMAND(0x01, 0x00);
+	ILI9881_COMMAND(0x02, 0x00);
+	ILI9881_COMMAND(0x03, 0x73);
+	ILI9881_COMMAND(0x04, 0x00);
+	ILI9881_COMMAND(0x05, 0x00);
+	ILI9881_COMMAND(0x06, 0x0A);
+	ILI9881_COMMAND(0x07, 0x00);
+	ILI9881_COMMAND(0x08, 0x00);
+	ILI9881_COMMAND(0x09, 0x01);
+	ILI9881_COMMAND(0x0a, 0x00);
+	ILI9881_COMMAND(0x0b, 0x00);
+	ILI9881_COMMAND(0x0c, 0x01);
+	ILI9881_COMMAND(0x0d, 0x00);
+	ILI9881_COMMAND(0x0e, 0x00);
+	ILI9881_COMMAND(0x0f, 0x1D);
+	ILI9881_COMMAND(0x10, 0x1D);
+	ILI9881_COMMAND(0x11, 0x00);
+	ILI9881_COMMAND(0x12, 0x00);
+	ILI9881_COMMAND(0x13, 0x00);
+	ILI9881_COMMAND(0x14, 0x00);
+	ILI9881_COMMAND(0x15, 0x00);
+	ILI9881_COMMAND(0x16, 0x00);
+	ILI9881_COMMAND(0x17, 0x00);
+	ILI9881_COMMAND(0x18, 0x00);
+	ILI9881_COMMAND(0x19, 0x00);
+	ILI9881_COMMAND(0x1a, 0x00);
+	ILI9881_COMMAND(0x1b, 0x00);
+	ILI9881_COMMAND(0x1c, 0x00);
+	ILI9881_COMMAND(0x1d, 0x00);
+	ILI9881_COMMAND(0x1e, 0x40);
+	ILI9881_COMMAND(0x1f, 0x80);
+	ILI9881_COMMAND(0x20, 0x06);
+	ILI9881_COMMAND(0x21, 0x02);
+	ILI9881_COMMAND(0x22, 0x00);
+	ILI9881_COMMAND(0x23, 0x00);
+	ILI9881_COMMAND(0x24, 0x00);
+	ILI9881_COMMAND(0x25, 0x00);
+	ILI9881_COMMAND(0x26, 0x00);
+	ILI9881_COMMAND(0x27, 0x00);
+	ILI9881_COMMAND(0x28, 0x33);
+	ILI9881_COMMAND(0x29, 0x03);
+	ILI9881_COMMAND(0x2a, 0x00);
+	ILI9881_COMMAND(0x2b, 0x00);
+	ILI9881_COMMAND(0x2c, 0x00);
+	ILI9881_COMMAND(0x2d, 0x00);
+	ILI9881_COMMAND(0x2e, 0x00);
+	ILI9881_COMMAND(0x2f, 0x00);
+	ILI9881_COMMAND(0x30, 0x00);
+	ILI9881_COMMAND(0x31, 0x00);
+	ILI9881_COMMAND(0x32, 0x00);
+	ILI9881_COMMAND(0x33, 0x00);
+	ILI9881_COMMAND(0x34, 0x04);
+	ILI9881_COMMAND(0x35, 0x00);
+	ILI9881_COMMAND(0x36, 0x00);
+	ILI9881_COMMAND(0x37, 0x00);
+	ILI9881_COMMAND(0x38, 0x3C);
+	ILI9881_COMMAND(0x39, 0x35);
+	ILI9881_COMMAND(0x3A, 0x01);
+	ILI9881_COMMAND(0x3B, 0x40);
+	ILI9881_COMMAND(0x3C, 0x00);
+	ILI9881_COMMAND(0x3D, 0x01);
+	ILI9881_COMMAND(0x3E, 0x00);
+	ILI9881_COMMAND(0x3F, 0x00);
+	ILI9881_COMMAND(0x40, 0x00);
+	ILI9881_COMMAND(0x41, 0x88);
+	ILI9881_COMMAND(0x42, 0x00);
+	ILI9881_COMMAND(0x43, 0x00);
+	ILI9881_COMMAND(0x44, 0x1F);
+	ILI9881_COMMAND(0x50, 0x01);
+	ILI9881_COMMAND(0x51, 0x23);
+	ILI9881_COMMAND(0x52, 0x45);
+	ILI9881_COMMAND(0x53, 0x67);
+	ILI9881_COMMAND(0x54, 0x89);
+	ILI9881_COMMAND(0x55, 0xab);
+	ILI9881_COMMAND(0x56, 0x01);
+	ILI9881_COMMAND(0x57, 0x23);
+	ILI9881_COMMAND(0x58, 0x45);
+	ILI9881_COMMAND(0x59, 0x67);
+	ILI9881_COMMAND(0x5a, 0x89);
+	ILI9881_COMMAND(0x5b, 0xab);
+	ILI9881_COMMAND(0x5c, 0xcd);
+	ILI9881_COMMAND(0x5d, 0xef);
+	ILI9881_COMMAND(0x5e, 0x11);
+	ILI9881_COMMAND(0x5f, 0x01);
+	ILI9881_COMMAND(0x60, 0x00);
+	ILI9881_COMMAND(0x61, 0x15);
+	ILI9881_COMMAND(0x62, 0x14);
+	ILI9881_COMMAND(0x63, 0x0E);
+	ILI9881_COMMAND(0x64, 0x0F);
+	ILI9881_COMMAND(0x65, 0x0C);
+	ILI9881_COMMAND(0x66, 0x0D);
+	ILI9881_COMMAND(0x67, 0x06);
+	ILI9881_COMMAND(0x68, 0x02);
+	ILI9881_COMMAND(0x69, 0x07);
+	ILI9881_COMMAND(0x6a, 0x02);
+	ILI9881_COMMAND(0x6b, 0x02);
+	ILI9881_COMMAND(0x6c, 0x02);
+	ILI9881_COMMAND(0x6d, 0x02);
+	ILI9881_COMMAND(0x6e, 0x02);
+	ILI9881_COMMAND(0x6f, 0x02);
+	ILI9881_COMMAND(0x70, 0x02);
+	ILI9881_COMMAND(0x71, 0x02);
+	ILI9881_COMMAND(0x72, 0x02);
+	ILI9881_COMMAND(0x73, 0x02);
+	ILI9881_COMMAND(0x74, 0x02);
+	ILI9881_COMMAND(0x75, 0x01);
+	ILI9881_COMMAND(0x76, 0x00);
+
+	// Page 4
+	ILI9881_PAGE(0x04);
+	ILI9881_COMMAND(0x70, 0x00);
+	ILI9881_COMMAND(0x71, 0x00);
+	ILI9881_COMMAND(0x82, 0x0F); //VGH_MOD clamp level=15v
+	ILI9881_COMMAND(0x84, 0x0F); //VGH clamp level 15V
+	ILI9881_COMMAND(0x85, 0x0D); //VGL clamp level (-10V)
+	ILI9881_COMMAND(0x32, 0xAC);
+	ILI9881_COMMAND(0x8C, 0x80);
+	ILI9881_COMMAND(0x3C, 0xF5);
+	ILI9881_COMMAND(0xB5, 0x07); //GAMMA OP
+	ILI9881_COMMAND(0x31, 0x45); //SOURCE OP
+	ILI9881_COMMAND(0x3A, 0x24); //PS_EN OFF
+	ILI9881_COMMAND(0x88, 0x33); //LVD
+
+	// Page 1
+	ILI9881_PAGE(0x01);
+	ILI9881_COMMAND(0x22, 0x09); //BGR SS GS
+	ILI9881_COMMAND(0x31, 0x00); //column inversion
+	ILI9881_COMMAND(0x53, 0x8A); //VCOM1
+	ILI9881_COMMAND(0x55, 0xA2); //VCOM2
+	ILI9881_COMMAND(0x50, 0x81); //VREG1OUT=5V
+	ILI9881_COMMAND(0x51, 0x85); //VREG2OUT=-5V
+	ILI9881_COMMAND(0x62, 0x0D); //EQT Time setting
+
+	// Page 1 (Gamma Settings - Positive)
+	ILI9881_COMMAND(0xA0, 0x00);
+	ILI9881_COMMAND(0xA1, 0x1A);
+	ILI9881_COMMAND(0xA2, 0x28);
+	ILI9881_COMMAND(0xA3, 0x13);
+	ILI9881_COMMAND(0xA4, 0x16);
+	ILI9881_COMMAND(0xA5, 0x29);
+	ILI9881_COMMAND(0xA6, 0x1D);
+	ILI9881_COMMAND(0xA7, 0x1E);
+	ILI9881_COMMAND(0xA8, 0x84);
+	ILI9881_COMMAND(0xA9, 0x1C);
+	ILI9881_COMMAND(0xAA, 0x28);
+	ILI9881_COMMAND(0xAB, 0x75);
+	ILI9881_COMMAND(0xAC, 0x1A);
+	ILI9881_COMMAND(0xAD, 0x19);
+	ILI9881_COMMAND(0xAE, 0x4D);
+	ILI9881_COMMAND(0xAF, 0x22);
+	ILI9881_COMMAND(0xB0, 0x28);
+	ILI9881_COMMAND(0xB1, 0x54);
+	ILI9881_COMMAND(0xB2, 0x66);
+	ILI9881_COMMAND(0xB3, 0x39);
+
+	// Page 1 (Gamma Settings - Negative)
+	ILI9881_COMMAND(0xC0, 0x00);
+	ILI9881_COMMAND(0xC1, 0x1A);
+	ILI9881_COMMAND(0xC2, 0x28);
+	ILI9881_COMMAND(0xC3, 0x13);
+	ILI9881_COMMAND(0xC4, 0x16);
+	ILI9881_COMMAND(0xC5, 0x29);
+	ILI9881_COMMAND(0xC6, 0x1D);
+	ILI9881_COMMAND(0xC7, 0x1E);
+	ILI9881_COMMAND(0xC8, 0x84);
+	ILI9881_COMMAND(0xC9, 0x1C);
+	ILI9881_COMMAND(0xCA, 0x28);
+	ILI9881_COMMAND(0xCB, 0x75);
+	ILI9881_COMMAND(0xCC, 0x1A);
+	ILI9881_COMMAND(0xCD, 0x19);
+	ILI9881_COMMAND(0xCE, 0x4D);
+	ILI9881_COMMAND(0xCF, 0x22);
+	ILI9881_COMMAND(0xD0, 0x28);
+	ILI9881_COMMAND(0xD1, 0x54);
+	ILI9881_COMMAND(0xD2, 0x66);
+	ILI9881_COMMAND(0xD3, 0x39);
+
+	// Page 0
+	ILI9881_PAGE(0x00);
+	ILI9881_COMMAND(0x35, 0x00); //TE ON
+
+	ILI9881_COMMAND(0x11); // Sleep Out
+	msleep(120);
+	ILI9881_COMMAND(0x29); // Display On
+	msleep(40);
+}
+
+// Optional: Add ILI9881D03-specific initialization here
+static void ili9881d03_init(struct mipi_dsi_device *dsi)
+{
+	pr_info("Initializing ILI9881D03 display...\n");
+
 	ILI9881_PAGE(0x01);           
 	ILI9881_COMMAND(0x91,0x00);
 	ILI9881_COMMAND(0x92,0x00);
@@ -331,8 +533,6 @@ static int ili9881x_prepare(struct drm_panel *panel)
 
 	if (!dsi) return -ENODEV;
 
-	pr_info("Prepare Panel\n");
-
 	// Detect panel type by reading ID
 	ret = ili9881_read_id(dsi);
 	if (ret < 0) {
@@ -341,13 +541,14 @@ static int ili9881x_prepare(struct drm_panel *panel)
 	}
 
 	switch (panel_type) {
-	case ILI9881D:
-		pr_info("Initializing ILI9881D panel\n");
-		ili9881d_init(dsi);
+	case ILI9881D02:
+		ili9881d02_init(dsi);
 		break;
-	case ILI9881C:
-		pr_info("Initializing ILI9881C panel\n");
-		ili9881c_init(dsi);
+	case ILI9881D03:
+		ili9881d03_init(dsi);
+		break;
+	case ILI9881C05:
+		ili9881c05_init(dsi);
 		break;
 	default:
 		pr_warn("Unknown ILI9881 panel type\n");
