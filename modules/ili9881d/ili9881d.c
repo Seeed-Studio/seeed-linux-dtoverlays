@@ -24,6 +24,7 @@
 
 #include <video/mipi_display.h>
 #include <linux/version.h>
+#include <linux/backlight.h>
 
 
 enum ili9881d_op {
