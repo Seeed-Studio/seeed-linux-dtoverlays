@@ -302,13 +302,19 @@ function install_overlay_reComputer {
   if [ "$device" = "reComputer-R100x" ]; then
     set_config_dtoverlay "vc4-kms-dsi-7inch"
   fi
-  make overlays/rpi/$device-overlay.dtbo || exit 1;
-  cp -fv overlays/rpi/$device-overlay.dtbo $OVERLAY_DIR/$device.dtbo || exit 1;
   if [ "$device" = "reComputer-R2x" ]; then
+    make overlays/rpi/reComputer-R2x-base-overlay.dtbo || exit 1;
+    cp -fv overlays/rpi/reComputer-R2x-base-overlay.dtbo $OVERLAY_DIR/reComputer-R2x-base.dtbo || exit 1;
+
     make overlays/rpi/reComputer-R21-overlay.dtbo || exit 1;
     cp -fv overlays/rpi/reComputer-R21-overlay.dtbo $OVERLAY_DIR/reComputer-R21.dtbo || exit 1;
+
+    set_config_dtoverlay "reComputer-R2x-base"
+  else
+    make overlays/rpi/$device-overlay.dtbo || exit 1;
+    cp -fv overlays/rpi/$device-overlay.dtbo $OVERLAY_DIR/$device.dtbo || exit 1;
+    set_config_dtoverlay "$device"
   fi
-  set_config_dtoverlay "$device"
 }
 
 function uninstall_overlay_reComputer {
