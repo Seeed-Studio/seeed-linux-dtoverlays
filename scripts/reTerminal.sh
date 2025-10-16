@@ -299,6 +299,7 @@ function install_overlay_reComputer {
 
   set_config_dtoverlay "dwc2,dr_mode=host"
   set_config_dtoverlay "vc4-kms-v3d"
+  set_config_dtoverlay "imx708,cam0"
   if [ "$device" = "reComputer-R100x" ]; then
     set_config_dtoverlay "vc4-kms-dsi-7inch"
   fi
@@ -612,6 +613,9 @@ function install {
        [ "$device" = "reComputer-R2x" ]; then
     install_modules rtc-pcf8563w
     install_overlay_reComputer
+  elif [ "$device" = "reachy_mini" ]; then
+    install_modules bmi088
+    install_overlay_reComputer
   fi
 
   # display
@@ -655,6 +659,9 @@ function uninstall {
        [ "$device" = "reComputer-AI-box" ] || [ "$device" != "reComputer-AI-box-cm5" ] || \
        [ "$device" = "reComputer-R2x" ]; then
     uninstall_modules rtc-pcf8563w
+    uninstall_overlay_reComputer
+  elif [ "$device" = "reachy_mini" ]; then
+    uninstall_modules bmi088
     uninstall_overlay_reComputer
   fi
 }
@@ -703,8 +710,8 @@ done
 if [ "$device" != "reTerminal" ] && [ "$device" != "reTerminal-DM" ] && \
     [ "$device" != "reComputer-R100x" ] && [ "$device" != "reComputer-R110x" ] && \
     [ "$device" != "reComputer-AI-box" ] && [ "$device" != "reComputer-AI-box-cm5" ] && \
-    [ "$device" != "reComputer-R2x" ]; then
-  echo "Invalid device type. the type should be reTerminal or reTerminal-DM reComputer-R100x reComputer-R110x reComputer-R2x reComputer-AI-box" 1>&2
+    [ "$device" != "reComputer-R2x" ] && [ "$device" != "reachy_mini" ]; then
+  echo "Invalid device type. the type should be reTerminal or reTerminal-DM reComputer-R100x reComputer-R110x reComputer-R2x reComputer-AI-box reachy_mini" 1>&2
   exit 1;
 fi
 

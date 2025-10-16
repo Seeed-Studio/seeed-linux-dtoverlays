@@ -1,0 +1,133 @@
+/*
+* Copyright (C) 2021 Seeed Studio
+* ruiqian <ruiqian.tang@seeed.cc>
+*
+* MIT License
+*
+*/
+/dts-v1/;
+/plugin/;
+
+#include "dt-bindings/gpio/gpio.h"
+
+/ {
+	compatible = "brcm,bcm2835", "brcm,bcm2708", "brcm,bcm2709", "brcm,bcm2711";
+	
+	fragment@0 {
+		target-path="/";
+		__overlay__ {
+			hardware = "Reachy Mini";
+		};
+	};
+	
+	fragment@1 {
+		target = <&i2c0if>;
+		i2cbus: __overlay__ {
+			status = "okay";
+		};
+	};
+	
+	fragment@2 {
+		target = <&i2c0mux>;
+		__overlay__ {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			status = "okay";
+			i2c_ch1: i2c@10 {
+				reg = <0x1>;
+				#address-cells = <1>;
+				#size-cells = <0>;
+				status = "okay";
+				
+				emc2301: emc2301@2f {
+					compatible = "microchip,emc2301";
+					reg = <0x2f>;
+					#cooling-cells = <2>;
+				};
+			};
+		};
+	};
+	
+	fragment@3 {
+		target = <&i2c1>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+	
+	fragment@4 {
+		target = <&i2c4>;
+		__overlay__ {
+			status = "okay";
+			clock-frequency = <400000>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			
+			bmi088-accel@18 {
+				compatible = "bosch,bmi088-accel";
+				reg = <0x18>;
+			};
+			
+			bmi088-gyro@69 {
+				compatible = "bosch,bmi088_gyro";
+				reg = <0x69>;
+			};
+		};
+	};
+	
+	fragment@5 {
+		target = <&uart3>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+	
+	fragment@6 {
+		target = <&cpu_thermal>;
+		__overlay__ {
+			polling-delay = <2000>; /* milliseconds */
+		};
+	};
+	
+	fragment@7 {
+		target = <&thermal_trips>;
+		__overlay__ {
+			fanmid0: fanmid0 {
+				temperature = <50000>;
+				hysteresis = <2000>;
+				type = "active";
+			};
+			fanmax0: fanmax0 {
+				temperature = <75000>;
+				hysteresis = <2000>;
+				type = "active";
+			};
+		};
+	};
+	
+	fragment@8 {
+		target = <&cooling_maps>;
+		__overlay__ {
+			map0: map0 {
+				trip = <&fanmid0>;
+				cooling-device = <&emc2301 2 6>;
+			};
+			map1: map1 {
+				trip = <&fanmax0>;
+				cooling-device = <&emc2301 7 (~0)>;
+			};
+		};
+	};
+	
+	// fragment@9 {
+	// 	target = <&gpio>;
+	// 	__overlay__ {
+	// 		gpio7_audio_rst: gpio7_audio_rst {
+	// 			gpio-hog;
+	// 			gpios = <7 0>;          /* BCM GPIO7, active high */
+	// 			output-low;
+	// 			line-name = "audio-rst-low";
+	// 		};
+	// 	};
+	// };
+};
