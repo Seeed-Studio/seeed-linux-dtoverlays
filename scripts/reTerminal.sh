@@ -613,7 +613,7 @@ function install {
        [ "$device" = "reComputer-R2x" ]; then
     install_modules rtc-pcf8563w
     install_overlay_reComputer
-  elif [ "$device" = "reachy_mini" ]; then
+  elif [[ $device == rpi-cm4-* ]]; then
     install_modules bmi088
     install_overlay_reComputer
   fi
@@ -656,11 +656,11 @@ function uninstall {
     uninstall_overlay_DM
     unblacklist_driver cdc_acm
   elif [ "$device" = "reComputer-R100x" ] || [ "$device" = "reComputer-R110x" ] || \
-       [ "$device" = "reComputer-AI-box" ] || [ "$device" != "reComputer-AI-box-cm5" ] || \
+    [ "$device" = "reComputer-AI-box" ] || [ "$device" = "reComputer-AI-box-cm5" ] || \
        [ "$device" = "reComputer-R2x" ]; then
     uninstall_modules rtc-pcf8563w
     uninstall_overlay_reComputer
-  elif [ "$device" = "reachy_mini" ]; then
+  elif [[ $device == rpi-cm4-* ]]; then
     uninstall_modules bmi088
     uninstall_overlay_reComputer
   fi
@@ -710,8 +710,9 @@ done
 if [ "$device" != "reTerminal" ] && [ "$device" != "reTerminal-DM" ] && \
     [ "$device" != "reComputer-R100x" ] && [ "$device" != "reComputer-R110x" ] && \
     [ "$device" != "reComputer-AI-box" ] && [ "$device" != "reComputer-AI-box-cm5" ] && \
-    [ "$device" != "reComputer-R2x" ] && [ "$device" != "reachy_mini" ]; then
-  echo "Invalid device type. the type should be reTerminal or reTerminal-DM reComputer-R100x reComputer-R110x reComputer-R2x reComputer-AI-box reachy_mini" 1>&2
+    [ "$device" != "reComputer-R2x" ] && \
+    ! [[ $device == rpi-cm4-* ]]; then
+  echo "Invalid device type. valid: reTerminal reTerminal-DM reComputer-R100x reComputer-R110x reComputer-R2x reComputer-AI-box reComputer-AI-box-cm5 rpi-cm4-*" 1>&2
   exit 1;
 fi
 

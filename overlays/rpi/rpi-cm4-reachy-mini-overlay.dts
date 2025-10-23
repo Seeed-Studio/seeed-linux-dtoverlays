@@ -30,32 +30,33 @@
 	fragment@2 {
 		target = <&i2c0mux>;
 		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@3 {
+		target = <&i2c_csi_dsi>; // The TP and CSI shared with the same I2C0 bus.
+		__overlay__ {
 			#address-cells = <1>;
 			#size-cells = <0>;
 			status = "okay";
-			i2c_ch1: i2c@10 {
-				reg = <0x1>;
-				#address-cells = <1>;
-				#size-cells = <0>;
-				status = "okay";
-				
-				emc2301: emc2301@2f {
-					compatible = "microchip,emc2301";
-					reg = <0x2f>;
-					#cooling-cells = <2>;
-				};
+
+			emc2301: emc2301@2f {
+				compatible = "microchip,emc2301";
+				reg = <0x2f>;
+				#cooling-cells = <2>;
 			};
 		};
 	};
-	
-	fragment@3 {
+
+	fragment@4 {
 		target = <&i2c1>;
 		__overlay__ {
 			status = "okay";
 		};
 	};
 	
-	fragment@4 {
+	fragment@5 {
 		target = <&i2c4>;
 		__overlay__ {
 			status = "okay";
@@ -75,21 +76,21 @@
 		};
 	};
 	
-	fragment@5 {
+	fragment@6 {
 		target = <&uart3>;
 		__overlay__ {
 			status = "okay";
 		};
 	};
 	
-	fragment@6 {
+	fragment@7 {
 		target = <&cpu_thermal>;
 		__overlay__ {
 			polling-delay = <2000>; /* milliseconds */
 		};
 	};
 	
-	fragment@7 {
+	fragment@8 {
 		target = <&thermal_trips>;
 		__overlay__ {
 			fanmid0: fanmid0 {
@@ -105,7 +106,7 @@
 		};
 	};
 	
-	fragment@8 {
+	fragment@9 {
 		target = <&cooling_maps>;
 		__overlay__ {
 			map0: map0 {
@@ -119,7 +120,7 @@
 		};
 	};
 	
-	// fragment@9 {
+	// fragment@10 {
 	// 	target = <&gpio>;
 	// 	__overlay__ {
 	// 		gpio7_audio_rst: gpio7_audio_rst {
