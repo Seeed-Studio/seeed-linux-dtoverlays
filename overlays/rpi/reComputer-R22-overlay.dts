@@ -502,8 +502,8 @@
 			simple-audio-card,routing =
 			"Headphone Jack", "HPLOUT",
 			"Headphone Jack", "HPROUT",
-			"LINE1L",         "Line In",
-			"LINE1R",         "Line In";
+			"MIC2L",         "Line In",
+			"MIC2R",         "Line In";
 			
 			simple-audio-card,bitclock-master = <&sound_master>;
 			simple-audio-card,frame-master = <&sound_master>;
