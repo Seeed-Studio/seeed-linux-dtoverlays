@@ -2,6 +2,8 @@
 /plugin/;
 
 #include "dt-bindings/gpio/gpio.h"
+#include <dt-bindings/input/input.h>
+#include <dt-bindings/interrupt-controller/irq.h>
 
 / {
 	compatible = "brcm,bcm2712";
@@ -73,7 +75,12 @@
 				
 				gpio-controller;
 				#gpio-cells = <2>;
-				
+				interrupt-controller;
+				#interrupt-cells = <2>;
+
+				interrupt-parent = <&gpio>;
+				interrupts = <26 IRQ_TYPE_LEVEL_LOW>;
+
 				gpio-line-names =
 				"PSE_PG",
 				"PSE_INTB",
@@ -509,6 +516,21 @@
 				sound-dai = <&tlv320aic3104>;
 				clocks = <&tlv320aic3104_mclk>;
 				clock-names = "mclk";
+			};
+		};
+	};
+
+	fragment@17 {
+		target-path="/";
+		__overlay__ {
+			gpio_pse_int: gpio-pse-int {
+				compatible = "gpio-keys";
+				status = "okay";
+				pse_intb: pse-intb {
+					label = "pse-intb";
+					linux,code = <116>;
+					gpios = <&pca9535_1 1 GPIO_ACTIVE_LOW>;
+				};
 			};
 		};
 	};
