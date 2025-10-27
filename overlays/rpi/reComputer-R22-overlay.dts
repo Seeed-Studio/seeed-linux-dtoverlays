@@ -1,7 +1,7 @@
 /dts-v1/;
 /plugin/;
 
-/* #include "dt-bindings/gpio/gpio.h" */
+#include "dt-bindings/gpio/gpio.h"
 
 / {
 	compatible = "brcm,bcm2712";
@@ -27,7 +27,7 @@
 				#sound-dai-cells = <0>;
 				compatible = "ti,tlv320aic3104";
 				reg = <0x18>;
-				gpio-reset = <&pca9535_1 14 0>;
+				gpio-reset = <&pca9535_1 14 GPIO_ACTIVE_LOW>;
 				ai3x-micbias-vg = <2>;// set MICBIAS to 2.5v
 			};
 			
