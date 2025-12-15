@@ -31,6 +31,7 @@ BLACKLIST_PATH=/etc/modprobe.d/raspi-blacklist.conf
 DISTRO_ID=$(lsb_release -is)
 DISTRO_CODE=$(lsb_release -cs)
 BOOKWORM_NUM=12
+TRIXIE_NUM=13
 DEBIAN_VER=`cat /etc/debian_version`
 DEBIAN_NUM=$(echo "$DEBIAN_VER" | awk -F'.' '{print $1}')
 
@@ -91,7 +92,7 @@ function check_kernel_headers() {
         buster|bullseye)
           apt-get -y --force-yes install raspberrypi-kernel-headers
           ;;
-        bookworm)
+        bookworm|trixie)
           apt-get -y --force-yes linux-headers-rpi-${VER_RUN##*-}
           ;;
       esac
@@ -139,7 +140,7 @@ function install_kernel() {
           buster|bullseye)
             apt-get -y --force-yes install raspberrypi-kernel-headers raspberrypi-kernel
             ;;
-          bookworm)
+          bookworm|trixie)
             apt-get -y --force-yes install linux-image-rpi-${ker_ver##*-} linux-headers-rpi-${ker_ver##*-}
             ;;
         esac
@@ -543,7 +544,7 @@ function setup_display {
             fi
           done
           ;;
-        bookworm)
+        bookworm|trixie)
           for file in /home/*
           do
             if [ -e "$file/.config/wayfire.ini" ]; then 
@@ -590,7 +591,7 @@ function setup_tp {
   case $DISTRO_ID in
     Raspbian|Debian)
       case $DISTRO_CODE in
-        bookworm)
+        bookworm|trixie)
           if [ "$device" = "reTerminal-DM" ]; then
             cp -v $RES_PATH/98-touchscreen-cal.rules /etc/udev/rules.d/
           fi
@@ -604,7 +605,7 @@ function install {
   if [ "$device" = "reTerminal" ]; then
     install_modules mipi_dsi ltr30x lis3lv02d bq24179_charger
     install_overlay reTerminal reTerminal-bridge
-    if [ $DEBIAN_NUM -eq $BOOKWORM_NUM ]; then
+    if [ "$DEBIAN_NUM" -eq "$BOOKWORM_NUM" ] || [ "$DEBIAN_NUM" -eq "$TRIXIE_NUM" ]; then
       setup_overlay reTerminal tp_rotate=1
     fi
   elif [ "$device" = "reTerminal-DM" ]; then
