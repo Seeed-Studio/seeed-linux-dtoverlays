@@ -303,6 +303,9 @@ function install_overlay_reComputer {
   if [ "$device" = "reComputer-R100x" ]; then
     set_config_dtoverlay "vc4-kms-dsi-7inch"
   fi
+  if [ "$device" = "reComputer-R100x" ] || [ "$device" = "reComputer-R110x" ]; then
+      set_config_dtparam "pcie_tperst_clk_ms" "100"
+  fi
   if [ "$device" = "reComputer-R2x" ]; then
     make overlays/rpi/reComputer-R2x-base-overlay.dtbo || exit 1;
     cp -fv overlays/rpi/reComputer-R2x-base-overlay.dtbo $OVERLAY_DIR/reComputer-R2x-base.dtbo || exit 1;
