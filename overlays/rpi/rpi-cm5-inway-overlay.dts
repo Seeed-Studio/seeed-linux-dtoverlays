@@ -213,6 +213,13 @@
 	};
 	
 	fragment@10 {
+		target = <&i2c6>;
+		__overlay__ {
+			status = "disabled";
+		};
+	};
+	
+	fragment@10a {
 		target = <&spidev0>;
 		__overlay__ {
 			status = "disabled";
