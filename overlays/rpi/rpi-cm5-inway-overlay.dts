@@ -180,6 +180,7 @@
 		target = <&rp1_uart4>;
 		__overlay__ {
 			label = "RS232";
+			pinctrl-0 = <&uart4_pins>;
 			status = "okay";
 		};
 	};
