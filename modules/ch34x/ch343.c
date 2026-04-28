@@ -1,9 +1,11 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
- * USB serial driver for USB to UART(s) chip ch342/ch343/ch344/ch347/ch9101/ch9102/ch9103/ch9104, etc.
+ * USB serial driver for USB to UART(s) chip ch342/ch343/ch344/ch346/ch347/
+ * ch339/ch9101/ch9102/ch9103/ch9104/ch9143/ch9111/ch9114, etc.
  *
- * Copyright (C) 2023 Nanjing Qinheng Microelectronics Co., Ltd.
- * Web: http://wch.cn
- * Author: WCH <tech@wch.cn>
+ * Copyright (C) 2025 Nanjing Qinheng Microelectronics Co., Ltd.
+ * Web:		http://wch.cn
+ * Author:	WCH <tech@wch.cn>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -11,7 +13,7 @@
  * (at your option) any later version.
  *
  * System required:
- * Kernel version beyond 3.4.x
+ * Kernel version beyond 3.2.x
  * Update Log:
  * V1.0 - initial version
  * V1.1 - add support of chip ch344, ch9101 and ch9103
@@ -19,7 +21,19 @@
  * V1.3 - add support of chip ch347
  * V1.4 - add support of chip ch9104
  * V1.5 - add gpio character device
- *      - add supports for kernel version beyond 5.14.x
+ *      - add support for kernel version beyond 5.14.x
+ * V1.6 - add support for non-standard baud rates above 2Mbps of ch347 etc.
+ *      - add support for kernel version beyond 6.3.x
+ *      - fix bugs when usb device disconnect
+ * V1.7 - add support for kernel version 3.3.x~3.4.x
+ *      - add support of chip ch9143
+ * V1.8 - add support for kernel version beyond 6.5.x
+ * V1.9 - add support of chip ch9111, ch9114 and ch346
+ * V2.0 - set default termios baudrate to B115200
+ *      - fix issue of automatically sending data upon opening tty
+ *        for the first time on some systems
+ * V2.1 - set low_latency flag in tty activate routine, speed up of serial port data notification
+ *        to the application layer in low-version kernels
  */
 
 #define DEBUG
@@ -35,6 +49,7 @@
 #include <linux/list.h>
 #include <linux/module.h>
 #include <linux/mutex.h>
+#include <linux/seq_file.h>
 #include <linux/serial.h>
 #include <linux/slab.h>
 #include <linux/tty.h>
@@ -45,7 +60,6 @@
 #include <linux/usb/cdc.h>
 #include <linux/version.h>
 #include <asm/byteorder.h>
-
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 12, 0))
 #include <linux/unaligned.h>
 #else
@@ -59,32 +73,52 @@
 #include "ch343.h"
 
 #define DRIVER_AUTHOR "WCH"
-#define DRIVER_DESC   "USB serial driver for ch342/ch343/ch344/ch347/ch9101/ch9102/ch9103/ch9104, etc."
-#define VERSION_DESC  "V1.5 On 2023.03"
+#define DRIVER_DESC                                                  \
+	"USB serial driver for ch342/ch343/ch344/ch346/ch347/ch339/" \
+	"ch9101/ch9102/ch9103/ch9104/ch9143, etc."
+#define VERSION_DESC "V2.1 On 2026.02"
 
-#define IOCTL_MAGIC	      'W'
+#define IOCTL_MAGIC 'W'
+
 #define IOCTL_CMD_GETCHIPTYPE _IOR(IOCTL_MAGIC, 0x84, u16)
-#define IOCTL_CMD_CTRLIN      _IOWR(IOCTL_MAGIC, 0x90, u16)
-#define IOCTL_CMD_CTRLOUT     _IOW(IOCTL_MAGIC, 0x91, u16)
+#define IOCTL_CMD_GETUARTINDEX _IOR(IOCTL_MAGIC, 0x85, u16)
+#define IOCTL_CMD_CTRLIN _IOWR(IOCTL_MAGIC, 0x90, u16)
+#define IOCTL_CMD_CTRLOUT _IOW(IOCTL_MAGIC, 0x91, u16)
+
+#ifndef USB_DEVICE_INTERFACE_NUMBER
+#define USB_DEVICE_INTERFACE_NUMBER(vend, prod, num)   \
+	.match_flags = USB_DEVICE_ID_MATCH_DEVICE |    \
+		       USB_DEVICE_ID_MATCH_INT_NUMBER, \
+	.idVendor = (vend), .idProduct = (prod),       \
+	.bInterfaceNumber = (num)
+#endif
 
 static struct usb_driver ch343_driver;
 static struct tty_driver *ch343_tty_driver;
-static struct usb_interface *g_intf;
 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 5, 0))
 static DEFINE_IDR(ch343_minors);
+#else
+static struct ch343 *ch343_table[CH343_TTY_MINORS];
+#endif
+
 static DEFINE_MUTEX(ch343_minors_lock);
 
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0))
-static void ch343_tty_set_termios(struct tty_struct *tty, const struct ktermios *termios_old);
+static void ch343_tty_set_termios(struct tty_struct *tty,
+				  const struct ktermios *termios_old);
 #else
-static void ch343_tty_set_termios(struct tty_struct *tty, struct ktermios *termios_old);
+static void ch343_tty_set_termios(struct tty_struct *tty,
+				  struct ktermios *termios_old);
 #endif
 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 5, 0))
+
 /*
- * Look up an ch343 structure by minor. If found and not disconnected, increment
- * its refcount and return it with its mutex held.
+ * Look up an ch343 structure by minor. If found and not disconnected,
+ * increment its refcount and return it with its mutex held.
  */
-static struct ch343 *ch343_get_by_minor(unsigned int minor)
+static struct ch343 *ch343_get_by_index(unsigned int minor)
 {
 	struct ch343 *ch343;
 
@@ -109,7 +143,8 @@ static int ch343_alloc_minor(struct ch343 *ch343)
 	int minor;
 
 	mutex_lock(&ch343_minors_lock);
-	minor = idr_alloc(&ch343_minors, ch343, 0, CH343_TTY_MINORS, GFP_KERNEL);
+	minor = idr_alloc(&ch343_minors, ch343, 0, CH343_TTY_MINORS,
+			  GFP_KERNEL);
 	mutex_unlock(&ch343_minors_lock);
 
 	return minor;
@@ -123,38 +158,100 @@ static void ch343_release_minor(struct ch343 *ch343)
 	mutex_unlock(&ch343_minors_lock);
 }
 
-static int ch343_control_out(struct ch343 *ch343, u8 request, u16 value, u16 index)
+#else
+
+/*
+ * Look up an CH343 structure by index. If found and not disconnected,
+ * increment its refcount and return it with its mutex held.
+ */
+static struct ch343 *ch343_get_by_index(unsigned int index)
+{
+	struct ch343 *ch343;
+
+	mutex_lock(&ch343_minors_lock);
+	ch343 = ch343_table[index];
+	if (ch343) {
+		mutex_lock(&ch343->mutex);
+		if (ch343->disconnected) {
+			mutex_unlock(&ch343->mutex);
+			ch343 = NULL;
+		} else {
+			tty_port_get(&ch343->port);
+			mutex_unlock(&ch343->mutex);
+		}
+	}
+	mutex_unlock(&ch343_minors_lock);
+
+	return ch343;
+}
+
+/*
+ * Try to find an available minor number and if found,
+ * associate it with 'ch343'.
+ */
+static int ch343_alloc_minor(struct ch343 *ch343)
+{
+	int minor;
+
+	mutex_lock(&ch343_minors_lock);
+	for (minor = 0; minor < ch343_TTY_MINORS; minor++) {
+		if (!ch343_table[minor]) {
+			ch343_table[minor] = ch343;
+			break;
+		}
+	}
+	mutex_unlock(&ch343_minors_lock);
+
+	return minor;
+}
+
+/* Release the minor number associated with 'ch343'. */
+static void ch343_release_minor(struct ch343 *ch343)
+{
+	mutex_lock(&ch343_minors_lock);
+	ch343_table[ch343->minor] = NULL;
+	mutex_unlock(&ch343_minors_lock);
+}
+
+#endif
+
+static int ch343_control_out(struct ch343 *ch343, u8 request, u16 value,
+			     u16 index)
 {
 	int retval;
 
 	retval = usb_autopm_get_interface(ch343->control);
 	if (retval)
 		return retval;
-	retval = usb_control_msg(ch343->dev, usb_sndctrlpipe(ch343->dev, 0), request,
-				 USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_DIR_OUT, value, index, NULL, 0,
-				 DEFAULT_TIMEOUT);
+	retval = usb_control_msg(
+		ch343->dev, usb_sndctrlpipe(ch343->dev, 0), request,
+		USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_DIR_OUT, value,
+		index, NULL, 0, DEFAULT_TIMEOUT);
 	usb_autopm_put_interface(ch343->control);
 
 	return retval;
 }
 
-static int ch343_control_in(struct ch343 *ch343, u8 request, u16 value, u16 index, char *buf, unsigned bufsize)
+static int ch343_control_in(struct ch343 *ch343, u8 request, u16 value,
+			    u16 index, char *buf, unsigned bufsize)
 {
 	int retval;
 
 	retval = usb_autopm_get_interface(ch343->control);
 	if (retval)
 		return retval;
-	retval = usb_control_msg(ch343->dev, usb_rcvctrlpipe(ch343->dev, 0), request,
-				 USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_DIR_IN, value, index, buf, bufsize,
-				 DEFAULT_TIMEOUT);
+	retval = usb_control_msg(
+		ch343->dev, usb_rcvctrlpipe(ch343->dev, 0), request,
+		USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_DIR_IN, value,
+		index, buf, bufsize, DEFAULT_TIMEOUT);
 	usb_autopm_put_interface(ch343->control);
 
 	return retval;
 }
 
-static int ch343_control_msg_out(struct ch343 *ch343, u8 request, u8 requesttype, u16 value, u16 index, void *buf,
-				 unsigned bufsize)
+static int ch343_control_msg_out(struct ch343 *ch343, u8 request,
+				 u8 requesttype, u16 value, u16 index,
+				 void *buf, unsigned bufsize)
 {
 	int retval;
 	char *buffer;
@@ -170,7 +267,9 @@ static int ch343_control_msg_out(struct ch343 *ch343, u8 request, u8 requesttype
 	retval = usb_autopm_get_interface(ch343->control);
 	if (retval)
 		goto out;
-	retval = usb_control_msg(ch343->dev, usb_sndctrlpipe(ch343->dev, 0), request, requesttype, value, index, buf,
+	retval = usb_control_msg(ch343->dev,
+				 usb_sndctrlpipe(ch343->dev, 0), request,
+				 requesttype, value, index, buffer,
 				 bufsize, DEFAULT_TIMEOUT);
 	usb_autopm_put_interface(ch343->control);
 
@@ -179,8 +278,9 @@ out:
 	return retval;
 }
 
-static int ch343_control_msg_in(struct ch343 *ch343, u8 request, u8 requesttype, u16 value, u16 index, void *buf,
-				unsigned bufsize)
+static int ch343_control_msg_in(struct ch343 *ch343, u8 request,
+				u8 requesttype, u16 value, u16 index,
+				void *buf, unsigned bufsize)
 {
 	int retval;
 	char *buffer;
@@ -192,7 +292,9 @@ static int ch343_control_msg_in(struct ch343 *ch343, u8 request, u8 requesttype,
 	retval = usb_autopm_get_interface(ch343->control);
 	if (retval)
 		goto out;
-	retval = usb_control_msg(ch343->dev, usb_rcvctrlpipe(ch343->dev, 0), request, requesttype, value, index, buffer,
+	retval = usb_control_msg(ch343->dev,
+				 usb_rcvctrlpipe(ch343->dev, 0), request,
+				 requesttype, value, index, buffer,
 				 bufsize, DEFAULT_TIMEOUT);
 	if (retval > 0) {
 		if (copy_to_user((char __user *)buf, buffer, retval)) {
@@ -209,83 +311,73 @@ out:
 static inline int ch343_set_control(struct ch343 *ch343, int control)
 {
 	if (ch343->iface <= 1)
-		return ch343_control_out(ch343, CMD_C2 + ch343->iface, ~control, 0x0000);
+		return ch343_control_out(ch343, CMD_C2 + ch343->iface,
+					 ~control, 0x0000);
 	else if (ch343->iface <= 3)
-		return ch343_control_out(ch343, CMD_C2 + 0x10 + (ch343->iface - 2), ~control, 0x0000);
+		return ch343_control_out(
+			ch343, CMD_C2 + 0x10 + (ch343->iface - 2),
+			~control, 0x0000);
 	else
 		return -1;
 }
 
-static inline int ch343_set_line(struct ch343 *ch343, struct usb_cdc_line_coding *line)
+static inline int ch343_set_line(struct ch343 *ch343,
+				 struct usb_cdc_line_coding *line)
 {
 	return 0;
-}
-
-static int ch343_get_status(struct ch343 *ch343)
-{
-	char *buffer;
-	int retval;
-	const unsigned size = 2;
-	unsigned long flags;
-
-	buffer = kmalloc(size, GFP_KERNEL);
-	if (!buffer)
-		return -ENOMEM;
-
-	retval = ch343_control_in(ch343, CMD_R, CMD_C3 + ch343->iface, 0, buffer, size);
-	if (retval != size)
-		goto out;
-
-	spin_lock_irqsave(&ch343->read_lock, flags);
-	ch343->ctrlin = (~(*buffer)) & CH343_CTI_ST;
-	spin_unlock_irqrestore(&ch343->read_lock, flags);
-
-out:
-	kfree(buffer);
-	return retval;
 }
 
 static int ch343_configure(struct ch343 *ch343)
 {
 	char *buffer;
 	int r;
-	const unsigned size = 2;
+	const unsigned size = 8;
 	u8 chiptype;
+	u8 chipver;
 
 	buffer = kmalloc(size, GFP_KERNEL);
 	if (!buffer)
 		return -ENOMEM;
 
 	r = ch343_control_in(ch343, CMD_C6, 0, 0, buffer, size);
-	if (r != size)
+	if (r <= 0)
 		goto out;
 
+	chipver = buffer[0];
 	chiptype = buffer[1];
+	ch343->iosupport = true;
 
 	switch (ch343->idProduct) {
 	case 0x55D2:
-		if (chiptype == 0x48)
-			ch343->chiptype = CHIP_CH342F;
-		else if (chiptype == 0x41)
+		ch343->num_ports = 2;
+		if (chiptype == 0x41)
 			ch343->chiptype = CHIP_CH342K;
+		else
+			ch343->chiptype = CHIP_CH342F;
+		if (chiptype != 0x48 || chipver < 0x45)
+			ch343->iosupport = false;
 		break;
 	case 0x55D3:
-		if (chiptype == 0x08)
-			ch343->chiptype = CHIP_CH343GP;
-		else if (chiptype == 0x02)
+		ch343->num_ports = 1;
+		if (chiptype == 0x02)
 			ch343->chiptype = CHIP_CH343J;
 		else if (chiptype == 0x01)
 			ch343->chiptype = CHIP_CH343K;
 		else if (chiptype == 0x18)
 			ch343->chiptype = CHIP_CH343G_AUTOBAUD;
+		else
+			ch343->chiptype = CHIP_CH343GP;
+		ch343->iosupport = false;
 		break;
 	case 0x55D4:
-		if (chiptype == 0x08)
-			ch343->chiptype = CHIP_CH9102F;
-		else if (chiptype == 0x09)
+		ch343->num_ports = 1;
+		if (chiptype == 0x09)
 			ch343->chiptype = CHIP_CH9102X;
+		else
+			ch343->chiptype = CHIP_CH9102F;
 		break;
 	case 0x55D5:
+		ch343->num_ports = 4;
 		if (chiptype == 0xC0) {
 			if ((buffer[0] & 0xF0) == 0x40)
 				ch343->chiptype = CHIP_CH344L;
@@ -295,32 +387,68 @@ static int ch343_configure(struct ch343 *ch343)
 			ch343->chiptype = CHIP_CH344Q;
 		break;
 	case 0x55D7:
-		if (chiptype == 0x4B)
-			ch343->chiptype = CHIP_CH9103M;
+		ch343->num_ports = 2;
+		ch343->chiptype = CHIP_CH9103M;
 		break;
 	case 0x55D8:
-		if (chiptype == 0x08)
-			ch343->chiptype = CHIP_CH9101UH;
-		else if (chiptype == 0x0A)
+		ch343->num_ports = 1;
+		if (chiptype == 0x0A)
 			ch343->chiptype = CHIP_CH9101RY;
+		else
+			ch343->chiptype = CHIP_CH9101UH;
 		break;
-	case 0x55DA:
 	case 0x55DB:
 	case 0x55DD:
-		ch343->chiptype = CHIP_CH347T;
+		ch343->num_ports = 1;
+		ch343->chiptype = CHIP_CH347TF;
+		break;
+	case 0x55DA:
+	case 0x55DE:
+		ch343->num_ports = 2;
+		ch343->chiptype = CHIP_CH347TF;
+		break;
+	case 0x55E7:
+		ch343->num_ports = 1;
+		ch343->chiptype = CHIP_CH339W;
+		ch343->iosupport = false;
 		break;
 	case 0x55DF:
+		ch343->num_ports = 4;
 		ch343->chiptype = CHIP_CH9104L;
+		break;
+	case 0x55E9:
+		ch343->num_ports = 1;
+		ch343->chiptype = CHIP_CH9111L_M0;
+		break;
+	case 0x55EA:
+		ch343->num_ports = 1;
+		ch343->chiptype = CHIP_CH9111L_M1;
+		break;
+	case 0x55E8:
+		ch343->num_ports = 4;
+		chiptype = buffer[2];
+		if (chiptype == 0x48)
+			ch343->chiptype = CHIP_CH9114L;
+		else if (chiptype == 0x49)
+			ch343->chiptype = CHIP_CH9114W;
+		else if (chiptype == 0x4A)
+			ch343->chiptype = CHIP_CH9114F;
+		break;
+	case 0x55EB:
+		ch343->num_ports = 1;
+		if (buffer[4] & 0x01)
+			ch343->chiptype = CHIP_CH346C_M1;
+		else
+			ch343->chiptype = CHIP_CH346C_M0;
+		break;
+	case 0x55EC:
+		ch343->num_ports = 2;
+		ch343->chiptype = CHIP_CH346C_M2;
 		break;
 	default:
 		break;
 	}
 
-	if (ch343->chiptype != CHIP_CH344L && ch343->chiptype != CHIP_CH344L_V2 && ch343->chiptype != CHIP_CH9104L) {
-		r = ch343_get_status(ch343);
-		if (r < 0)
-			goto out;
-	}
 out:
 	kfree(buffer);
 	return r < 0 ? r : 0;
@@ -378,13 +506,16 @@ static int ch343_start_wb(struct ch343 *ch343, struct ch343_wb *wb)
 
 	rc = usb_submit_urb(wb->urb, GFP_ATOMIC);
 	if (rc < 0) {
-		dev_err(&ch343->data->dev, "%s - usb_submit_urb(write bulk) failed: %d\n", __func__, rc);
+		dev_err(&ch343->data->dev,
+			"%s - usb_submit_urb(write bulk) failed: %d\n",
+			__func__, rc);
 		ch343_write_done(ch343, wb);
 	}
 	return rc;
 }
 
-static void ch343_update_status(struct ch343 *ch343, unsigned char *data, size_t len)
+static void ch343_update_status(struct ch343 *ch343, unsigned char *data,
+				size_t len)
 {
 	unsigned long flags;
 	u8 status;
@@ -399,18 +530,37 @@ static void ch343_update_status(struct ch343 *ch343, unsigned char *data, size_t
 		if (data[0] != 0x00)
 			return;
 		type = data[1];
-	} else if (ch343->chiptype == CHIP_CH344Q || ch343->chiptype == CHIP_CH344L_V2 ||
-		   ch343->chiptype == CHIP_CH9104L) {
+	} else if (ch343->chiptype == CHIP_CH346C_M0 ||
+		   ch343->chiptype == CHIP_CH346C_M1 ||
+		   ch343->chiptype == CHIP_CH346C_M2 ||
+		   ch343->chiptype == CHIP_CH339W ||
+		   ch343->chiptype == CHIP_CH347TF ||
+		   ch343->chiptype == CHIP_CH344Q ||
+		   ch343->chiptype == CHIP_CH344L_V2 ||
+		   ch343->chiptype == CHIP_CH9104L ||
+		   ch343->chiptype == CHIP_CH9114L ||
+		   ch343->chiptype == CHIP_CH9114F ||
+		   ch343->chiptype == CHIP_CH9114W ||
+		   ch343->chiptype == CHIP_CH9111L_M0 ||
+		   ch343->chiptype == CHIP_CH9111L_M1) {
 		type = data[1];
 	}
 
 	if (type & CH343_CTT_M) {
 		status = ~data[len - 1] & CH343_CTI_ST;
-		if (ch343->chiptype == CHIP_CH344L || ch343->chiptype == CHIP_CH344L_V2)
+		if (ch343->chiptype == CHIP_CH344L ||
+		    ch343->chiptype == CHIP_CH344L_V2)
 			status &= CH343_CTI_C;
 
-		if (!ch343->clocal && (ch343->ctrlin & status & CH343_CTI_DC)) {
+		if (!ch343->clocal &&
+		    (ch343->ctrlin & status & CH343_CTI_DC)) {
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0))
+			struct tty_struct *tty =
+				tty_port_tty_get(&ch343->port);
+			tty_hangup(tty);
+#else
 			tty_port_tty_hangup(&ch343->port, false);
+#endif
 		}
 
 		spin_lock_irqsave(&ch343->read_lock, flags);
@@ -435,6 +585,13 @@ static void ch343_update_status(struct ch343 *ch343, unsigned char *data, size_t
 			wake_up_interruptible(&ch343->wioctl);
 		} else
 			spin_unlock_irqrestore(&ch343->read_lock, flags);
+		handled = 1;
+	}
+	if (type & CH343_CTT_B) {
+		spin_lock_irqsave(&ch343->read_lock, flags);
+		ch343->oldcount = ch343->iocount;
+		ch343->iocount.brk++;
+		spin_unlock_irqrestore(&ch343->read_lock, flags);
 		handled = 1;
 	}
 	if (type & CH343_CTT_O) {
@@ -480,10 +637,14 @@ static void ch343_ctrl_irq(struct urb *urb)
 	case -ENOENT:
 	case -ESHUTDOWN:
 		/* this urb is terminated, clean up */
-		dev_dbg(&ch343->control->dev, "%s - urb shutting down with status: %d\n", __func__, status);
+		dev_dbg(&ch343->control->dev,
+			"%s - urb shutting down with status: %d\n",
+			__func__, status);
 		return;
 	default:
-		dev_dbg(&ch343->control->dev, "%s - nonzero urb status received: %d\n", __func__, status);
+		dev_dbg(&ch343->control->dev,
+			"%s - nonzero urb status received: %d\n", __func__,
+			status);
 		goto exit;
 	}
 
@@ -492,10 +653,13 @@ static void ch343_ctrl_irq(struct urb *urb)
 exit:
 	retval = usb_submit_urb(urb, GFP_ATOMIC);
 	if (retval && retval != -EPERM)
-		dev_err(&ch343->control->dev, "%s - usb_submit_urb failed: %d\n", __func__, retval);
+		dev_err(&ch343->control->dev,
+			"%s - usb_submit_urb failed: %d\n", __func__,
+			retval);
 }
 
-static int ch343_submit_read_urb(struct ch343 *ch343, int index, gfp_t mem_flags)
+static int ch343_submit_read_urb(struct ch343 *ch343, int index,
+				 gfp_t mem_flags)
 {
 	int res;
 
@@ -505,7 +669,9 @@ static int ch343_submit_read_urb(struct ch343 *ch343, int index, gfp_t mem_flags
 	res = usb_submit_urb(ch343->read_urbs[index], mem_flags);
 	if (res) {
 		if (res != -EPERM) {
-			dev_err(&ch343->data->dev, "%s - usb_submit_urb failed: %d\n", __func__, res);
+			dev_err(&ch343->data->dev,
+				"%s - usb_submit_urb failed: %d\n",
+				__func__, res);
 		}
 		set_bit(index, &ch343->read_urbs_free);
 		return res;
@@ -532,8 +698,17 @@ static void ch343_process_read_urb(struct ch343 *ch343, struct urb *urb)
 		return;
 
 	ch343->iocount.rx += urb->actual_length;
-	tty_insert_flip_string(&ch343->port, urb->transfer_buffer, urb->actual_length);
+
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 9, 0))
+	tty_insert_flip_string(&ch343->port, urb->transfer_buffer,
+			       urb->actual_length);
 	tty_flip_buffer_push(&ch343->port);
+#else
+	struct tty_struct *tty = tty_port_tty_get(&ch343->port);
+	tty_insert_flip_string(tty, urb->transfer_buffer,
+			       urb->actual_length);
+	tty_flip_buffer_push(tty);
+#endif
 }
 
 static void ch343_read_bulk_callback(struct urb *urb)
@@ -544,13 +719,16 @@ static void ch343_read_bulk_callback(struct urb *urb)
 
 	if (!ch343->dev) {
 		set_bit(rb->index, &ch343->read_urbs_free);
-		dev_dbg(&ch343->data->dev, "%s - disconnected\n", __func__);
+		dev_dbg(&ch343->data->dev, "%s - disconnected\n",
+			__func__);
 		return;
 	}
 
 	if (status) {
 		set_bit(rb->index, &ch343->read_urbs_free);
-		dev_dbg(&ch343->data->dev, "%s - non-zero urb status: %d\n", __func__, status);
+		dev_dbg(&ch343->data->dev,
+			"%s - non-zero urb status: %d\n", __func__,
+			status);
 		return;
 	}
 
@@ -568,12 +746,14 @@ static void ch343_write_bulk(struct urb *urb)
 	int status = urb->status;
 
 	if (status || (urb->actual_length != urb->transfer_buffer_length))
-		dev_vdbg(&ch343->data->dev, "%s - len %d/%d, status %d\n", __func__, urb->actual_length,
+		dev_vdbg(&ch343->data->dev, "%s - len %d/%d, status %d\n",
+			 __func__, urb->actual_length,
 			 urb->transfer_buffer_length, status);
 
 	ch343->iocount.tx += urb->actual_length;
 	spin_lock_irqsave(&ch343->write_lock, flags);
 	ch343_write_done(ch343, wb);
+	wake_up_interruptible(&ch343->sendioctl);
 	spin_unlock_irqrestore(&ch343->write_lock, flags);
 	schedule_work(&ch343->work);
 }
@@ -581,24 +761,47 @@ static void ch343_write_bulk(struct urb *urb)
 static void ch343_softint(struct work_struct *work)
 {
 	struct ch343 *ch343 = container_of(work, struct ch343, work);
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0))
+	struct tty_struct *tty;
 
+	tty = tty_port_tty_get(&ch343->port);
+	if (!tty)
+		return;
+	tty_wakeup(tty);
+	tty_kref_put(tty);
+#else
 	tty_port_tty_wakeup(&ch343->port);
+#endif
 }
 
-static int ch343_tty_install(struct tty_driver *driver, struct tty_struct *tty)
+static int ch343_tty_install(struct tty_driver *driver,
+			     struct tty_struct *tty)
 {
 	struct ch343 *ch343;
 	int retval;
 
-	ch343 = ch343_get_by_minor(tty->index);
+	ch343 = ch343_get_by_index(tty->index);
 	if (!ch343)
 		return -ENODEV;
 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 5, 0))
 	retval = tty_standard_install(driver, tty);
 	if (retval)
 		goto error_init_termios;
 
 	tty->driver_data = ch343;
+#else
+	retval = tty_init_termios(tty);
+	if (retval)
+		goto error_init_termios;
+
+	tty->driver_data = ch343;
+
+	/* Final install (we use the default method) */
+	tty_driver_kref_get(driver);
+	tty->count++;
+	driver->ttys[tty->index] = tty;
+#endif
 
 	return 0;
 
@@ -611,10 +814,13 @@ static int ch343_tty_open(struct tty_struct *tty, struct file *filp)
 {
 	struct ch343 *ch343 = tty->driver_data;
 
+	if (tty)
+		ch343_tty_set_termios(tty, NULL);
+
 	return tty_port_open(&ch343->port, tty, filp);
 }
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 6, 20)
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 3, 0))
 static void ch343_port_dtr_rts(struct tty_port *port, bool raise)
 #else
 static void ch343_port_dtr_rts(struct tty_port *port, int raise)
@@ -622,6 +828,10 @@ static void ch343_port_dtr_rts(struct tty_port *port, int raise)
 {
 	struct ch343 *ch343 = container_of(port, struct ch343, port);
 	int res;
+
+#ifdef IGNORE_RTSDTR
+	return;
+#endif
 
 	if (raise)
 		ch343->ctrlout |= CH343_CTO_D | CH343_CTO_R;
@@ -633,7 +843,8 @@ static void ch343_port_dtr_rts(struct tty_port *port, int raise)
 		dev_err(&ch343->control->dev, "failed to set dtr/rts\n");
 }
 
-static int ch343_port_activate(struct tty_port *port, struct tty_struct *tty)
+static int ch343_port_activate(struct tty_port *port,
+			       struct tty_struct *tty)
 {
 	struct ch343 *ch343 = container_of(port, struct ch343, port);
 	int retval = -ENODEV;
@@ -650,19 +861,34 @@ static int ch343_port_activate(struct tty_port *port, struct tty_struct *tty)
 	set_bit(TTY_NO_WRITE_SPLIT, &tty->flags);
 	ch343->control->needs_remote_wakeup = 1;
 
-	ch343_tty_set_termios(tty, NULL);
-
 	retval = usb_submit_urb(ch343->ctrlurb, GFP_KERNEL);
 	if (retval) {
-		dev_err(&ch343->control->dev, "%s - usb_submit_urb(ctrl cmd) failed\n", __func__);
+		dev_err(&ch343->control->dev,
+			"%s - usb_submit_urb(ctrl cmd) failed\n",
+			__func__);
 		goto error_submit_urb;
 	}
 	retval = ch343_submit_read_urbs(ch343, GFP_KERNEL);
 	if (retval)
 		goto error_submit_read_urbs;
 
+	if (ch343->chiptype == CHIP_CH9114L ||
+	    ch343->chiptype == CHIP_CH9114F ||
+	    ch343->chiptype == CHIP_CH9114W ||
+	    ch343->chiptype == CHIP_CH346C_M2) {
+		retval = ch343_control_out(
+			ch343, CMD_C8, 0x01 | (ch343->iface << 8), 0x00);
+		if (retval) {
+			goto error_submit_read_urbs;
+		}
+	}
+
 	usb_autopm_put_interface(ch343->control);
 	mutex_unlock(&ch343->mutex);
+
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 12, 0))
+	port->low_latency = (port->flags & ASYNC_LOW_LATENCY) ? 1 : 0;
+#endif
 
 	return 0;
 
@@ -684,6 +910,7 @@ static void ch343_port_destruct(struct tty_port *port)
 
 	ch343_release_minor(ch343);
 	usb_put_intf(ch343->control);
+	memset(ch343, 0x00, sizeof(struct ch343));
 	kfree(ch343);
 }
 
@@ -693,6 +920,9 @@ static void ch343_port_shutdown(struct tty_port *port)
 	struct urb *urb;
 	struct ch343_wb *wb;
 	int i;
+	int r;
+
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 16, 0))
 
 	usb_autopm_get_interface_no_resume(ch343->control);
 	ch343->control->needs_remote_wakeup = 0;
@@ -712,6 +942,35 @@ static void ch343_port_shutdown(struct tty_port *port)
 		usb_kill_urb(ch343->wb[i].urb);
 	for (i = 0; i < ch343->rx_buflimit; i++)
 		usb_kill_urb(ch343->read_urbs[i]);
+
+#else
+	mutex_lock(&ch343->mutex);
+	if (!ch343->disconnected) {
+		usb_autopm_get_interface(ch343->control);
+		ch343_set_control(ch343, ch343->ctrlout = 0);
+
+		usb_kill_urb(ch343->ctrlurb);
+		for (i = 0; i < CH343_NW; i++)
+			usb_kill_urb(ch343->wb[i].urb);
+		for (i = 0; i < ch343->rx_buflimit; i++)
+			usb_kill_urb(ch343->read_urbs[i]);
+		ch343->control->needs_remote_wakeup = 0;
+
+		usb_autopm_put_interface(ch343->control);
+	}
+	mutex_unlock(&ch343->mutex);
+#endif
+
+	if (ch343->chiptype == CHIP_CH9114L ||
+	    ch343->chiptype == CHIP_CH9114F ||
+	    ch343->chiptype == CHIP_CH9114W ||
+	    ch343->chiptype == CHIP_CH346C_M2) {
+		r = ch343_control_out(ch343, CMD_C8,
+				      0x02 | (ch343->iface << 8), 0x00);
+		if (r)
+			dev_err(&ch343->control->dev, "%s - failed: %d\n",
+				__func__, r);
+	}
 }
 
 static void ch343_tty_cleanup(struct tty_struct *tty)
@@ -732,10 +991,12 @@ static void ch343_tty_close(struct tty_struct *tty, struct file *filp)
 	tty_port_close(&ch343->port, tty, filp);
 }
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 6, 20)
-static ssize_t ch343_tty_write(struct tty_struct *tty, const u8 *buf, size_t count)
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 6, 0))
+static ssize_t ch343_tty_write(struct tty_struct *tty, const u8 *buf,
+			       size_t count)
 #else
-static int ch343_tty_write(struct tty_struct *tty, const unsigned char *buf, int count)
+static int ch343_tty_write(struct tty_struct *tty,
+			   const unsigned char *buf, int count)
 #endif
 {
 	struct ch343 *ch343 = tty->driver_data;
@@ -743,15 +1004,23 @@ static int ch343_tty_write(struct tty_struct *tty, const unsigned char *buf, int
 	unsigned long flags;
 	int wbn;
 	struct ch343_wb *wb;
+	int timeout;
 
 	if (!count)
 		return 0;
 
+retry:
 	spin_lock_irqsave(&ch343->write_lock, flags);
 	wbn = ch343_wb_alloc(ch343);
 	if (wbn < 0) {
 		spin_unlock_irqrestore(&ch343->write_lock, flags);
-		return 0;
+		timeout = wait_event_interruptible_timeout(
+			ch343->sendioctl, ch343_wb_is_avail(ch343),
+			msecs_to_jiffies(DEFAULT_TIMEOUT));
+		if (timeout <= 0) {
+			return -ETIMEDOUT;
+		} else
+			goto retry;
 	}
 	wb = &ch343->wb[wbn];
 
@@ -824,8 +1093,20 @@ static int ch343_tty_break_ctl(struct tty_struct *tty, int state)
 		return -1;
 
 	if (state != 0) {
-		if ((ch343->chiptype == CHIP_CH344L) || (ch343->chiptype == CHIP_CH344Q) ||
-		    (ch343->chiptype == CHIP_CH344L_V2) || (ch343->chiptype == CHIP_CH9104L)) {
+		if (ch343->chiptype == CHIP_CH346C_M0 ||
+		    ch343->chiptype == CHIP_CH346C_M1 ||
+		    ch343->chiptype == CHIP_CH346C_M2 ||
+		    ch343->chiptype == CHIP_CH339W ||
+		    ch343->chiptype == CHIP_CH347TF ||
+		    ch343->chiptype == CHIP_CH344L ||
+		    ch343->chiptype == CHIP_CH344Q ||
+		    ch343->chiptype == CHIP_CH344L_V2 ||
+		    ch343->chiptype == CHIP_CH9104L ||
+		    ch343->chiptype == CHIP_CH9114L ||
+		    ch343->chiptype == CHIP_CH9114F ||
+		    ch343->chiptype == CHIP_CH9114W ||
+		    ch343->chiptype == CHIP_CH9111L_M0 ||
+		    ch343->chiptype == CHIP_CH9111L_M1) {
 			regbuf[0] = ch343->iface;
 			regbuf[1] = 0x01;
 		} else {
@@ -833,8 +1114,20 @@ static int ch343_tty_break_ctl(struct tty_struct *tty, int state)
 			regbuf[1] = 0x00;
 		}
 	} else {
-		if ((ch343->chiptype == CHIP_CH344L) || (ch343->chiptype == CHIP_CH344Q) ||
-		    (ch343->chiptype == CHIP_CH344L_V2) || (ch343->chiptype == CHIP_CH9104L)) {
+		if (ch343->chiptype == CHIP_CH346C_M0 ||
+		    ch343->chiptype == CHIP_CH346C_M1 ||
+		    ch343->chiptype == CHIP_CH346C_M2 ||
+		    ch343->chiptype == CHIP_CH339W ||
+		    ch343->chiptype == CHIP_CH347TF ||
+		    ch343->chiptype == CHIP_CH344L ||
+		    ch343->chiptype == CHIP_CH344Q ||
+		    ch343->chiptype == CHIP_CH344L_V2 ||
+		    ch343->chiptype == CHIP_CH9104L ||
+		    ch343->chiptype == CHIP_CH9114L ||
+		    ch343->chiptype == CHIP_CH9114F ||
+		    ch343->chiptype == CHIP_CH9114W ||
+		    ch343->chiptype == CHIP_CH9111L_M0 ||
+		    ch343->chiptype == CHIP_CH9111L_M1) {
 			regbuf[0] = ch343->iface;
 			regbuf[1] = 0x00;
 		} else {
@@ -844,18 +1137,35 @@ static int ch343_tty_break_ctl(struct tty_struct *tty, int state)
 	}
 	reg_contents = get_unaligned_le16(regbuf);
 
-	if ((ch343->chiptype == CHIP_CH344L) || (ch343->chiptype == CHIP_CH344Q) ||
-	    (ch343->chiptype == CHIP_CH344L_V2) || (ch343->chiptype == CHIP_CH9104L)) {
-		retval = ch343_control_out(ch343, CMD_C4, reg_contents, 0x00);
+	if (ch343->chiptype == CHIP_CH346C_M0 ||
+	    ch343->chiptype == CHIP_CH346C_M1 ||
+	    ch343->chiptype == CHIP_CH346C_M2 ||
+	    ch343->chiptype == CHIP_CH339W ||
+	    ch343->chiptype == CHIP_CH347TF ||
+	    ch343->chiptype == CHIP_CH344L ||
+	    ch343->chiptype == CHIP_CH344Q ||
+	    ch343->chiptype == CHIP_CH344L_V2 ||
+	    ch343->chiptype == CHIP_CH9104L ||
+	    ch343->chiptype == CHIP_CH9114L ||
+	    ch343->chiptype == CHIP_CH9114F ||
+	    ch343->chiptype == CHIP_CH9114W ||
+	    ch343->chiptype == CHIP_CH9111L_M0 ||
+	    ch343->chiptype == CHIP_CH9111L_M1) {
+		retval = ch343_control_out(ch343, CMD_C4, reg_contents,
+					   0x00);
 	} else {
 		if (ch343->iface)
-			retval = ch343_control_out(ch343, CMD_C4, 0x00, reg_contents);
+			retval = ch343_control_out(ch343, CMD_C4, 0x00,
+						   reg_contents);
 		else
-			retval = ch343_control_out(ch343, CMD_C4, reg_contents, 0x00);
+			retval = ch343_control_out(ch343, CMD_C4,
+						   reg_contents, 0x00);
 	}
 
 	if (retval < 0)
-		dev_err(&ch343->control->dev, "%s - USB control write error (%d)\n", __func__, retval);
+		dev_err(&ch343->control->dev,
+			"%s - USB control write error (%d)\n", __func__,
+			retval);
 
 	kfree(regbuf);
 	return retval;
@@ -868,22 +1178,28 @@ static int ch343_tty_tiocmget(struct tty_struct *tty)
 	unsigned int result;
 
 	spin_lock_irqsave(&ch343->read_lock, flags);
-	result = (ch343->ctrlout & CH343_CTO_D ? TIOCM_DTR : 0) | (ch343->ctrlout & CH343_CTO_R ? TIOCM_RTS : 0) |
-		 (ch343->ctrlin & CH343_CTI_C ? TIOCM_CTS : 0) | (ch343->ctrlin & CH343_CTI_DS ? TIOCM_DSR : 0) |
-		 (ch343->ctrlin & CH343_CTI_R ? TIOCM_RI : 0) | (ch343->ctrlin & CH343_CTI_DC ? TIOCM_CD : 0);
+	result = (ch343->ctrlout & CH343_CTO_D ? TIOCM_DTR : 0) |
+		 (ch343->ctrlout & CH343_CTO_R ? TIOCM_RTS : 0) |
+		 (ch343->ctrlin & CH343_CTI_C ? TIOCM_CTS : 0) |
+		 (ch343->ctrlin & CH343_CTI_DS ? TIOCM_DSR : 0) |
+		 (ch343->ctrlin & CH343_CTI_R ? TIOCM_RI : 0) |
+		 (ch343->ctrlin & CH343_CTI_DC ? TIOCM_CD : 0);
 	spin_unlock_irqrestore(&ch343->read_lock, flags);
 
 	return result;
 }
 
-static int ch343_tty_tiocmset(struct tty_struct *tty, unsigned int set, unsigned int clear)
+static int ch343_tty_tiocmset(struct tty_struct *tty, unsigned int set,
+			      unsigned int clear)
 {
 	struct ch343 *ch343 = tty->driver_data;
 	unsigned int newctrl;
 
 	newctrl = ch343->ctrlout;
-	set = (set & TIOCM_DTR ? CH343_CTO_D : 0) | (set & TIOCM_RTS ? CH343_CTO_R : 0);
-	clear = (clear & TIOCM_DTR ? CH343_CTO_D : 0) | (clear & TIOCM_RTS ? CH343_CTO_R : 0);
+	set = (set & TIOCM_DTR ? CH343_CTO_D : 0) |
+	      (set & TIOCM_RTS ? CH343_CTO_R : 0);
+	clear = (clear & TIOCM_DTR ? CH343_CTO_D : 0) |
+		(clear & TIOCM_RTS ? CH343_CTO_R : 0);
 
 	newctrl = (newctrl & ~clear) | set;
 
@@ -894,7 +1210,8 @@ static int ch343_tty_tiocmset(struct tty_struct *tty, unsigned int set, unsigned
 	return ch343_set_control(ch343, ch343->ctrlout = newctrl);
 }
 
-static int ch343_get_icount(struct tty_struct *tty, struct serial_icounter_struct *icount)
+static int ch343_get_icount(struct tty_struct *tty,
+			    struct serial_icounter_struct *icount)
 {
 	struct ch343 *ch343 = tty->driver_data;
 	struct async_icount cnow;
@@ -919,7 +1236,8 @@ static int ch343_get_icount(struct tty_struct *tty, struct serial_icounter_struc
 	return 0;
 }
 
-static int ch343_get_serial_info(struct ch343 *ch343, struct serial_struct __user *info)
+static int ch343_get_serial_info(struct ch343 *ch343,
+				 struct serial_struct __user *info)
 {
 	struct serial_struct tmp;
 
@@ -927,12 +1245,14 @@ static int ch343_get_serial_info(struct ch343 *ch343, struct serial_struct __use
 		return -EINVAL;
 
 	memset(&tmp, 0, sizeof(tmp));
-	tmp.flags = ASYNC_LOW_LATENCY;
+	tmp.flags = ch343->port.flags;
 	tmp.xmit_fifo_size = ch343->writesize;
 	tmp.baud_base = le32_to_cpu(ch343->line.dwDTERate);
 	tmp.close_delay = ch343->port.close_delay / 10;
-	tmp.closing_wait = ch343->port.closing_wait == ASYNC_CLOSING_WAIT_NONE ? ASYNC_CLOSING_WAIT_NONE :
-										 ch343->port.closing_wait / 10;
+	tmp.closing_wait = ch343->port.closing_wait ==
+					   ASYNC_CLOSING_WAIT_NONE ?
+				   ASYNC_CLOSING_WAIT_NONE :
+				   ch343->port.closing_wait / 10;
 
 	if (copy_to_user(info, &tmp, sizeof(tmp)))
 		return -EFAULT;
@@ -940,7 +1260,8 @@ static int ch343_get_serial_info(struct ch343 *ch343, struct serial_struct __use
 		return 0;
 }
 
-static int ch343_set_serial_info(struct ch343 *ch343, struct serial_struct __user *newinfo)
+static int ch343_set_serial_info(struct ch343 *ch343,
+				 struct serial_struct __user *newinfo)
 {
 	struct serial_struct new_serial;
 	unsigned int closing_wait, close_delay;
@@ -950,13 +1271,15 @@ static int ch343_set_serial_info(struct ch343 *ch343, struct serial_struct __use
 		return -EFAULT;
 
 	close_delay = new_serial.close_delay * 10;
-	closing_wait = new_serial.closing_wait == ASYNC_CLOSING_WAIT_NONE ? ASYNC_CLOSING_WAIT_NONE :
-									    new_serial.closing_wait * 10;
+	closing_wait = new_serial.closing_wait == ASYNC_CLOSING_WAIT_NONE ?
+			       ASYNC_CLOSING_WAIT_NONE :
+			       new_serial.closing_wait * 10;
 
 	mutex_lock(&ch343->port.mutex);
 
 	if (!capable(CAP_SYS_ADMIN)) {
-		if ((close_delay != ch343->port.close_delay) || (closing_wait != ch343->port.closing_wait))
+		if ((close_delay != ch343->port.close_delay) ||
+		    (closing_wait != ch343->port.closing_wait))
 			retval = -EPERM;
 		else
 			retval = -EOPNOTSUPP;
@@ -964,6 +1287,11 @@ static int ch343_set_serial_info(struct ch343 *ch343, struct serial_struct __use
 		ch343->port.close_delay = close_delay;
 		ch343->port.closing_wait = closing_wait;
 	}
+
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 12, 0))
+	ch343->port.low_latency =
+		(ch343->port.flags & ASYNC_LOW_LATENCY) ? 1 : 0;
+#endif
 
 	mutex_unlock(&ch343->port.mutex);
 	return retval;
@@ -1009,7 +1337,9 @@ static int ch343_wait_serial_change(struct ch343 *ch343, unsigned long arg)
 	return rv;
 }
 
-static int ch343_get_serial_usage(struct ch343 *ch343, struct serial_icounter_struct __user *count)
+static int
+ch343_get_serial_usage(struct ch343 *ch343,
+		       struct serial_icounter_struct __user *count)
 {
 	struct serial_icounter_struct icount;
 	int rv = 0;
@@ -1033,7 +1363,8 @@ static int ch343_get_serial_usage(struct ch343 *ch343, struct serial_icounter_st
 	return rv;
 }
 
-static int ch343_tty_ioctl(struct tty_struct *tty, unsigned int cmd, unsigned long arg)
+static int ch343_tty_ioctl(struct tty_struct *tty, unsigned int cmd,
+			   unsigned long arg)
 {
 	struct ch343 *ch343 = tty->driver_data;
 	int rv = 0;
@@ -1047,10 +1378,12 @@ static int ch343_tty_ioctl(struct tty_struct *tty, unsigned int cmd, unsigned lo
 
 	switch (cmd) {
 	case TIOCGSERIAL: /* gets serial port data */
-		rv = ch343_get_serial_info(ch343, (struct serial_struct __user *)arg);
+		rv = ch343_get_serial_info(
+			ch343, (struct serial_struct __user *)arg);
 		break;
 	case TIOCSSERIAL:
-		rv = ch343_set_serial_info(ch343, (struct serial_struct __user *)arg);
+		rv = ch343_set_serial_info(
+			ch343, (struct serial_struct __user *)arg);
 		break;
 	case TIOCMIWAIT:
 		rv = usb_autopm_get_interface(ch343->control);
@@ -1062,10 +1395,18 @@ static int ch343_tty_ioctl(struct tty_struct *tty, unsigned int cmd, unsigned lo
 		usb_autopm_put_interface(ch343->control);
 		break;
 	case TIOCGICOUNT:
-		rv = ch343_get_serial_usage(ch343, (struct serial_icounter_struct __user *)arg);
+		rv = ch343_get_serial_usage(
+			ch343,
+			(struct serial_icounter_struct __user *)arg);
 		break;
 	case IOCTL_CMD_GETCHIPTYPE:
 		if (put_user(ch343->chiptype, argval)) {
+			rv = -EFAULT;
+			goto out;
+		}
+		break;
+	case IOCTL_CMD_GETUARTINDEX:
+		if (put_user(ch343->iface, argval)) {
 			rv = -EFAULT;
 			goto out;
 		}
@@ -1077,8 +1418,9 @@ static int ch343_tty_ioctl(struct tty_struct *tty, unsigned int cmd, unsigned lo
 		get_user(arg4, (u16 __user *)((u8 *)arg + 4));
 		get_user(arg5, (u16 __user *)((u8 *)arg + 6));
 		arg6 = (unsigned long)((u8 __user *)arg + 8);
-		rv = ch343_control_msg_in(ch343, (u8)arg1, (u8)arg2, (u16)arg3, (u16)arg4, (u8 __user *)arg6,
-					  (u16)arg5);
+		rv = ch343_control_msg_in(ch343, (u8)arg1, (u8)arg2,
+					  (u16)arg3, (u16)arg4,
+					  (u8 __user *)arg6, (u16)arg5);
 		break;
 	case IOCTL_CMD_CTRLOUT:
 		get_user(arg1, (u8 __user *)arg);
@@ -1087,8 +1429,9 @@ static int ch343_tty_ioctl(struct tty_struct *tty, unsigned int cmd, unsigned lo
 		get_user(arg4, (u16 __user *)((u8 *)arg + 4));
 		get_user(arg5, (u16 __user *)((u8 *)arg + 6));
 		arg6 = (unsigned long)((u8 __user *)arg + 8);
-		rv = ch343_control_msg_out(ch343, (u8)arg1, (u8)arg2, (u16)arg3, (u16)arg4, (u8 __user *)arg6,
-					   (u16)arg5);
+		rv = ch343_control_msg_out(ch343, (u8)arg1, (u8)arg2,
+					   (u16)arg3, (u16)arg4,
+					   (u8 __user *)arg6, (u16)arg5);
 		if (rv != (u16)arg5) {
 			rv = -EINVAL;
 			goto out;
@@ -1100,69 +1443,155 @@ static int ch343_tty_ioctl(struct tty_struct *tty, unsigned int cmd, unsigned lo
 	}
 out:
 	kfree(buffer);
-	return rv < 0 ? rv : 0;
+	return rv;
 }
 
-static int ch343_get(CHIPTYPE chiptype, unsigned int bval, unsigned char *fct, unsigned char *dvs)
+static int ch343_get(struct ch343 *ch343, enum CHIPTYPE chiptype,
+		     unsigned int bval, unsigned char *fct,
+		     unsigned char *dvs)
 {
 	unsigned char a;
 	unsigned char b;
 	unsigned long c;
+	char *buffer;
+	int r = 0;
+	const unsigned size = 8;
+	u32 gfreq;
+	u8 change;
+	bool bfirst = false;
 
-	if (((chiptype == CHIP_CH347T) || (chiptype == CHIP_CH344Q) || (chiptype == CHIP_CH9104L)) && bval >= 2000000) {
+	buffer = kmalloc(size, GFP_KERNEL);
+	if (!buffer)
+		return -ENOMEM;
+
+	if ((ch343->chiptype >= CHIP_CH9111L_M0 &&
+	     ch343->chiptype <= CHIP_CH346C_M2) &&
+	    bval >= 2000000) {
+		if ((ch343->chiptype >= CHIP_CH9111L_M0 &&
+		     ch343->chiptype <= CHIP_CH346C_M2) &&
+		    (bval > 13000000)) {
+			*fct = (bval + 500000) / 1000000 - 13;
+			*dvs = 0xFF;
+		} else {
+			*fct = (unsigned char)(bval / 200);
+			*dvs = (unsigned char)((bval / 200) >> 8);
+		}
+	} else if ((ch343->chiptype == CHIP_CH344Q ||
+		    ch343->chiptype == CHIP_CH347TF) &&
+		   bval > 358400) {
 		*fct = (unsigned char)(bval / 200);
 		*dvs = (unsigned char)((bval / 200) >> 8);
-	}
-
-	switch (bval) {
-	case 6000000:
-	case 4000000:
-	case 2400000:
-	case 921600:
-	case 307200:
-	case 256000:
-		b = 7;
-		c = 12000000;
-		break;
-	default:
-		if (bval > 6000000 / 255) {
-			b = 3;
-			c = 6000000;
-		} else if (bval > 750000 / 255) {
-			b = 2;
-			c = 750000;
-		} else if (bval > 93750 / 255) {
-			b = 1;
-			c = 93750;
-		} else {
-			b = 0;
-			c = 11719;
+	} else {
+		switch (bval) {
+		case 6000000:
+		case 4000000:
+		case 2400000:
+		case 921600:
+		case 307200:
+		case 256000:
+			b = 7;
+			c = 12000000;
+			break;
+		default:
+			if (bval > 6000000 / 255) {
+				b = 3;
+				c = 6000000;
+			} else if (bval > 750000 / 255) {
+				b = 2;
+				c = 750000;
+			} else if (bval > 93750 / 255) {
+				b = 1;
+				c = 93750;
+			} else {
+				b = 0;
+				c = 11719;
+			}
+			break;
 		}
-		break;
+		a = (unsigned char)(c / bval);
+		if (a == 0 || a == 0xFF)
+			return -EINVAL;
+		if ((c / a - bval) > (bval - c / (a + 1)))
+			a++;
+		a = 256 - a;
+
+		*fct = a;
+		*dvs = b;
 	}
-	a = (unsigned char)(c / bval);
-	if (a == 0 || a == 0xFF)
-		return -EINVAL;
-	if ((c / a - bval) > (bval - c / (a + 1)))
-		a++;
-	a = 256 - a;
 
-	*fct = a;
-	*dvs = b;
+	if (chiptype == CHIP_CH9114L || chiptype == CHIP_CH9114F ||
+	    chiptype == CHIP_CH9114W || chiptype == CHIP_CH346C_M2) {
+retry:
+		r = ch343_control_in(ch343, CMD_C7, 0x01, 0, buffer, size);
+		if (r <= 0)
+			goto out;
+		else
+			r = 0;
+		gfreq = *(__le32 *)buffer;
+		change = buffer[4];
 
-	return 0;
+		if (!change) {
+			if ((gfreq == 120000000 && bval > 1000000 &&
+			     (15000000 % bval)) ||
+			    (gfreq == 96000000 && bval > 1000000 &&
+			     (12000000 % bval)) ||
+			    (gfreq == 80000000 && bval > 1000000 &&
+			     (10000000 % bval))) {
+				if (bfirst) {
+					r = -EINVAL;
+					goto out;
+				} else {
+					bfirst = true;
+					r = ch343_control_out(
+						ch343, CMD_C8,
+						0x02 | (ch343->iface << 8),
+						0x00);
+					if (r) {
+						dev_err(&ch343->control
+								 ->dev,
+							"%s - failed: %d\n",
+							__func__, r);
+						goto out;
+					}
+					r = ch343_control_out(
+						ch343, CMD_C8,
+						0x01 | (ch343->iface << 8),
+						0x00);
+					if (r) {
+						dev_err(&ch343->control
+								 ->dev,
+							"%s - failed: %d\n",
+							__func__, r);
+						goto out;
+					}
+					goto retry;
+				}
+			}
+		}
+	}
+
+out:
+	kfree(buffer);
+	return r;
 }
 
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0))
-static void ch343_tty_set_termios(struct tty_struct *tty, const struct ktermios *termios_old)
+static void ch343_tty_set_termios(struct tty_struct *tty,
+				  const struct ktermios *termios_old)
 #else
-static void ch343_tty_set_termios(struct tty_struct *tty, struct ktermios *termios_old)
+static void ch343_tty_set_termios(struct tty_struct *tty,
+				  struct ktermios *termios_old)
 #endif
 {
 	struct ch343 *ch343 = tty->driver_data;
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 7, 0))
 	struct ktermios *termios = &tty->termios;
+#else
+	struct ktermios *termios = tty->termios;
+#endif
 	struct usb_ch343_line_coding newline;
 	int newctrl = ch343->ctrlout;
+	int r;
 
 	unsigned char dvs = 0;
 	unsigned char reg_count = 0;
@@ -1171,23 +1600,42 @@ static void ch343_tty_set_termios(struct tty_struct *tty, struct ktermios *termi
 	unsigned short value = 0;
 	unsigned short index = 0;
 
-	if (termios_old && !tty_termios_hw_change(&tty->termios, termios_old)) {
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 7, 0))
+	if (termios_old &&
+	    !tty_termios_hw_change(&tty->termios, termios_old)) {
+#else
+	if (termios_old &&
+	    !tty_termios_hw_change(tty->termios, termios_old)) {
+#endif
 		return;
 	}
 
 	newline.dwDTERate = tty_get_baud_rate(tty);
+	if (C_BAUD(tty) == B0) {
+		newline.dwDTERate = ch343->line.dwDTERate;
+		newctrl &= ~(CH343_CTO_D | CH343_CTO_R);
+	} else if (termios_old && (termios_old->c_cflag & CBAUD) == B0) {
+		newctrl |= CH343_CTO_D | CH343_CTO_R;
+	}
 
-	if (newline.dwDTERate == 0)
-		newline.dwDTERate = 9600;
-	ch343_get(ch343->chiptype, newline.dwDTERate, &fct, &dvs);
+	r = ch343_get(ch343, ch343->chiptype, newline.dwDTERate, &fct,
+		      &dvs);
+	if (r) {
+		dev_err(&ch343->control->dev,
+			"%s - Bad termios setting, DTERate: %d.\n",
+			__func__, newline.dwDTERate);
+		return;
+	}
 
 	newline.bCharFormat = termios->c_cflag & CSTOPB ? 2 : 1;
 	if (newline.bCharFormat == 2)
 		reg_value |= CH343_L_SB;
 
-	newline.bParityType = termios->c_cflag & PARENB ?
-				      (termios->c_cflag & PARODD ? 1 : 2) + (termios->c_cflag & CMSPAR ? 2 : 0) :
-				      0;
+	newline.bParityType =
+		termios->c_cflag & PARENB ?
+			(termios->c_cflag & PARODD ? 1 : 2) +
+				(termios->c_cflag & CMSPAR ? 2 : 0) :
+			0;
 
 	switch (newline.bParityType) {
 	case 0x01:
@@ -1228,13 +1676,6 @@ static void ch343_tty_set_termios(struct tty_struct *tty, struct ktermios *termi
 
 	ch343->clocal = ((termios->c_cflag & CLOCAL) != 0);
 
-	if (C_BAUD(tty) == B0) {
-		newline.dwDTERate = ch343->line.dwDTERate;
-		newctrl &= ~CH343_CTO_D;
-	} else if (termios_old && (termios_old->c_cflag & CBAUD) == B0) {
-		newctrl |= CH343_CTO_D;
-	}
-
 	reg_value |= CH343_L_E_R | CH343_L_E_T;
 	reg_count |= CH343_L_R_CT | CH343_L_R_CL | CH343_L_R_T;
 
@@ -1244,9 +1685,12 @@ static void ch343_tty_set_termios(struct tty_struct *tty, struct ktermios *termi
 	index |= 0x00 | dvs;
 	index |= (unsigned short)fct << 8;
 	if (ch343->iface <= 1)
-		ch343_control_out(ch343, CMD_C1 + ch343->iface, value, index);
+		ch343_control_out(ch343, CMD_C1 + ch343->iface, value,
+				  index);
 	else if (ch343->iface <= 3)
-		ch343_control_out(ch343, CMD_C1 + 0x10 + (ch343->iface - 2), value, index);
+		ch343_control_out(ch343,
+				  CMD_C1 + 0x10 + (ch343->iface - 2),
+				  value, index);
 
 	if (memcmp(&ch343->line, &newline, sizeof newline))
 		memcpy(&ch343->line, &newline, sizeof newline);
@@ -1258,6 +1702,8 @@ static void ch343_tty_set_termios(struct tty_struct *tty, struct ktermios *termi
 
 	if (newctrl != ch343->ctrlout)
 		ch343_set_control(ch343, ch343->ctrlout = newctrl);
+
+	tty_encode_baud_rate(tty, newline.dwDTERate, newline.dwDTERate);
 }
 
 static const struct tty_port_operations ch343_port_ops = {
@@ -1267,6 +1713,47 @@ static const struct tty_port_operations ch343_port_ops = {
 	.destruct = ch343_port_destruct,
 };
 
+static int ch343_proc_show(struct seq_file *m, void *v)
+{
+	struct ch343 *ch343;
+	int i;
+	char tmp[40];
+
+	seq_printf(m, "ch343serinfo:1.0 driver:%s\n", VERSION_DESC);
+	for (i = 0; i < CH343_TTY_MINORS; ++i) {
+		ch343 = ch343_get_by_index(i);
+		if (!ch343)
+			continue;
+		mutex_lock(&ch343->proc_mutex);
+		seq_printf(m, "%d:", i);
+		seq_printf(m, " module:%s", "ch343");
+		seq_printf(m, " name:\"%s\"", "usb_ch343");
+		seq_printf(m, " vendor:%04x product:%04x",
+			   le16_to_cpu(ch343->idVendor),
+			   le16_to_cpu(ch343->idProduct));
+		seq_printf(m, " num_ports:%d", ch343->num_ports);
+		seq_printf(m, " port:%d", ch343->iface);
+		usb_make_path(ch343->dev, tmp, sizeof(tmp));
+		seq_printf(m, " path:%s", tmp);
+		seq_putc(m, '\n');
+		mutex_unlock(&ch343->proc_mutex);
+	}
+	return 0;
+}
+
+static int ch343_proc_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, ch343_proc_show, NULL);
+}
+
+static const struct file_operations ch343_proc_fops = {
+	.owner = THIS_MODULE,
+	.open = ch343_proc_open,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
+
 static void ch343_write_buffers_free(struct ch343 *ch343)
 {
 	int i;
@@ -1274,7 +1761,8 @@ static void ch343_write_buffers_free(struct ch343 *ch343)
 	struct usb_device *usb_dev = interface_to_usbdev(ch343->control);
 
 	for (wb = &ch343->wb[0], i = 0; i < CH343_NW; i++, wb++)
-		usb_free_coherent(usb_dev, ch343->writesize, wb->buf, wb->dmah);
+		usb_free_coherent(usb_dev, ch343->writesize, wb->buf,
+				  wb->dmah);
 }
 
 static void ch343_read_buffers_free(struct ch343 *ch343)
@@ -1283,7 +1771,9 @@ static void ch343_read_buffers_free(struct ch343 *ch343)
 	int i;
 
 	for (i = 0; i < ch343->rx_buflimit; i++)
-		usb_free_coherent(usb_dev, ch343->readsize, ch343->read_buffers[i].base, ch343->read_buffers[i].dma);
+		usb_free_coherent(usb_dev, ch343->readsize,
+				  ch343->read_buffers[i].base,
+				  ch343->read_buffers[i].dma);
 }
 
 static int ch343_write_buffers_alloc(struct ch343 *ch343)
@@ -1292,12 +1782,15 @@ static int ch343_write_buffers_alloc(struct ch343 *ch343)
 	struct ch343_wb *wb;
 
 	for (wb = &ch343->wb[0], i = 0; i < CH343_NW; i++, wb++) {
-		wb->buf = usb_alloc_coherent(ch343->dev, ch343->writesize, GFP_KERNEL, &wb->dmah);
+		wb->buf = usb_alloc_coherent(ch343->dev, ch343->writesize,
+					     GFP_KERNEL, &wb->dmah);
 		if (!wb->buf) {
 			while (i != 0) {
 				--i;
 				--wb;
-				usb_free_coherent(ch343->dev, ch343->writesize, wb->buf, wb->dmah);
+				usb_free_coherent(ch343->dev,
+						  ch343->writesize,
+						  wb->buf, wb->dmah);
 			}
 			return -ENOMEM;
 		}
@@ -1327,37 +1820,52 @@ static int ch343_open(struct inode *inode, struct file *file)
 	}
 
 	file->private_data = ch343;
-
 exit:
 	return retval;
 }
 
 static int ch343_release(struct inode *inode, struct file *file)
 {
-	struct ch343 *ch343;
+	struct ch343 *ch343 = file->private_data;
 
-	ch343 = file->private_data;
-	if (ch343 == NULL)
+	if (ch343 == NULL || ch343->io_id != IOID)
 		return -ENODEV;
 
+	mutex_lock(&ch343->mutex);
+
+	if (ch343->disconnected) {
+		mutex_unlock(&ch343->mutex);
+		return -ENODEV;
+	}
+
+	mutex_unlock(&ch343->mutex);
 	return 0;
 }
 
-static long ch343_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+static long ch343_ioctl(struct file *file, unsigned int cmd,
+			unsigned long arg)
 {
-	struct ch343 *ch343;
+	struct ch343 *ch343 = file->private_data;
 	int rv = 0;
 	u8 *buffer;
 	unsigned long arg1, arg2, arg3, arg4, arg5, arg6;
 	u32 __user *argval = (u32 __user *)arg;
 
-	ch343 = file->private_data;
-	if (ch343 == NULL)
+	if (ch343 == NULL || ch343->io_id != IOID)
 		return -ENODEV;
 
+	mutex_lock(&ch343->mutex);
+
+	if (ch343->disconnected) {
+		rv = -ENODEV;
+		goto out_unfree;
+	}
+
 	buffer = kmalloc(512, GFP_KERNEL);
-	if (!buffer)
-		return -ENOMEM;
+	if (!buffer) {
+		rv = -ENOMEM;
+		goto out_unfree;
+	}
 
 	switch (cmd) {
 	case IOCTL_CMD_GETCHIPTYPE:
@@ -1373,8 +1881,9 @@ static long ch343_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		get_user(arg4, (u16 __user *)((u8 *)arg + 4));
 		get_user(arg5, (u16 __user *)((u8 *)arg + 6));
 		arg6 = (unsigned long)((u8 __user *)arg + 8);
-		rv = ch343_control_msg_in(ch343, (u8)arg1, (u8)arg2, (u16)arg3, (u16)arg4, (u8 __user *)arg6,
-					  (u16)arg5);
+		rv = ch343_control_msg_in(ch343, (u8)arg1, (u8)arg2,
+					  (u16)arg3, (u16)arg4,
+					  (u8 __user *)arg6, (u16)arg5);
 		break;
 	case IOCTL_CMD_CTRLOUT:
 		get_user(arg1, (u8 __user *)arg);
@@ -1383,8 +1892,9 @@ static long ch343_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		get_user(arg4, (u16 __user *)((u8 *)arg + 4));
 		get_user(arg5, (u16 __user *)((u8 *)arg + 6));
 		arg6 = (unsigned long)((u8 __user *)arg + 8);
-		rv = ch343_control_msg_out(ch343, (u8)arg1, (u8)arg2, (u16)arg3, (u16)arg4, (u8 __user *)arg6,
-					   (u16)arg5);
+		rv = ch343_control_msg_out(ch343, (u8)arg1, (u8)arg2,
+					   (u16)arg3, (u16)arg4,
+					   (u8 __user *)arg6, (u16)arg5);
 		if (rv != (u16)arg5) {
 			rv = -EINVAL;
 			goto out;
@@ -1397,13 +1907,27 @@ static long ch343_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 out:
 	kfree(buffer);
+out_unfree:
+	mutex_unlock(&ch343->mutex);
+
 	return rv;
 }
+
+#ifdef CONFIG_COMPAT
+static long ch343_compat_ioctl(struct file *file, unsigned int cmd,
+			       unsigned long arg)
+{
+	return ch343_ioctl(file, cmd, arg);
+}
+#endif
 
 static const struct file_operations ch343_fops = {
 	.owner = THIS_MODULE,
 	.open = ch343_open,
 	.unlocked_ioctl = ch343_ioctl,
+#ifdef CONFIG_COMPAT
+	.compat_ioctl = ch343_compat_ioctl,
+#endif
 	.release = ch343_release,
 };
 
@@ -1420,7 +1944,8 @@ static struct usb_class_driver ch343_class = {
 /*
  * USB probe and disconnect routines.
  */
-static int ch343_probe(struct usb_interface *intf, const struct usb_device_id *id)
+static int ch343_probe(struct usb_interface *intf,
+		       const struct usb_device_id *id)
 {
 	struct usb_cdc_union_desc *union_header = NULL;
 	unsigned char *buffer = intf->altsetting->extra;
@@ -1443,7 +1968,7 @@ static int ch343_probe(struct usb_interface *intf, const struct usb_device_id *i
 	int rv = -ENOMEM;
 
 	quirks = (unsigned long)id->driver_info;
-	if (!buffer) {
+	if ((!buffer) || (buflen == 0)) {
 		dev_err(&intf->dev, "Weird descriptor references\n");
 		return -EINVAL;
 	}
@@ -1465,17 +1990,18 @@ static int ch343_probe(struct usb_interface *intf, const struct usb_device_id *i
 			if (elength < sizeof(struct usb_cdc_union_desc))
 				goto next_desc;
 			if (union_header) {
-				dev_err(&intf->dev, "More than one "
-						    "union descriptor, skipping ...\n");
+				dev_err(&intf->dev,
+					"More than one "
+					"union descriptor, skipping ...\n");
 				goto next_desc;
 			}
 			union_header = (struct usb_cdc_union_desc *)buffer;
 			break;
 		default:
 			/*
-             * there are LOTS more CDC descriptors that
-             * could legitimately be found here.
-             */
+			 * there are LOTS more CDC descriptors that
+			 * could legitimately be found here.
+			 */
 			break;
 		}
 next_desc:
@@ -1483,14 +2009,22 @@ next_desc:
 		buffer += elength;
 	}
 
-	control_interface = usb_ifnum_to_if(usb_dev, union_header->bMasterInterface0);
-	data_interface = usb_ifnum_to_if(usb_dev, union_header->bSlaveInterface0);
+	if (!union_header) {
+		dev_err(&intf->dev, "Weird descriptor references\n");
+		return -EINVAL;
+	}
+
+	control_interface =
+		usb_ifnum_to_if(usb_dev, union_header->bMasterInterface0);
+	data_interface =
+		usb_ifnum_to_if(usb_dev, union_header->bSlaveInterface0);
 
 	if (intf != control_interface)
 		return -ENODEV;
 
 	if (usb_interface_claimed(data_interface)) {
-		dev_err(&intf->dev, "The data interface isn't available\n");
+		dev_err(&intf->dev,
+			"The data interface isn't available\n");
 		return -EBUSY;
 	}
 
@@ -1506,18 +2040,23 @@ next_desc:
 		swap(epread, epwrite);
 
 	ch343 = kzalloc(sizeof(struct ch343), GFP_KERNEL);
-	if (ch343 == NULL)
-		goto alloc_fail;
+	if (!ch343)
+		return -ENOMEM;
 
-	ch343->idVendor = id->idVendor;
-	ch343->idProduct = id->idProduct;
-	ch343->iface = control_interface->cur_altsetting->desc.bInterfaceNumber / 2;
+	ch343->idVendor = le16_to_cpu(id->idVendor);
+	ch343->idProduct = le16_to_cpu(id->idProduct);
+	ch343->iface =
+		control_interface->cur_altsetting->desc.bInterfaceNumber /
+		2;
+
+	usb_get_intf(control_interface);
 
 	minor = ch343_alloc_minor(ch343);
 	if (minor < 0) {
 		dev_err(&intf->dev, "no more free ch343 devices\n");
+		ch343->minor = CH343_MINOR_INVALID;
 		kfree(ch343);
-		return -ENODEV;
+		return minor;
 	}
 
 	ctrlsize = usb_endpoint_maxp(epctrl);
@@ -1533,44 +2072,50 @@ next_desc:
 
 	INIT_WORK(&ch343->work, ch343_softint);
 	init_waitqueue_head(&ch343->wioctl);
+	init_waitqueue_head(&ch343->sendioctl);
 	spin_lock_init(&ch343->write_lock);
 	spin_lock_init(&ch343->read_lock);
 	mutex_init(&ch343->mutex);
-	ch343->rx_endpoint = usb_rcvbulkpipe(usb_dev, epread->bEndpointAddress);
+	mutex_init(&ch343->proc_mutex);
+	ch343->rx_endpoint =
+		usb_rcvbulkpipe(usb_dev, epread->bEndpointAddress);
 	tty_port_init(&ch343->port);
 	ch343->port.ops = &ch343_port_ops;
 	init_usb_anchor(&ch343->delayed);
 	ch343->quirks = quirks;
 
-	buf = usb_alloc_coherent(usb_dev, ctrlsize, GFP_KERNEL, &ch343->ctrl_dma);
+	buf = usb_alloc_coherent(usb_dev, ctrlsize, GFP_KERNEL,
+				 &ch343->ctrl_dma);
 	if (!buf)
-		goto alloc_fail2;
+		goto err_put_port;
 	ch343->ctrl_buffer = buf;
 
 	if (ch343_write_buffers_alloc(ch343) < 0)
-		goto alloc_fail4;
+		goto err_free_ctrl_buffer;
 
 	ch343->ctrlurb = usb_alloc_urb(0, GFP_KERNEL);
 	if (!ch343->ctrlurb)
-		goto alloc_fail5;
+		goto err_free_write_buffers;
 
 	for (i = 0; i < num_rx_buf; i++) {
 		struct ch343_rb *rb = &(ch343->read_buffers[i]);
 		struct urb *urb;
 
-		rb->base = usb_alloc_coherent(ch343->dev, readsize, GFP_KERNEL, &rb->dma);
+		rb->base = usb_alloc_coherent(ch343->dev, readsize,
+					      GFP_KERNEL, &rb->dma);
 		if (!rb->base)
-			goto alloc_fail6;
+			goto err_free_read_urbs;
 		rb->index = i;
 		rb->instance = ch343;
 
 		urb = usb_alloc_urb(0, GFP_KERNEL);
 		if (!urb)
-			goto alloc_fail6;
+			goto err_free_read_urbs;
 
 		urb->transfer_flags |= URB_NO_TRANSFER_DMA_MAP;
 		urb->transfer_dma = rb->dma;
-		usb_fill_bulk_urb(urb, ch343->dev, ch343->rx_endpoint, rb->base, ch343->readsize,
+		usb_fill_bulk_urb(urb, ch343->dev, ch343->rx_endpoint,
+				  rb->base, ch343->readsize,
 				  ch343_read_bulk_callback, rb);
 
 		ch343->read_urbs[i] = urb;
@@ -1581,80 +2126,135 @@ next_desc:
 
 		snd->urb = usb_alloc_urb(0, GFP_KERNEL);
 		if (snd->urb == NULL)
-			goto alloc_fail7;
+			goto err_free_write_urbs;
 
-		usb_fill_bulk_urb(snd->urb, usb_dev, usb_sndbulkpipe(usb_dev, epwrite->bEndpointAddress), NULL,
-				  ch343->writesize, ch343_write_bulk, snd);
+		usb_fill_bulk_urb(
+			snd->urb, usb_dev,
+			usb_sndbulkpipe(usb_dev,
+					epwrite->bEndpointAddress),
+			NULL, ch343->writesize, ch343_write_bulk, snd);
 		snd->urb->transfer_flags |= URB_NO_TRANSFER_DMA_MAP;
 		snd->instance = ch343;
 	}
 
 	usb_set_intfdata(intf, ch343);
 
-	usb_fill_int_urb(ch343->ctrlurb, usb_dev, usb_rcvintpipe(usb_dev, epctrl->bEndpointAddress), ch343->ctrl_buffer,
-			 ctrlsize, ch343_ctrl_irq, ch343, epctrl->bInterval ? epctrl->bInterval : 16);
+	usb_fill_int_urb(ch343->ctrlurb, usb_dev,
+			 usb_rcvintpipe(usb_dev, epctrl->bEndpointAddress),
+			 ch343->ctrl_buffer, ctrlsize, ch343_ctrl_irq,
+			 ch343,
+			 epctrl->bInterval ? epctrl->bInterval : 16);
 	ch343->ctrlurb->transfer_flags |= URB_NO_TRANSFER_DMA_MAP;
 	ch343->ctrlurb->transfer_dma = ch343->ctrl_dma;
 
 	dev_info(&intf->dev, "ttyCH343USB%d: usb to uart device\n", minor);
 
-	usb_driver_claim_interface(&ch343_driver, data_interface, ch343);
-	usb_set_intfdata(data_interface, ch343);
-	usb_get_intf(control_interface);
-
 	rv = ch343_configure(ch343);
 	if (rv)
-		goto alloc_fail7;
+		goto err_free_write_urbs;
 
-	if (ch343->iface == 0) {
+	if (ch343->iosupport && (ch343->iface == 0) &&
+	    (ch343->io_intf == NULL)) {
 		/* register the device now, as it is ready */
 		rv = usb_register_dev(intf, &ch343_class);
 		if (rv) {
 			/* error when registering this driver */
-			dev_err(&intf->dev, "Not able to get a minor for this device.\n");
+			dev_err(&intf->dev,
+				"Not able to get a minor for this device.\n");
 		} else {
-			g_intf = intf;
+			ch343->io_id = IOID;
+			ch343->io_intf = intf;
+			dev_info(
+				&intf->dev,
+				"USB to GPIO device now attached to ch343_iodev%d\n",
+				intf->minor);
 		}
 	}
 
-	tty_dev = tty_port_register_device(&ch343->port, ch343_tty_driver, minor, &control_interface->dev);
+	usb_driver_claim_interface(&ch343_driver, data_interface, ch343);
+	usb_set_intfdata(data_interface, ch343);
+
+	ch343->line.dwDTERate = 115200;
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 7, 0))
+	tty_dev = tty_port_register_device(&ch343->port, ch343_tty_driver,
+					   minor, &control_interface->dev);
 	if (IS_ERR(tty_dev)) {
 		rv = PTR_ERR(tty_dev);
-		goto alloc_fail7;
+		goto err_release_data_interface;
 	}
+#else
+	tty_register_device(ch343_tty_driver, minor,
+			    &control_interface->dev);
+#endif
 
 	return 0;
 
-alloc_fail7:
-	usb_set_intfdata(intf, NULL);
+err_release_data_interface:
+	usb_set_intfdata(data_interface, NULL);
+	usb_driver_release_interface(&ch343_driver, data_interface);
+err_free_write_urbs:
 	for (i = 0; i < CH343_NW; i++)
 		usb_free_urb(ch343->wb[i].urb);
-alloc_fail6:
+err_free_read_urbs:
 	for (i = 0; i < num_rx_buf; i++)
 		usb_free_urb(ch343->read_urbs[i]);
 	ch343_read_buffers_free(ch343);
 	usb_free_urb(ch343->ctrlurb);
-alloc_fail5:
+err_free_write_buffers:
 	ch343_write_buffers_free(ch343);
-alloc_fail4:
-	usb_free_coherent(usb_dev, ctrlsize, ch343->ctrl_buffer, ch343->ctrl_dma);
-alloc_fail2:
-	ch343_release_minor(ch343);
-	kfree(ch343);
-alloc_fail:
+err_free_ctrl_buffer:
+	usb_free_coherent(usb_dev, ctrlsize, ch343->ctrl_buffer,
+			  ch343->ctrl_dma);
+err_put_port:
+	tty_port_put(&ch343->port);
+
 	return rv;
 }
 
 static void stop_data_traffic(struct ch343 *ch343)
 {
+	struct urb *urb;
+	struct ch343_wb *wb;
 	int i;
+
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 16, 0))
+
+	usb_autopm_get_interface_no_resume(ch343->control);
+	ch343->control->needs_remote_wakeup = 0;
+	usb_autopm_put_interface(ch343->control);
+
+	for (;;) {
+		urb = usb_get_from_anchor(&ch343->delayed);
+		if (!urb)
+			break;
+		wb = urb->context;
+		wb->use = 0;
+		usb_autopm_put_interface_async(ch343->control);
+	}
 
 	usb_kill_urb(ch343->ctrlurb);
 	for (i = 0; i < CH343_NW; i++)
 		usb_kill_urb(ch343->wb[i].urb);
 	for (i = 0; i < ch343->rx_buflimit; i++)
 		usb_kill_urb(ch343->read_urbs[i]);
-	cancel_work_sync(&ch343->work);
+
+#else
+	mutex_lock(&ch343->mutex);
+	if (!ch343->disconnected) {
+		usb_autopm_get_interface(ch343->control);
+		ch343_set_control(ch343, ch343->ctrlout = 0);
+
+		usb_kill_urb(ch343->ctrlurb);
+		for (i = 0; i < CH343_NW; i++)
+			usb_kill_urb(ch343->wb[i].urb);
+		for (i = 0; i < ch343->rx_buflimit; i++)
+			usb_kill_urb(ch343->read_urbs[i]);
+		ch343->control->needs_remote_wakeup = 0;
+
+		usb_autopm_put_interface(ch343->control);
+	}
+	mutex_unlock(&ch343->mutex);
+#endif
 }
 
 static void ch343_disconnect(struct usb_interface *intf)
@@ -1669,13 +2269,16 @@ static void ch343_disconnect(struct usb_interface *intf)
 		return;
 
 	/* give back minor */
-	if ((ch343->iface == 0) && (g_intf != NULL)) {
-		usb_deregister_dev(g_intf, &ch343_class);
+	if (ch343->iosupport && (ch343->iface == 0) &&
+	    (ch343->io_intf != NULL)) {
+		usb_deregister_dev(ch343->io_intf, &ch343_class);
+		ch343->io_intf = NULL;
 	}
 
 	mutex_lock(&ch343->mutex);
 	ch343->disconnected = true;
 	wake_up_all(&ch343->wioctl);
+	wake_up_all(&ch343->sendioctl);
 	usb_set_intfdata(ch343->control, NULL);
 	usb_set_intfdata(ch343->data, NULL);
 	mutex_unlock(&ch343->mutex);
@@ -1695,10 +2298,13 @@ static void ch343_disconnect(struct usb_interface *intf)
 	for (i = 0; i < ch343->rx_buflimit; i++)
 		usb_free_urb(ch343->read_urbs[i]);
 	ch343_write_buffers_free(ch343);
-	usb_free_coherent(usb_dev, ch343->ctrlsize, ch343->ctrl_buffer, ch343->ctrl_dma);
+	usb_free_coherent(usb_dev, ch343->ctrlsize, ch343->ctrl_buffer,
+			  ch343->ctrl_dma);
 	ch343_read_buffers_free(ch343);
 
-	usb_driver_release_interface(&ch343_driver, intf == ch343->control ? ch343->data : ch343->control);
+	usb_driver_release_interface(
+		&ch343_driver,
+		intf == ch343->control ? ch343->data : ch343->control);
 	tty_port_put(&ch343->port);
 	dev_info(&intf->dev, "%s\n", "ch343 usb device disconnect.");
 }
@@ -1766,23 +2372,56 @@ static int ch343_reset_resume(struct usb_interface *intf)
 #else
 	if (test_bit(ASYNCB_INITIALIZED, &ch343->port.flags))
 #endif
-		tty_port_tty_hangup(&ch343->port, false);
 
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0))
+		struct tty_struct *tty = tty_port_tty_get(&ch343->port);
+	tty_hangup(tty);
+#else
+		tty_port_tty_hangup(&ch343->port, false);
+#endif
 	return ch343_resume(intf);
 }
 #endif /* CONFIG_PM */
 
 static const struct usb_device_id ch343_ids[] = {
-	{ USB_DEVICE_INTERFACE_PROTOCOL(0x1a86, 0x55d2, USB_CDC_ACM_PROTO_AT_V25TER) }, /* ch342 chip */
-	{ USB_DEVICE_INTERFACE_PROTOCOL(0x1a86, 0x55d3, USB_CDC_ACM_PROTO_AT_V25TER) }, /* ch343 chip */
-	{ USB_DEVICE_INTERFACE_PROTOCOL(0x1a86, 0x55d5, USB_CDC_ACM_PROTO_AT_V25TER) }, /* ch344 chip */
-	{ USB_DEVICE_INTERFACE_PROTOCOL(0x1a86, 0x55da, USB_CDC_ACM_PROTO_AT_V25TER) }, /* ch347 chip mode0*/
-	{ USB_DEVICE_INTERFACE_PROTOCOL(0x1a86, 0x55db, USB_CDC_ACM_PROTO_AT_V25TER) }, /* ch347 chip mode1*/
-	{ USB_DEVICE_INTERFACE_PROTOCOL(0x1a86, 0x55dd, USB_CDC_ACM_PROTO_AT_V25TER) }, /* ch347 chip mode3*/
-	{ USB_DEVICE_INTERFACE_PROTOCOL(0x1a86, 0x55d8, USB_CDC_ACM_PROTO_AT_V25TER) }, /* ch9101 chip */
-	{ USB_DEVICE_INTERFACE_PROTOCOL(0x1a86, 0x55d4, USB_CDC_ACM_PROTO_AT_V25TER) }, /* ch9102 chip */
-	{ USB_DEVICE_INTERFACE_PROTOCOL(0x1a86, 0x55d7, USB_CDC_ACM_PROTO_AT_V25TER) }, /* ch9103 chip */
-	{ USB_DEVICE_INTERFACE_PROTOCOL(0x1a86, 0x55df, USB_CDC_ACM_PROTO_AT_V25TER) }, /* ch9104 chip */
+	/* ch342 chip */
+	{ USB_DEVICE(0x1a86, 0x55d2) },
+	/* ch343 chip */
+	{ USB_DEVICE(0x1a86, 0x55d3) },
+	/* ch344 chip */
+	{ USB_DEVICE(0x1a86, 0x55d5) },
+	/* ch9143 chip */
+	{ USB_DEVICE(0x1a86, 0x55d6) },
+	/* ch347t chip mode0*/
+	{ USB_DEVICE(0x1a86, 0x55da) },
+	/* ch347t chip mode1*/
+	{ USB_DEVICE_INTERFACE_NUMBER(0x1a86, 0x55db, 0x00) },
+	/* ch347t chip mode3*/
+	{ USB_DEVICE_INTERFACE_NUMBER(0x1a86, 0x55dd, 0x00) },
+	/* ch347f chip uart0*/
+	{ USB_DEVICE_INTERFACE_NUMBER(0x1a86, 0x55de, 0x00) },
+	/* ch347f chip uart1*/
+	{ USB_DEVICE_INTERFACE_NUMBER(0x1a86, 0x55de, 0x02) },
+	/* ch339w chip */
+	{ USB_DEVICE_INTERFACE_NUMBER(0x1a86, 0x55e7, 0x00) },
+	/* ch9101 chip */
+	{ USB_DEVICE(0x1a86, 0x55d8) },
+	/* ch9102 chip */
+	{ USB_DEVICE(0x1a86, 0x55d4) },
+	/* ch9103 chip */
+	{ USB_DEVICE(0x1a86, 0x55d7) },
+	/* ch9104 chip */
+	{ USB_DEVICE(0x1a86, 0x55df) },
+	/* ch9111l chip mode0*/
+	{ USB_DEVICE(0x1a86, 0x55e9) },
+	/* ch9111l chip mode1*/
+	{ USB_DEVICE(0x1a86, 0x55ea) },
+	/* ch9114 chip */
+	{ USB_DEVICE(0x1a86, 0x55e8) },
+	/* ch346c chip mode0/1*/
+	{ USB_DEVICE_INTERFACE_NUMBER(0x1a86, 0x55eb, 0x00) },
+	/* ch346c chip mode2*/
+	{ USB_DEVICE(0x1a86, 0x55ec) },
 	{}
 };
 
@@ -1801,7 +2440,9 @@ static struct usb_driver ch343_driver = {
 #ifdef CONFIG_PM
 	.supports_autosuspend = 1,
 #endif
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 5, 0))
 	.disable_hub_initiated_lpm = 1,
+#endif
 };
 
 /*
@@ -1822,13 +2463,20 @@ static const struct tty_operations ch343_ops = {
 	.tiocmget = ch343_tty_tiocmget,
 	.tiocmset = ch343_tty_tiocmset,
 	.get_icount = ch343_get_icount,
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 18, 0))
+	.proc_fops = &ch343_proc_fops,
+#else
+	.proc_show = ch343_proc_show,
+#endif
 };
 
 static int __init ch343_init(void)
 {
 	int retval;
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0))
-	ch343_tty_driver = tty_alloc_driver(CH343_TTY_MINORS, TTY_DRIVER_REAL_RAW | TTY_DRIVER_DYNAMIC_DEV);
+	ch343_tty_driver = tty_alloc_driver(
+		CH343_TTY_MINORS,
+		TTY_DRIVER_REAL_RAW | TTY_DRIVER_DYNAMIC_DEV);
 	if (IS_ERR(ch343_tty_driver))
 		return PTR_ERR(ch343_tty_driver);
 #else
@@ -1836,14 +2484,23 @@ static int __init ch343_init(void)
 	if (!ch343_tty_driver)
 		return -ENOMEM;
 #endif
-	ch343_tty_driver->driver_name = "usbch343", ch343_tty_driver->name = "ttyCH343USB",
-	ch343_tty_driver->major = CH343_TTY_MAJOR, ch343_tty_driver->minor_start = 0,
-	ch343_tty_driver->type = TTY_DRIVER_TYPE_SERIAL, ch343_tty_driver->subtype = SERIAL_TYPE_NORMAL,
+	ch343_tty_driver->driver_name = "usbch343",
+	ch343_tty_driver->name = "ttyCH343USB",
+	ch343_tty_driver->major = CH343_TTY_MAJOR,
+	ch343_tty_driver->minor_start = 0,
+	ch343_tty_driver->type = TTY_DRIVER_TYPE_SERIAL,
+	ch343_tty_driver->subtype = SERIAL_TYPE_NORMAL,
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 15, 0))
-	ch343_tty_driver->flags = TTY_DRIVER_REAL_RAW | TTY_DRIVER_DYNAMIC_DEV;
+	ch343_tty_driver->flags = TTY_DRIVER_REAL_RAW |
+				  TTY_DRIVER_DYNAMIC_DEV;
 #endif
 	ch343_tty_driver->init_termios = tty_std_termios;
-	ch343_tty_driver->init_termios.c_cflag = B9600 | CS8 | CREAD | HUPCL | CLOCAL;
+	ch343_tty_driver->init_termios.c_cflag = B115200 | CS8 | CREAD |
+						 HUPCL | CLOCAL;
+	ch343_tty_driver->init_termios.c_lflag &=
+		~(ECHO | ECHONL | ICANON | ISIG);
+	ch343_tty_driver->init_termios.c_oflag &= ~OPOST;
+
 	tty_set_operations(ch343_tty_driver, &ch343_ops);
 
 	retval = tty_register_driver(ch343_tty_driver);
@@ -1882,12 +2539,14 @@ static void __exit ch343_exit(void)
 #else
 	put_tty_driver(ch343_tty_driver);
 #endif
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 5, 0))
 	idr_destroy(&ch343_minors);
+#endif
 	printk(KERN_INFO KBUILD_MODNAME ": "
 					"ch343 driver exit.\n");
 }
 
-module_init(ch343_init);
+fs_initcall(ch343_init);
 module_exit(ch343_exit);
 
 MODULE_AUTHOR(DRIVER_AUTHOR);
