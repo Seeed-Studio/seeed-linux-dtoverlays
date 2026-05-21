@@ -90,10 +90,17 @@ function check_kernel_headers() {
     Raspbian|Debian)
       case $DISTRO_CODE in
         buster|bullseye)
-          apt-get -y --force-yes install raspberrypi-kernel-headers
+          apt-get -y --allow-downgrade --allow-unauthenticated install raspberrypi-kernel-headers
           ;;
         bookworm|trixie)
-          apt-get -y --force-yes linux-headers-rpi-${VER_RUN##*-}
+          apt-get -y --allow-downgrade --allow-unauthenticated install linux-headers-rpi-${VER_RUN##*-}
+          if [ $? -ne 0 ]; then
+            echo " !!! Failed to install kernel headers."
+            echo "     On trixie, this may be caused by missing 'gcc-14-for-host' package."
+            echo "     Try: apt-get update && apt-get -y install gcc-14-for-host"
+            echo "     Then re-run this script."
+            exit 1
+          fi
           ;;
       esac
       ;;
@@ -138,10 +145,16 @@ function install_kernel() {
       Raspbian|Debian)
         case $DISTRO_CODE in
           buster|bullseye)
-            apt-get -y --force-yes install raspberrypi-kernel-headers raspberrypi-kernel
+            apt-get -y --allow-downgrade --allow-unauthenticated install raspberrypi-kernel-headers raspberrypi-kernel
             ;;
           bookworm|trixie)
-            apt-get -y --force-yes install linux-image-rpi-${ker_ver##*-} linux-headers-rpi-${ker_ver##*-}
+            apt-get -y --allow-downgrade --allow-unauthenticated install linux-image-rpi-${ker_ver##*-} linux-headers-rpi-${ker_ver##*-}
+            if [ $? -ne 0 ]; then
+              echo " !!! Failed to install kernel packages."
+              echo "     On trixie, try: apt-get update && apt-get -y install gcc-14-for-host"
+              echo "     Then re-run this script."
+              exit 1
+            fi
             ;;
         esac
         ;;
@@ -164,8 +177,8 @@ function install_kernel() {
         exit 2
       }
     else
-      apt-get -y --force-yes install linux-image-rpi-${ker_ver##*-}=$FORCE_KERNEL 
-      apt-get -y --force-yes install linux-headers-rpi-${ker_ver##*-}=$FORCE_KERNEL
+      apt-get -y --allow-downgrade --allow-unauthenticated install linux-image-rpi-${ker_ver##*-}=$FORCE_KERNEL 
+      apt-get -y --allow-downgrade --allow-unauthenticated install linux-headers-rpi-${ker_ver##*-}=$FORCE_KERNEL
     fi
   }
 }
@@ -636,7 +649,7 @@ function install {
   setup_display
 
   # touch panel
-  # setup_tp
+  setup_tp
 
   # rebuild initramfs
   update-initramfs -c -k $(uname -r)
