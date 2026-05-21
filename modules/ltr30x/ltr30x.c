@@ -24,6 +24,12 @@
 #include <linux/iio/triggered_buffer.h>
 #include <linux/version.h>
 
+/* Kernel 6.18+ renamed IIO direct mode functions */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 18, 0)
+#define iio_device_claim_direct_mode iio_device_claim_direct
+#define iio_device_release_direct_mode iio_device_release_direct
+#endif
+
 #define LTR501_DRV_NAME "ltr501"
 
 #define LTR501_ALS_CONTR 0x80 /* ALS operation mode, SW reset */
@@ -1055,10 +1061,17 @@ static int ltr501_read_event_config(struct iio_dev *indio_dev,
 	return -EINVAL;
 }
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 18, 0)
+static int ltr501_write_event_config(struct iio_dev *indio_dev,
+				     const struct iio_chan_spec *chan,
+				     enum iio_event_type type,
+				     enum iio_event_direction dir, bool state)
+#else
 static int ltr501_write_event_config(struct iio_dev *indio_dev,
 				     const struct iio_chan_spec *chan,
 				     enum iio_event_type type,
 				     enum iio_event_direction dir, int state)
+#endif
 {
 	struct ltr501_data *data = iio_priv(indio_dev);
 	int ret;

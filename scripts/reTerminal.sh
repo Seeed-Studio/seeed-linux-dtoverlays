@@ -35,6 +35,13 @@ TRIXIE_NUM=13
 DEBIAN_VER=`cat /etc/debian_version`
 DEBIAN_NUM=$(echo "$DEBIAN_VER" | awk -F'.' '{print $1}')
 
+# apt force options vary by distro version
+if [ $DEBIAN_NUM -lt $TRIXIE_NUM ]; then
+  APT_FORCE="--allow-downgrade --allow-unauthenticated"
+else
+  APT_FORCE=""
+fi
+
 _VER_RUN=""
 function get_kernel_version() {
   local ZIMAGE IMG_OFFSET
@@ -90,10 +97,10 @@ function check_kernel_headers() {
     Raspbian|Debian)
       case $DISTRO_CODE in
         buster|bullseye)
-          apt-get -y --allow-downgrade --allow-unauthenticated install raspberrypi-kernel-headers
+          apt-get -y $APT_FORCE install raspberrypi-kernel-headers
           ;;
         bookworm|trixie)
-          apt-get -y --allow-downgrade --allow-unauthenticated install linux-headers-rpi-${VER_RUN##*-}
+          apt-get -y $APT_FORCE install linux-headers-rpi-${VER_RUN##*-}
           if [ $? -ne 0 ]; then
             echo " !!! Failed to install kernel headers."
             echo "     On trixie, this may be caused by missing 'gcc-14-for-host' package."
@@ -145,10 +152,10 @@ function install_kernel() {
       Raspbian|Debian)
         case $DISTRO_CODE in
           buster|bullseye)
-            apt-get -y --allow-downgrade --allow-unauthenticated install raspberrypi-kernel-headers raspberrypi-kernel
+            apt-get -y $APT_FORCE install raspberrypi-kernel-headers raspberrypi-kernel
             ;;
           bookworm|trixie)
-            apt-get -y --allow-downgrade --allow-unauthenticated install linux-image-rpi-${ker_ver##*-} linux-headers-rpi-${ker_ver##*-}
+            apt-get -y $APT_FORCE install linux-image-rpi-${ker_ver##*-} linux-headers-rpi-${ker_ver##*-}
             if [ $? -ne 0 ]; then
               echo " !!! Failed to install kernel packages."
               echo "     On trixie, try: apt-get update && apt-get -y install gcc-14-for-host"
@@ -177,8 +184,8 @@ function install_kernel() {
         exit 2
       }
     else
-      apt-get -y --allow-downgrade --allow-unauthenticated install linux-image-rpi-${ker_ver##*-}=$FORCE_KERNEL 
-      apt-get -y --allow-downgrade --allow-unauthenticated install linux-headers-rpi-${ker_ver##*-}=$FORCE_KERNEL
+      apt-get -y $APT_FORCE install linux-image-rpi-${ker_ver##*-}=$FORCE_KERNEL 
+      apt-get -y $APT_FORCE install linux-headers-rpi-${ker_ver##*-}=$FORCE_KERNEL
     fi
   }
 }
@@ -589,6 +596,14 @@ function setup_display {
               mkdir -p "$file/.config/labwc"
               grep -q "wlr-randr --output DSI-1 --transform 270" "$file/.config/labwc/autostart" || \
                 echo "wlr-randr --output DSI-1 --transform 270 &" >> "$file/.config/labwc/autostart"
+              if [ "$device" = "reTerminal-DM" ]; then
+                cat > "$file/.config/labwc/rc.xml" << 'LABWCRC'
+<?xml version="1.0"?>
+<openbox_config xmlns="http://openbox.org/3.4/rc">
+	<touch deviceName="Goodix Capacitive TouchScreen" mapToOutput="" mouseEmulation="yes"/>
+</openbox_config>
+LABWCRC
+              fi
             done
           fi
           ;;
