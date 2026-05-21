@@ -42,6 +42,27 @@ else
   APT_FORCE=""
 fi
 
+# Detect 32-bit userspace with 64-bit (v8) kernel on Raspbian
+# In this config, v8 headers need gcc-14:arm64 which is unavailable in armhf repos.
+# This is a fundamental limitation; the user must switch to 64-bit OS.
+function check_mixed_arch_kernel() {
+  local host_arch=$(dpkg --print-architecture)
+  local kernel_suffix=$(uname -r | sed 's/.*rpi-//')
+
+  if [ "$host_arch" = "armhf" ] && [ "$kernel_suffix" = "v8" ]; then
+    echo ""
+    echo " !!! Incompatible system configuration detected:"
+    echo "     This is a 32-bit OS (armhf) running a 64-bit kernel (v8)."
+    echo "     Kernel module compilation requires gcc-14:arm64 which is"
+    echo "     not available in 32-bit repositories."
+    echo ""
+    echo "     Please re-flash with Raspberry Pi OS 64-bit (bookworm/trixie)."
+    echo "     Download: https://www.raspberrypi.com/software/operating-systems/"
+    echo ""
+    exit 1
+  fi
+}
+
 _VER_RUN=""
 function get_kernel_version() {
   local ZIMAGE IMG_OFFSET
@@ -100,6 +121,8 @@ function check_kernel_headers() {
           apt-get -y $APT_FORCE install raspberrypi-kernel-headers
           ;;
         bookworm|trixie)
+          # Check for 32-bit userspace + 64-bit kernel before attempting install
+          check_mixed_arch_kernel
           apt-get -y $APT_FORCE install linux-headers-rpi-${VER_RUN##*-}
           if [ $? -ne 0 ]; then
             echo " !!! Failed to install kernel headers."
@@ -155,6 +178,8 @@ function install_kernel() {
             apt-get -y $APT_FORCE install raspberrypi-kernel-headers raspberrypi-kernel
             ;;
           bookworm|trixie)
+            # Check for 32-bit userspace + 64-bit kernel before attempting install
+            check_mixed_arch_kernel
             apt-get -y $APT_FORCE install linux-image-rpi-${ker_ver##*-} linux-headers-rpi-${ker_ver##*-}
             if [ $? -ne 0 ]; then
               echo " !!! Failed to install kernel packages."
