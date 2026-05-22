@@ -239,41 +239,48 @@ function uninstall_modules {
   done
 }
 
+# Safe sed replacement for vfat filesystems where sed -i can truncate files
+function safe_sed {
+  local tmp=$(mktemp)
+  sed "$1" "$2" > "$tmp" && cat "$tmp" > "$2"
+  rm -f "$tmp"
+}
+
 # set dtparam=$1=$2
 function set_config_dtparam {
   if [ "`grep ".*dtparam=$1=.*$" ${CFG_PATH}`" ]; then
     # item exist
-    sed -i "s/.*dtparam=$1=.*$/dtparam=$1=$2/g" ${CFG_PATH}
+    safe_sed "s/.*dtparam=$1=.*$/dtparam=$1=$2/g" ${CFG_PATH}
   else
     # not exist, apply new item
-    echo "dtparam=$1=$2" >> $CFG_PATH 
+    echo "dtparam=$1=$2" >> $CFG_PATH
   fi
 }
 
 # remove dtparam=$1=$2
 function remove_config_dtparam {
-  sed -i "/^dtparam=$1=$2$/d" ${CFG_PATH}
+  safe_sed "/^dtparam=$1=$2$/d" ${CFG_PATH}
 }
 
 # set dtoverlay=$1
 function set_config_dtoverlay {
   if [ "`grep ".*dtoverlay=$1$" ${CFG_PATH}`" ]; then
     # item exist
-    sed -i "s/.*dtoverlay=$1$/dtoverlay=$1/g" ${CFG_PATH}
+    safe_sed "s/.*dtoverlay=$1$/dtoverlay=$1/g" ${CFG_PATH}
   else
     # not exist, apply new item
-    echo "dtoverlay=$1" >> $CFG_PATH 
+    echo "dtoverlay=$1" >> $CFG_PATH
   fi
 }
 
 # remove dtoverlay=$1
 function remove_config_dtoverlay {
-  sed -i "/^dtoverlay=$1$/d" ${CFG_PATH}
+  safe_sed "/^dtoverlay=$1$/d" ${CFG_PATH}
 }
 
 # commit config value
 function commit_config_value {
-    sed -i "s/^$1$/#&/g" ${CFG_PATH}
+    safe_sed "s/^$1$/#&/g" ${CFG_PATH}
 }
 
 # set $1=$2
@@ -284,7 +291,7 @@ function set_config_value {
 
 # remove $1=$2
 function remove_config_value {
-  sed -i "/^$1=$2$/d" ${CFG_PATH}
+  safe_sed "/^$1=$2$/d" ${CFG_PATH}
 }
 
 # apply new value on cmdline
@@ -451,7 +458,7 @@ function install_overlay {
   echo $CMDLINE > $CLI_PATH
 
   # config.txt
-  sed -i "s/.*dtparam=i2c_arm=.*$/dtparam=i2c_arm=on/g" ${CFG_PATH}
+  safe_sed "\1" ${CFG_PATH}
 
   grep -q "^enable_uart=1$" $CFG_PATH || \
     echo "enable_uart=1" >> $CFG_PATH
@@ -498,16 +505,16 @@ function uninstall_overlay {
   echo $CMDLINE > $CLI_PATH
 
   # config.txt
-  sed -i "/^disable_splash=1$/d" ${CFG_PATH}
-  sed -i "/^ignore_lcd=1$/d" ${CFG_PATH}
-  sed -i "/^dtoverlay=vc4-kms-v3d-pi4$/d" ${CFG_PATH}
-  sed -i "/^dtoverlay=i2c3,pins_4_5$/d" ${CFG_PATH}
-  sed -i "/^gpio=13=pu$/d" ${CFG_PATH}
+  safe_sed "\1" ${CFG_PATH}
+  safe_sed "\1" ${CFG_PATH}
+  safe_sed "\1" ${CFG_PATH}
+  safe_sed "\1" ${CFG_PATH}
+  safe_sed "\1" ${CFG_PATH}
 
   for i
   do
     rm -fv $OVERLAY_DIR/$i.dtbo || exit 1;
-	sed -i "/^dtoverlay="$i"$/d" ${CFG_PATH}
+	safe_sed "\1" ${CFG_PATH}
   done
 
   rm -fv overlays/rpi/.*.tmp
@@ -516,13 +523,13 @@ function uninstall_overlay {
 }
 
 function setup_overlay {
-  sed -i "/^dtoverlay=$1$/s//dtoverlay=$1,$2/" ${CFG_PATH}
+  safe_sed "\1" ${CFG_PATH}
 }
 
 #NOTICE: this function must be used
 # before the uninstall_overlay
 function unsetup_overlay {
-  sed -i "/^dtoverlay=$1,$2$/s//dtoverlay=$1/" ${CFG_PATH}
+  safe_sed "\1" ${CFG_PATH}
 }
 
 function usage() {
@@ -816,7 +823,7 @@ fi
 echo -e "\n### Sync kernel and userland"
 if [ $arch_r != "arm64" ]; then
   grep -q "^arm_64bit" ${CFG_PATH} && \
-  sed -i 's/arm_64bit=.*/arm_64bit=0/' ${CFG_PATH} || \
+  safe_sed 's/arm_64bit=.*/arm_64bit=0/' ${CFG_PATH} || \
   echo "arm_64bit=0" >> ${CFG_PATH} 
 fi
 
