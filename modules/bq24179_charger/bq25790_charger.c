@@ -959,8 +959,13 @@ static const struct regmap_config bq25790_regmap_config = {
 static int bq25790_power_supply_init(struct bq25790_device *bq,
 							struct device *dev)
 {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 18, 0)
+	struct power_supply_config psy_cfg = { .drv_data = bq,
+						.fwnode = dev_fwnode(dev), };
+#else
 	struct power_supply_config psy_cfg = { .drv_data = bq,
 						.of_node = dev->of_node, };
+#endif
 
 	psy_cfg.supplied_to = bq25790_charger_supplied_to;
 	psy_cfg.num_supplicants = ARRAY_SIZE(bq25790_charger_supplied_to);
