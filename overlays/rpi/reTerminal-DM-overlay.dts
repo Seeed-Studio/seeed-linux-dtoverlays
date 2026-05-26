@@ -39,6 +39,7 @@
 				#interrupt-cells=<2>;
 				interrupt-parent = <&gpio>;
 				interrupts = <6 2>; /* IRQ_TYPE_EDGE_FALLING */
+				#address-cells = <0>;
 				interrupt-controller;
 			};
 

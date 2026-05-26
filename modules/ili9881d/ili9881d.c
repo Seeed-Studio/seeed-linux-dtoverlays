@@ -578,7 +578,12 @@ static const struct ili9881d_desc gjx101c7_desc = {
 	.init = gjx101c7_init,
 	.init_length = ARRAY_SIZE(gjx101c7_init),
 	.mode = &nwe080_default_mode,
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 18, 0)
+	/* Burst mode reduces DSI LP/HS transitions that cause flickering on 6.18+ */
+	.mode_flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_BURST,
+#else
 	.mode_flags = MIPI_DSI_MODE_VIDEO_SYNC_PULSE | MIPI_DSI_MODE_VIDEO,
+#endif
 	.flags = ILI9881_FLAGS_NO_SHUTDOWN_CMDS |
 		 ILI9881_FLAGS_PANEL_ON_IN_PREPARE,
 	.lanes = 4,

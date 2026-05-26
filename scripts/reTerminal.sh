@@ -35,6 +35,15 @@ TRIXIE_NUM=13
 DEBIAN_VER=`cat /etc/debian_version`
 DEBIAN_NUM=$(echo "$DEBIAN_VER" | awk -F'.' '{print $1}')
 
+# apt force options vary by distro version
+if [ $DEBIAN_NUM -lt $BOOKWORM_NUM ]; then
+  APT_FORCE="--force-yes"
+elif [ $DEBIAN_NUM -lt $TRIXIE_NUM ]; then
+  APT_FORCE="--allow-downgrade --allow-unauthenticated"
+else
+  APT_FORCE=""
+fi
+
 _VER_RUN=""
 function get_kernel_version() {
   local ZIMAGE IMG_OFFSET
@@ -90,10 +99,17 @@ function check_kernel_headers() {
     Raspbian|Debian)
       case $DISTRO_CODE in
         buster|bullseye)
-          apt-get -y --force-yes install raspberrypi-kernel-headers
+          apt-get -y $APT_FORCE install raspberrypi-kernel-headers
           ;;
         bookworm|trixie)
-          apt-get -y --force-yes linux-headers-rpi-${VER_RUN##*-}
+          apt-get -y $APT_FORCE install linux-headers-rpi-${VER_RUN##*-}
+          if [ $? -ne 0 ]; then
+            echo " !!! Failed to install kernel headers."
+            echo "     On trixie, this may be caused by missing 'gcc-14-for-host' package."
+            echo "     Try: apt-get update && apt-get -y install gcc-14-for-host"
+            echo "     Then re-run this script."
+            exit 1
+          fi
           ;;
       esac
       ;;
@@ -138,10 +154,16 @@ function install_kernel() {
       Raspbian|Debian)
         case $DISTRO_CODE in
           buster|bullseye)
-            apt-get -y --force-yes install raspberrypi-kernel-headers raspberrypi-kernel
+            apt-get -y $APT_FORCE install raspberrypi-kernel-headers raspberrypi-kernel
             ;;
           bookworm|trixie)
-            apt-get -y --force-yes install linux-image-rpi-${ker_ver##*-} linux-headers-rpi-${ker_ver##*-}
+            apt-get -y $APT_FORCE install linux-image-rpi-${ker_ver##*-} linux-headers-rpi-${ker_ver##*-}
+            if [ $? -ne 0 ]; then
+              echo " !!! Failed to install kernel packages."
+              echo "     On trixie, try: apt-get update && apt-get -y install gcc-14-for-host"
+              echo "     Then re-run this script."
+              exit 1
+            fi
             ;;
         esac
         ;;
@@ -164,8 +186,8 @@ function install_kernel() {
         exit 2
       }
     else
-      apt-get -y --force-yes install linux-image-rpi-${ker_ver##*-}=$FORCE_KERNEL 
-      apt-get -y --force-yes install linux-headers-rpi-${ker_ver##*-}=$FORCE_KERNEL
+      apt-get -y $APT_FORCE install linux-image-rpi-${ker_ver##*-}=$FORCE_KERNEL 
+      apt-get -y $APT_FORCE install linux-headers-rpi-${ker_ver##*-}=$FORCE_KERNEL
     fi
   }
 }
@@ -219,41 +241,48 @@ function uninstall_modules {
   done
 }
 
+# Safe sed replacement for vfat filesystems where sed -i can truncate files
+function safe_sed {
+  local tmp=$(mktemp)
+  sed "$1" "$2" > "$tmp" && cat "$tmp" > "$2"
+  rm -f "$tmp"
+}
+
 # set dtparam=$1=$2
 function set_config_dtparam {
   if [ "`grep ".*dtparam=$1=.*$" ${CFG_PATH}`" ]; then
     # item exist
-    sed -i "s/.*dtparam=$1=.*$/dtparam=$1=$2/g" ${CFG_PATH}
+    safe_sed "s/.*dtparam=$1=.*$/dtparam=$1=$2/g" ${CFG_PATH}
   else
     # not exist, apply new item
-    echo "dtparam=$1=$2" >> $CFG_PATH 
+    echo "dtparam=$1=$2" >> $CFG_PATH
   fi
 }
 
 # remove dtparam=$1=$2
 function remove_config_dtparam {
-  sed -i "/^dtparam=$1=$2$/d" ${CFG_PATH}
+  safe_sed "/^dtparam=$1=$2$/d" ${CFG_PATH}
 }
 
 # set dtoverlay=$1
 function set_config_dtoverlay {
   if [ "`grep ".*dtoverlay=$1$" ${CFG_PATH}`" ]; then
     # item exist
-    sed -i "s/.*dtoverlay=$1$/dtoverlay=$1/g" ${CFG_PATH}
+    safe_sed "s/.*dtoverlay=$1$/dtoverlay=$1/g" ${CFG_PATH}
   else
     # not exist, apply new item
-    echo "dtoverlay=$1" >> $CFG_PATH 
+    echo "dtoverlay=$1" >> $CFG_PATH
   fi
 }
 
 # remove dtoverlay=$1
 function remove_config_dtoverlay {
-  sed -i "/^dtoverlay=$1$/d" ${CFG_PATH}
+  safe_sed "/^dtoverlay=$1$/d" ${CFG_PATH}
 }
 
 # commit config value
 function commit_config_value {
-    sed -i "s/^$1$/#&/g" ${CFG_PATH}
+    safe_sed "s/^$1$/#&/g" ${CFG_PATH}
 }
 
 # set $1=$2
@@ -264,7 +293,7 @@ function set_config_value {
 
 # remove $1=$2
 function remove_config_value {
-  sed -i "/^$1=$2$/d" ${CFG_PATH}
+  safe_sed "/^$1=$2$/d" ${CFG_PATH}
 }
 
 # apply new value on cmdline
@@ -357,12 +386,22 @@ function install_overlay_DM {
   set_config_dtparam "spi" "on"
 
   set_config_value "enable_uart" "1"
-  set_config_value "dtparam" "ant2"
+  # dtparam=ant2 uses GPIO2 which conflicts with I2C1 SDA on reTerminal-DM
+  if [ $DEBIAN_NUM -lt $BOOKWORM_NUM ]; then
+    set_config_value "dtparam" "ant2"
+  else
+    remove_config_value "dtparam" "ant2"
+  fi
   set_config_value "disable_splash" "1"
   set_config_value "ignore_lcd" "1"
 
   set_config_dtoverlay "dwc2,dr_mode=host"
-  set_config_dtoverlay "vc4-kms-v3d-pi4"
+  # vc4-kms-v3d is the unified overlay for bookworm+, vc4-kms-v3d-pi4 is legacy
+  if [ $DEBIAN_NUM -lt $BOOKWORM_NUM ]; then
+    set_config_dtoverlay "vc4-kms-v3d-pi4"
+  else
+    set_config_dtoverlay "vc4-kms-v3d"
+  fi
   set_config_dtoverlay "i2c1,pins_2_3"
   set_config_dtoverlay "i2c3,pins_4_5"
   set_config_dtoverlay "imx219,cam0"
@@ -431,21 +470,33 @@ function install_overlay {
   echo $CMDLINE > $CLI_PATH
 
   # config.txt
-  sed -i "s/.*dtparam=i2c_arm=.*$/dtparam=i2c_arm=on/g" ${CFG_PATH}
+  safe_sed "s/.*dtparam=i2c_arm=.*$/dtparam=i2c_arm=on/g" ${CFG_PATH}
 
   grep -q "^enable_uart=1$" $CFG_PATH || \
     echo "enable_uart=1" >> $CFG_PATH
   grep -q "^dtoverlay=dwc2,dr_mode=host$" $CFG_PATH || \
     echo "dtoverlay=dwc2,dr_mode=host" >> $CFG_PATH
-  grep -q "^dtparam=ant2$" $CFG_PATH || \
-    echo "dtparam=ant2" >> $CFG_PATH
+  # dtparam=ant2 uses GPIO2 which conflicts with I2C1 SDA on reTerminal
+  if [ $DEBIAN_NUM -lt $BOOKWORM_NUM ]; then
+    grep -q "^dtparam=ant2$" $CFG_PATH || \
+      echo "dtparam=ant2" >> $CFG_PATH
+  else
+    safe_sed "/^dtparam=ant2$/d" ${CFG_PATH}
+  fi
   grep -q "^disable_splash=1$" $CFG_PATH || \
     echo "disable_splash=1" >> $CFG_PATH
 
   grep -q "^ignore_lcd=1$" $CFG_PATH || \
     echo "ignore_lcd=1" >> $CFG_PATH
-  grep -q "^dtoverlay=vc4-kms-v3d-pi4$" $CFG_PATH || \
-    echo "dtoverlay=vc4-kms-v3d-pi4" >> $CFG_PATH
+  # vc4-kms-v3d is the unified overlay for bookworm+, vc4-kms-v3d-pi4 is legacy
+  if [ $DEBIAN_NUM -lt $BOOKWORM_NUM ]; then
+    grep -q "^dtoverlay=vc4-kms-v3d-pi4$" $CFG_PATH || \
+      echo "dtoverlay=vc4-kms-v3d-pi4" >> $CFG_PATH
+  else
+    safe_sed "/^dtoverlay=vc4-kms-v3d-pi4$/d" ${CFG_PATH}
+    grep -q "^dtoverlay=vc4-kms-v3d$" $CFG_PATH || \
+      echo "dtoverlay=vc4-kms-v3d" >> $CFG_PATH
+  fi
   grep -q "^dtoverlay=i2c3,pins_4_5$" $CFG_PATH || \
     echo "dtoverlay=i2c3,pins_4_5" >> $CFG_PATH
   grep -q "^gpio=13=pu$" $CFG_PATH || \
@@ -478,16 +529,16 @@ function uninstall_overlay {
   echo $CMDLINE > $CLI_PATH
 
   # config.txt
-  sed -i "/^disable_splash=1$/d" ${CFG_PATH}
-  sed -i "/^ignore_lcd=1$/d" ${CFG_PATH}
-  sed -i "/^dtoverlay=vc4-kms-v3d-pi4$/d" ${CFG_PATH}
-  sed -i "/^dtoverlay=i2c3,pins_4_5$/d" ${CFG_PATH}
-  sed -i "/^gpio=13=pu$/d" ${CFG_PATH}
+  safe_sed "/^disable_splash=1$/d" ${CFG_PATH}
+  safe_sed "/^ignore_lcd=1$/d" ${CFG_PATH}
+  safe_sed "/^dtoverlay=vc4-kms-v3d-pi4$/d" ${CFG_PATH}
+  safe_sed "/^dtoverlay=i2c3,pins_4_5$/d" ${CFG_PATH}
+  safe_sed "/^gpio=13=pu$/d" ${CFG_PATH}
 
   for i
   do
     rm -fv $OVERLAY_DIR/$i.dtbo || exit 1;
-	sed -i "/^dtoverlay="$i"$/d" ${CFG_PATH}
+	safe_sed "/^dtoverlay=$i$/d" ${CFG_PATH}
   done
 
   rm -fv overlays/rpi/.*.tmp
@@ -496,13 +547,13 @@ function uninstall_overlay {
 }
 
 function setup_overlay {
-  sed -i "/^dtoverlay=$1$/s//dtoverlay=$1,$2/" ${CFG_PATH}
+  safe_sed "/^dtoverlay=$1$/s//dtoverlay=$1,$2/" ${CFG_PATH}
 }
 
 #NOTICE: this function must be used
 # before the uninstall_overlay
 function unsetup_overlay {
-  sed -i "/^dtoverlay=$1,$2$/s//dtoverlay=$1/" ${CFG_PATH}
+  safe_sed "/^dtoverlay=$1,$2$/s//dtoverlay=$1/" ${CFG_PATH}
 }
 
 function usage() {
@@ -576,6 +627,14 @@ function setup_display {
               mkdir -p "$file/.config/labwc"
               grep -q "wlr-randr --output DSI-1 --transform 270" "$file/.config/labwc/autostart" || \
                 echo "wlr-randr --output DSI-1 --transform 270 &" >> "$file/.config/labwc/autostart"
+              if [ "$device" = "reTerminal-DM" ]; then
+                cat > "$file/.config/labwc/rc.xml" << 'LABWCRC'
+<?xml version="1.0"?>
+<openbox_config xmlns="http://openbox.org/3.4/rc">
+	<touch deviceName="Goodix Capacitive TouchScreen" mapToOutput="" mouseEmulation="yes"/>
+</openbox_config>
+LABWCRC
+              fi
             done
           fi
           ;;
@@ -616,7 +675,7 @@ function install {
   if [ "$device" = "reTerminal" ]; then
     install_modules mipi_dsi ltr30x lis3lv02d bq24179_charger
     install_overlay reTerminal reTerminal-bridge
-    if [ "$DEBIAN_NUM" -eq "$BOOKWORM_NUM" ] || [ "$DEBIAN_NUM" -eq "$TRIXIE_NUM" ]; then
+    if [ "$DEBIAN_NUM" -ge "$BOOKWORM_NUM" ]; then
       setup_overlay reTerminal tp_rotate=1
     fi
   elif [ "$device" = "reTerminal-DM" ]; then
@@ -635,8 +694,10 @@ function install {
   # display
   setup_display
 
-  # touch panel
-  # setup_tp
+  # touch panel (only needed on bookworm+)
+  if [ "$DEBIAN_NUM" -ge "$BOOKWORM_NUM" ]; then
+    setup_tp
+  fi
 
   # rebuild initramfs
   update-initramfs -c -k $(uname -r)
@@ -788,7 +849,7 @@ fi
 echo -e "\n### Sync kernel and userland"
 if [ $arch_r != "arm64" ]; then
   grep -q "^arm_64bit" ${CFG_PATH} && \
-  sed -i 's/arm_64bit=.*/arm_64bit=0/' ${CFG_PATH} || \
+  safe_sed 's/arm_64bit=.*/arm_64bit=0/' ${CFG_PATH} || \
   echo "arm_64bit=0" >> ${CFG_PATH} 
 fi
 
