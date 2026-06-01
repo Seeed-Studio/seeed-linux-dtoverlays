@@ -333,7 +333,12 @@ function install_overlay_reComputer {
     set_config_dtoverlay "vc4-kms-dsi-7inch"
   fi
   if [ "$device" = "reComputer-R100x" ] || [ "$device" = "reComputer-R110x" ]; then
-      set_config_dtparam "pcie_tperst_clk_ms" "100"
+      set_config_value "dtparam" "pciex1"
+      set_config_dtparam "pcie_tperst_clk_ms" "1000"
+      set_config_dtparam "pciex1_no_l0s" "on"
+      set_cmdline_value "pci=noaer"
+      set_cmdline_value "pci=nomsi"
+      set_cmdline_value "nvme_core.default_ps_max_latency_us=0"
   fi
   if [ "$device" = "reComputer-R2x" ]; then
     make overlays/rpi/reComputer-R2x-base-overlay.dtbo || exit 1;
@@ -360,6 +365,14 @@ function uninstall_overlay_reComputer {
   remove_config_dtoverlay "vc4-kms-v3d"
   if [ "$device" = "reComputer-R100x" ]; then
     remove_config_dtoverlay "vc4-kms-dsi-7inch"
+  fi
+  if [ "$device" = "reComputer-R100x" ] || [ "$device" = "reComputer-R110x" ]; then
+    remove_config_value "dtparam" "pciex1"
+    remove_config_dtparam "pcie_tperst_clk_ms" "1000"
+    remove_config_dtparam "pciex1_no_l0s" "on"
+    remove_cmdline_value "pci=noaer"
+    remove_cmdline_value "pci=nomsi"
+    remove_cmdline_value "nvme_core.default_ps_max_latency_us=0"
   fi
   remove_config_dtoverlay $device
   rm -fv $OVERLAY_DIR/$device.dtbo || exit 1;
