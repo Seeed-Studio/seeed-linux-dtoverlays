@@ -39,7 +39,7 @@ DEBIAN_NUM=$(echo "$DEBIAN_VER" | awk -F'.' '{print $1}')
 if [ $DEBIAN_NUM -lt $BOOKWORM_NUM ]; then
   APT_FORCE="--force-yes"
 elif [ $DEBIAN_NUM -lt $TRIXIE_NUM ]; then
-  APT_FORCE="--allow-downgrade --allow-unauthenticated"
+  APT_FORCE="--allow-downgrades --allow-unauthenticated"
 else
   APT_FORCE=""
 fi
