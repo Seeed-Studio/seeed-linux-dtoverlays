@@ -86,13 +86,15 @@
                 ;
 
                 RS485_POWER_EN {
-                    gpios = <&pca9535 0 0>;
+                    gpio-hog;
+                    gpios = <0 0>;
                     output-high;
                     line-name = "RS485_POWER_EN";
                 };
 
                 CH344_RST {
-                    gpios = <&pca9535 1 0>;
+                    gpio-hog;
+                    gpios = <1 0>;
                     output-high;
                     line-name = "CH344_RST";
                 };
@@ -104,7 +106,8 @@
                 };
 
                 TPM_RST {
-                    gpios = <&pca9535 3 0>;
+                    gpio-hog;
+                    gpios = <3 0>;
                     output-high;
                     line-name = "TPM_RST";
                 };
