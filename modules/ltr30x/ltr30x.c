@@ -26,7 +26,9 @@
 
 /* Kernel 6.18+ renamed IIO direct mode functions */
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 18, 0)
-#define iio_device_claim_direct_mode iio_device_claim_direct
+/* iio_device_claim_direct() returns true on success; keep the old 0 / -EBUSY */
+#define iio_device_claim_direct_mode(indio_dev) \
+	(iio_device_claim_direct(indio_dev) ? 0 : -EBUSY)
 #define iio_device_release_direct_mode iio_device_release_direct
 #endif
 
